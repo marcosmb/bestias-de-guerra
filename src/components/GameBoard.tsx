@@ -78,7 +78,7 @@ function CardZoomModal({
   if (isHidden) {
     return (
       <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4 animate-backdrop-fade" onClick={onClose}>
-        <div className="bg-ink-700 rounded-2xl border-2 border-ink-500/50 p-6 max-w-xs w-full shadow-glow animate-scale-in text-center">
+        <div className="bg-ink-700 rounded-2xl border-2 border-ink-500/50 p-6 max-w-xs w-full shadow-glow animate-scale-in text-center" onClick={(e) => e.stopPropagation()}>
           <div className="w-32 h-44 mx-auto mb-4 rounded-lg card-back border border-gold-700/40 shadow-card flex items-center justify-center">
             <div className="rounded-full border-2 border-gold-500/30 flex items-center justify-center" style={{ width: '30%', height: '30%' }}>
               <span className="text-gold-500/40 font-display text-2xl">B</span>
