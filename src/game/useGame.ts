@@ -17,12 +17,14 @@ import {
   MAX_HAND_SIZE,
   canAttack,
   createPlayer,
+  detachFieldMonster,
   drawCards,
   getEffectiveAtk,
   getFirstEmptySlot,
   hasEmptySlot,
   hasAnyLegalAction,
   checkStalemate,
+  placeFieldMonster,
   resolveCombat,
   shuffleDeck,
 } from './types';
@@ -45,6 +47,7 @@ function initialState(): GameState {
     selection: { kind: 'none' },
     log: [],
     winner: null,
+    isDraw: false,
     pendingTrap: null,
     pendingDice: null,
     lastCombat: null,
@@ -57,11 +60,14 @@ function addLog(state: GameState, msg: string): string[] {
   return [...state.log.slice(-50), msg];
 }
 
-function checkWinner(players: [PlayerState, PlayerState]): 0 | 1 | null {
-  if (players[0].lp <= 0 && players[1].lp <= 0) return players[0].lp >= players[1].lp ? 0 : 1;
-  if (players[1].lp <= 0) return 0;
-  if (players[0].lp <= 0) return 1;
-  return null;
+function checkWinner(players: [PlayerState, PlayerState]): { winner: 0 | 1 | null; isDraw: boolean } {
+  if (players[0].lp <= 0 && players[1].lp <= 0) {
+    if (players[0].lp === players[1].lp) return { winner: null, isDraw: true };
+    return { winner: players[0].lp > players[1].lp ? 0 : 1, isDraw: false };
+  }
+  if (players[1].lp <= 0) return { winner: 0, isDraw: false };
+  if (players[0].lp <= 0) return { winner: 1, isDraw: false };
+  return { winner: null, isDraw: false };
 }
 
 /**
@@ -87,6 +93,7 @@ function checkStalemateEnd(state: GameState): GameState {
     ...state,
     phase: 'game-over' as const,
     winner,
+    isDraw: winner === null,
     log: addLog(state, 'Ningún jugador puede realizar acciones legales. Fin de la partida.'),
   };
 }
@@ -186,18 +193,13 @@ function applyTrapEffect(
           log.push(`¡${trap.name}! No hay espacio libre en tu campo. La Trampa no puede activarse.`);
           break;
         }
-        // Mover el atacante al campo del defensor
-        const slot = getFirstEmptySlot(players[defenderPlayer]);
+        // Mover el atacante al campo del defensor SIN enviarlo al cementerio
         const movedAttacker: FieldMonster = {
           ...attacker,
           controlledBy: defenderPlayer,
         };
-        players[defenderPlayer] = {
-          ...players[defenderPlayer],
-          field: players[defenderPlayer].field.map((f, i) => (i === slot ? movedAttacker : f)) as (FieldMonster | null)[],
-        };
-        // Eliminar el atacante del campo original
-        players[attackerPlayer] = removeFieldMonster(players[attackerPlayer], attackerUid);
+        players[defenderPlayer] = placeFieldMonster(players[defenderPlayer], movedAttacker);
+        players[attackerPlayer] = detachFieldMonster(players[attackerPlayer], attackerUid);
         log.push(`¡${trap.name}! ${attacker.card.name} pasa a tu campo.`);
       }
       negateAttack = true;
@@ -219,14 +221,28 @@ function applyTrapEffect(
       log.push(`¡${trap.name}! (Esta Trampa se activa al comienzo del turno, no al recibir un ataque.)`);
       break;
     }
-    case 'control_two_turns':
+    case 'control_two_turns': {
+      // Trampa 10: El atacante pasa al campo del defensor bajo su control durante 2 turnos
       if (attacker) {
-        players[attackerPlayer] = updateFieldMonster(players[attackerPlayer], attackerUid, (fm) => ({ ...fm, pendingEffect: 'control', pendingTurns: 2, controlledBy: defenderPlayer }));
-        log.push(`¡${trap.name}! ${attacker.card.name} es controlado por 2 turnos.`);
-        negateAttack = true;
-        skipCombat = true;
+        if (!hasEmptySlot(players[defenderPlayer])) {
+          log.push(`¡${trap.name}! No hay espacio libre en tu campo. La Trampa no puede activarse.`);
+          break;
+        }
+        const movedAttacker: FieldMonster = {
+          ...attacker,
+          pendingEffect: 'control',
+          pendingTurns: 2,
+          controlledBy: defenderPlayer,
+          hasAttacked: true,
+        };
+        players[defenderPlayer] = placeFieldMonster(players[defenderPlayer], movedAttacker);
+        players[attackerPlayer] = detachFieldMonster(players[attackerPlayer], attackerUid);
+        log.push(`¡${trap.name}! ${attacker.card.name} pasa a tu campo bajo tu control por 2 turnos.`);
       }
+      negateAttack = true;
+      skipCombat = true;
       break;
+    }
     case 'death_after_two_turns':
       if (attacker) {
         players[attackerPlayer] = updateFieldMonster(players[attackerPlayer], attackerUid, (fm) => ({ ...fm, pendingEffect: 'death', pendingTurns: 2 }));
@@ -434,8 +450,8 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string,
     players[me] = playCardFromHand(players[me], card.id);
   }
 
-  const winner = checkWinner(players);
-  return { ...state, players, log: addLog(state, log.join(' ')), winner, selection: { kind: 'none' } };
+  const winResult = checkWinner(players);
+  return { ...state, players, log: addLog(state, log.join(' ')), winner: winResult.winner, isDraw: winResult.isDraw, selection: { kind: 'none' } };
 }
 
 // --- Turn start/end effects ---
@@ -478,14 +494,17 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
     }
     // Trap 9: Tres turnos — cuenta 3 turnos y luego permite elegir un monstruo para destruir
     if (fm.trap?.effect.kind === 'three_turns_kill') {
-      // Usar pendingTurns como contador de turnos restantes
       const currentTurns = fm.pendingTurns > 0 ? fm.pendingTurns : 3;
       const newTurns = currentTurns - 1;
       if (newTurns === 0) {
-        // Activar selección de objetivo para destruir
         players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({ ...f, pendingTurns: 0 }));
         log.push(`${fm.trap.name}: ¡Elige un Monstruo del campo para destruir!`);
-        // Nota: La selección se maneja en el reducer con el estado 'choose-destroy-target'
+        return {
+          ...state,
+          players,
+          selection: { kind: 'choose-destroy-target', trapUid: fm.uid },
+          log: log.length > 0 ? addLog(state, log.join(' ')) : state.log,
+        };
       } else {
         players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({ ...f, pendingTurns: newTurns }));
         log.push(`${fm.trap.name}: ${newTurns} turnos restantes.`);
@@ -646,22 +665,19 @@ function reducer(state: GameState, action: Action): GameState {
       const hasOppMonsters = oppField.some((f) => f !== null);
       
       if (!hasOppMonsters) {
-        // El rival no tiene Monstruos — ataque directo
+        // Regla 22.3: El rival no tiene Monstruos — ataque directo
         return executeDirectAttack(state, action.attackerUid);
       }
       
-      // Verificar si el rival tiene Monstruos en Defensa
       const hasOppDefense = oppField.some((f) => f !== null && f.position === 'defense');
       
       if (hasOppDefense) {
-        // El rival tiene Monstruos en Defensa — el atacante está obligado a atacar a uno de ellos
-        // Filtrar solo los monstruos en defensa como objetivos válidos
+        // Regla 22.1: obligado a atacar a un Monstruo en Defensa
         return { ...state, selection: { kind: 'attack', attackerUid: action.attackerUid } };
       }
       
-      // El rival no tiene Monstruos en Defensa pero sí en Ataque
-      // El atacante puede elegir entre atacar a uno de ellos o realizar un ataque directo
-      return { ...state, selection: { kind: 'attack', attackerUid: action.attackerUid } };
+      // Regla 22.2: sin Monstruos en Defensa pero sí en Ataque → puede atacar o hacer directo
+      return { ...state, selection: { kind: 'attack-or-direct', attackerUid: action.attackerUid } };
     }
     case 'DECLARE_ATTACK': {
       if (state.phase !== 'playing') return state;
@@ -695,6 +711,12 @@ function reducer(state: GameState, action: Action): GameState {
       return executeCombat(state, action.attackerUid, action.defenderUid);
     }
     case 'DIRECT_ATTACK': {
+      if (state.phase !== 'playing') return state;
+      const cp = state.currentPlayer;
+      const opp = (cp === 0 ? 1 : 0) as 0 | 1;
+      // Regla 22.1: no se puede atacar directamente si hay Monstruos en Defensa
+      const hasOppDefense = state.players[opp].field.some((f) => f !== null && f.position === 'defense');
+      if (hasOppDefense) return state;
       return executeDirectAttack(state, action.attackerUid);
     }
     case 'RESOLVE_TRAP': {
@@ -720,8 +742,8 @@ function reducer(state: GameState, action: Action): GameState {
             }
           }
           newState = { ...newState, phase: 'playing', pendingTrap: null, selection: { kind: 'none' } };
-          const winner = checkWinner(newState.players);
-          if (winner !== null) return { ...newState, phase: 'game-over', winner };
+          const winResult = checkWinner(newState.players);
+          if (winResult.winner !== null || winResult.isDraw) return { ...newState, phase: 'game-over', winner: winResult.winner, isDraw: winResult.isDraw };
           return newState;
         }
         if (newState.phase === 'dice-roll') return newState;
@@ -775,8 +797,8 @@ function reducer(state: GameState, action: Action): GameState {
       };
       // Apply turn start passive effects
       newState = applyTurnStartEffects(newState, nextPlayer);
-      const winner = checkWinner(newState.players);
-      if (winner !== null) return { ...newState, phase: 'game-over', winner };
+      const winResult = checkWinner(newState.players);
+      if (winResult.winner !== null || winResult.isDraw) return { ...newState, phase: 'game-over', winner: winResult.winner, isDraw: winResult.isDraw };
       // Regla 27.2: comprobar si ningún jugador puede realizar acciones legales
       return checkStalemateEnd(newState);
     }
@@ -841,17 +863,18 @@ function reducer(state: GameState, action: Action): GameState {
         if (magicCard) players[me] = playCardFromHand(players[me], magicCard.id);
       }
 
-      const winner = checkWinner(players);
+      const winResult = checkWinner(players);
       return {
         ...state,
         players,
-        phase: winner !== null ? 'game-over' : 'playing',
+        phase: winResult.winner !== null || winResult.isDraw ? 'game-over' : 'playing',
         pendingTrap: null,
         pendingDice: null,
         diceResult: roll,
         selection: { kind: 'none' },
         log: addLog(state, log.join(' ')),
-        winner,
+        winner: winResult.winner,
+        isDraw: winResult.isDraw,
       };
     }
     case 'DESTROY_MONSTER': {
@@ -868,14 +891,15 @@ function reducer(state: GameState, action: Action): GameState {
           players[state.currentPlayer] = updateFieldMonster(players[state.currentPlayer], trapUid, (f) => ({ ...f, trap: null }));
         }
       }
-      const winner = checkWinner(players);
+      const winResult = checkWinner(players);
       const newState: GameState = {
         ...state,
         players,
-        phase: winner !== null ? ('game-over' as const) : ('playing' as const),
+        phase: winResult.winner !== null || winResult.isDraw ? ('game-over' as const) : ('playing' as const),
         selection: { kind: 'none' },
         log: addLog(state, `${target.card.name} destruido por Trampa 9.`),
-        winner,
+        winner: winResult.winner,
+        isDraw: winResult.isDraw,
       };
       return checkStalemateEnd(newState);
     }
@@ -924,14 +948,15 @@ function reducer(state: GameState, action: Action): GameState {
       }
       // Consumir la carta de la mano
       players[me] = playCardFromHand(players[me], action.card.id);
-      const winner = checkWinner(players);
+      const winResult = checkWinner(players);
       const newState: GameState = {
         ...state,
         players,
-        phase: winner !== null ? ('game-over' as const) : ('playing' as const),
+        phase: winResult.winner !== null || winResult.isDraw ? ('game-over' as const) : ('playing' as const),
         selection: { kind: 'none' },
         log: addLog(state, log.join(' ')),
-        winner,
+        winner: winResult.winner,
+        isDraw: winResult.isDraw,
       };
       return checkStalemateEnd(newState);
     }
@@ -955,14 +980,15 @@ function executeDirectAttack(state: GameState, attackerUid: string): GameState {
   const dmg = getEffectiveAtk(attacker);
   players[opp] = applyDamage(players[opp], dmg);
   players[cp] = updateFieldMonster(players[cp], attackerUid, (fm) => ({ ...fm, hasAttacked: true }));
-  const winner = checkWinner(players);
+  const winResult = checkWinner(players);
   return {
     ...state,
     players,
-    phase: winner !== null ? 'game-over' : 'playing',
+    phase: winResult.winner !== null || winResult.isDraw ? 'game-over' : 'playing',
     selection: { kind: 'none' },
     log: addLog(state, `${attacker.card.name} ataca directamente. ${dmg} PV al rival.`),
-    winner,
+    winner: winResult.winner,
+    isDraw: winResult.isDraw,
   };
 }
 
@@ -1044,15 +1070,16 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
     }
   }
 
-  const winner = checkWinner(players);
+  const winResult = checkWinner(players);
   const newState: GameState = {
     ...state,
     players,
-    phase: winner !== null ? ('game-over' as const) : ('playing' as const),
+    phase: winResult.winner !== null || winResult.isDraw ? ('game-over' as const) : ('playing' as const),
     selection: { kind: 'none' },
     lastCombat: result,
     log: addLog(state, result.log),
-    winner,
+    winner: winResult.winner,
+    isDraw: winResult.isDraw,
   };
   return checkStalemateEnd(newState);
 }

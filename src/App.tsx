@@ -60,9 +60,21 @@ function App() {
   const [flow, setFlow] = useState<FlowPhase>('menu');
 
   if (state.phase === 'game-over') {
-    const winner = state.winner!;
-    // En modo CPU el jugador es siempre el índice 0.
-    // En modo local siempre hay un ganador humano, así que se trata como victoria.
+    if (state.isDraw || state.winner === null) {
+      return (
+        <GameOverScreen
+          winnerName="Empate"
+          loserName=""
+          playerWon={false}
+          isDraw
+          onRestart={() => {
+            dispatch({ type: 'RESTART' });
+            setFlow('menu');
+          }}
+        />
+      );
+    }
+    const winner = state.winner;
     const playerWon = state.mode === 'cpu' ? winner === 0 : true;
     return (
       <GameOverScreen

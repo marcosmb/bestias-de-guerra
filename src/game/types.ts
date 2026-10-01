@@ -43,6 +43,7 @@ export type SelectionMode =
   | { kind: 'magic-target-monster'; card: MagicCard; side: 'self' | 'enemy' }
   | { kind: 'attack'; attackerUid: string }
   | { kind: 'direct-attack'; attackerUid: string }
+  | { kind: 'attack-or-direct'; attackerUid: string }
   | { kind: 'choose-destroy-target'; trapUid: string }
   | { kind: 'revive-choice'; card: MagicCard };
 
@@ -93,6 +94,7 @@ export interface GameState {
   selection: SelectionMode;
   log: string[];
   winner: 0 | 1 | null;
+  isDraw: boolean;
   pendingTrap: {
     attackerUid: string;
     defenderUid: string;
@@ -181,6 +183,23 @@ export function hasEmptySlot(player: PlayerState): boolean {
 
 export function getFirstEmptySlot(player: PlayerState): number {
   return player.field.findIndex((s) => s === null);
+}
+
+/**
+ * Retira un monstruo del campo de un jugador SIN enviarlo al cementerio.
+ * Usar para mover cartas entre campos (Trampa 7, Trampa 10).
+ */
+export function detachFieldMonster(player: PlayerState, uid: string): PlayerState {
+  return { ...player, field: player.field.map((f) => (f?.uid === uid ? null : f)) };
+}
+
+/**
+ * Coloca un FieldMonster en el primer espacio libre del campo de un jugador.
+ * No verifica nada — el llamador debe comprobar hasEmptySlot antes.
+ */
+export function placeFieldMonster(player: PlayerState, fm: FieldMonster): PlayerState {
+  const slot = getFirstEmptySlot(player);
+  return { ...player, field: player.field.map((f, i) => (i === slot ? fm : f)) as (FieldMonster | null)[] };
 }
 
 export function canAttack(state: GameState): boolean {

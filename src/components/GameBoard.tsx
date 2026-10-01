@@ -533,7 +533,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
   };
 
   const handleOpponentFieldClick = (uid: string) => {
-    if (sel.kind === 'attack') {
+    if (sel.kind === 'attack' || sel.kind === 'attack-or-direct') {
       dispatch({ type: 'DECLARE_ATTACK', attackerUid: sel.attackerUid, defenderUid: uid });
     } else if (sel.kind === 'place-magic') {
       dispatch({ type: 'PLACE_MAGIC_ON_MONSTER', card: sel.card, side: 'enemy', fieldUid: uid });
@@ -547,8 +547,8 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       dispatch({ type: 'PLACE_TRAP_ON_MONSTER', card: sel.card, fieldUid: uid });
     } else if (sel.kind === 'place-magic') {
       dispatch({ type: 'PLACE_MAGIC_ON_MONSTER', card: sel.card, side: 'self', fieldUid: uid });
-    } else if (sel.kind === 'direct-attack') {
-      dispatch({ type: 'DIRECT_ATTACK', attackerUid: uid });
+    } else if (sel.kind === 'direct-attack' || sel.kind === 'attack-or-direct') {
+      dispatch({ type: 'DIRECT_ATTACK', attackerUid: sel.attackerUid });
     } else if (sel.kind === 'choose-destroy-target') {
       dispatch({ type: 'DESTROY_MONSTER', fieldUid: uid });
     }
@@ -559,8 +559,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
 
   const isOpponentSlotSelectable = (fm: FieldMonster | null): boolean => {
     if (!fm) return false;
-    if (sel.kind === 'attack') {
-      // Si el rival tiene Monstruos en Defensa, solo se pueden atacar esos
+    if (sel.kind === 'attack' || sel.kind === 'attack-or-direct') {
       const oppField = opp.field;
       const hasOppDefense = oppField.some((f) => f !== null && f.position === 'defense');
       if (hasOppDefense) {
@@ -576,7 +575,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
   const isMySlotSelectable = (): boolean => {
     if (sel.kind === 'place-trap') return true;
     if (sel.kind === 'place-magic') return true;
-    if (sel.kind === 'direct-attack') return true;
+    if (sel.kind === 'direct-attack' || sel.kind === 'attack-or-direct') return true;
     return false;
   };
 
@@ -586,6 +585,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
   const selectionPromptText = (): string => {
     switch (sel.kind) {
       case 'attack': return 'Elige un monstruo enemigo para atacar';
+      case 'attack-or-direct': return 'Elige un monstruo enemigo para atacar, o tu monstruo para ataque directo';
       case 'place-trap': return 'Elige tu monstruo para colocar la trampa';
       case 'place-magic': return 'Elige un monstruo (tuyo o rival) para la mágica';
       case 'direct-attack': return 'Elige tu monstruo para atacar directamente';
@@ -741,7 +741,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
               fm={fm}
               isOpponent={false}
               onClick={fm ? () => {
-                if (sel.kind === 'place-trap' || sel.kind === 'place-magic' || sel.kind === 'direct-attack') {
+                if (sel.kind === 'place-trap' || sel.kind === 'place-magic' || sel.kind === 'direct-attack' || sel.kind === 'attack-or-direct') {
                   handleMyFieldClick(fm.uid);
                 } else if (sel.kind === 'attack') {
                   // ignore, already attacking
@@ -869,7 +869,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       )}
 
       {/* Selection prompt bar */}
-      {sel.kind !== 'none' && !trapPrompt && !dicePrompt && sel.kind !== 'revive-choice' && (
+      {sel.kind !== 'none' && !trapPrompt && !dicePrompt && sel.kind !== 'revive-choice' && sel.kind !== 'choose-destroy-target' && (
         <div className="px-3 py-2 bg-gold-500/15 border-t-2 border-gold-500/40 flex items-center justify-between flex-none animate-fade-in shadow-lg">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-gold-400 animate-pulse"></div>
