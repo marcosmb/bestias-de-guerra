@@ -572,8 +572,12 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
     return false;
   };
 
-  const isMySlotSelectable = (): boolean => {
-    if (sel.kind === 'place-trap') return true;
+  const isMySlotSelectable = (fm: FieldMonster | null): boolean => {
+    if (!fm) return false;
+    if (sel.kind === 'place-trap') {
+      // Match reducer validation: no trap already, not summoned this turn
+      return !fm.trap && !fm.summonedThisTurn;
+    }
     if (sel.kind === 'place-magic') return true;
     if (sel.kind === 'direct-attack' || sel.kind === 'attack-or-direct') return true;
     return false;
@@ -750,7 +754,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
                   setSelectedFieldUid(selectedFieldUid === fm.uid ? null : fm.uid);
                 }
               } : undefined}
-              selectable={isMySlotSelectable()}
+              selectable={isMySlotSelectable(fm)}
               showTrap={true}
               showMagic={true}
               animateSummon={summonedUids.has(fm?.uid ?? '')}
