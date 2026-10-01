@@ -1091,7 +1091,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
             {selectedCard.type === 'trap' && (
               <button
                 onClick={() => handlePlayTrap(selectedCard)}
-                disabled={!canPlayMore || !me.field.some((f) => f !== null && !f.trap)}
+                disabled={!canPlayMore || !me.field.some((f) => f !== null && !f.trap && !f.summonedThisTurn)}
                 className="flex-1 rounded-lg bg-gradient-to-r from-crimson-500 to-crimson-400 text-white font-display font-bold hover:from-crimson-400 hover:to-crimson-300 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
                 style={{ ...uiSm, padding: '0.7em 0' }}
               >

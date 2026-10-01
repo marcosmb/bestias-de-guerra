@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { reducer, initialState } from '../useGame';
 import type { GameState, Action, FieldMonster } from '../types';
 import { createPlayer, drawCards } from '../types';
-import { buildDeck, TRAPS, MAGICS, type MonsterCard, type TrapCard } from '../cardData';
+import { buildDeck, TRAPS, type MonsterCard, type TrapCard } from '../cardData';
 
 // --- Helpers ---
 
@@ -54,6 +54,11 @@ function getFirstMonsterCard(): MonsterCard {
 function getMonsterWithAtk(atk: number): MonsterCard {
   const deck = buildDeck();
   return deck.filter((c): c is MonsterCard => c.type === 'monster').find((c) => c.atk === atk)!;
+}
+
+function getDistinctMonsterCards(count: number): MonsterCard[] {
+  const deck = buildDeck();
+  return deck.filter((c): c is MonsterCard => c.type === 'monster').slice(0, count);
 }
 
 function getTrapByEffect(kind: string): TrapCard {
@@ -479,6 +484,151 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     // Try to place trap — should be blocked (summonedThisTurn)
     state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: fm.uid });
     expect(state.players[0].field.find((f) => f?.uid === fm.uid)?.trap).toBeNull();
+  });
+
+  it('full flow: SELECT_TRAP_PLACE → PLACE_TRAP_ON_MONSTER → trap associated, card consumed, selection cleared', () => {
+    const trap = TRAPS[3]; // reflect_damage
+    const m = getFirstMonsterCard();
+    let state = makeState();
+    state = setHand(state, 0, [trap]);
+    const fm = monster(m);
+    state = setField(state, 0, [fm]);
+    // Step 1: select the trap
+    state = dispatch(state, { type: 'SELECT_TRAP_PLACE', card: trap });
+    expect(state.selection.kind).toBe('place-trap');
+    if (state.selection.kind === 'place-trap') {
+      expect(state.selection.card.id).toBe(trap.id);
+    }
+    // Step 2: place on monster
+    state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: fm.uid });
+    // Trap associated to the correct uid
+    const placed = state.players[0].field.find((f) => f?.uid === fm.uid);
+    expect(placed?.trap?.id).toBe(trap.id);
+    // Card consumed from hand
+    expect(state.players[0].hand.some((c) => c.id === trap.id)).toBe(false);
+    // Selection cleared
+    expect(state.selection.kind).toBe('none');
+    // No duplicate trap in hand
+    expect(state.players[0].hand.filter((c) => c.id === trap.id).length).toBe(0);
+    // Monster still exists exactly once
+    expect(state.players[0].field.filter((f) => f?.uid === fm.uid).length).toBe(1);
+    // cardsPlayedThisTurn incremented
+    expect(state.players[0].cardsPlayedThisTurn).toBe(1);
+  });
+
+  it('blocks trap on monster that already has a trap', () => {
+    const trap1 = TRAPS[0];
+    const trap2 = TRAPS[1];
+    const m = getFirstMonsterCard();
+    let state = makeState();
+    state = setHand(state, 0, [trap2]);
+    const fm = monster(m, { trap: trap1 });
+    state = setField(state, 0, [fm]);
+    state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap2, fieldUid: fm.uid });
+    // Should be blocked — trap1 still there, trap2 not placed
+    const placed = state.players[0].field.find((f) => f?.uid === fm.uid);
+    expect(placed?.trap?.id).toBe(trap1.id);
+    // trap2 still in hand
+    expect(state.players[0].hand.some((c) => c.id === trap2.id)).toBe(true);
+  });
+
+  it('blocks trap on non-existent monster uid', () => {
+    const trap = TRAPS[0];
+    const m = getFirstMonsterCard();
+    let state = makeState();
+    state = setHand(state, 0, [trap]);
+    const fm = monster(m);
+    state = setField(state, 0, [fm]);
+    state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: 'non-existent-uid' });
+    // Nothing changed
+    expect(state.players[0].field.find((f) => f?.uid === fm.uid)?.trap).toBeNull();
+    expect(state.players[0].hand.some((c) => c.id === trap.id)).toBe(true);
+  });
+
+  it('blocks trap when card not in hand', () => {
+    const trap = TRAPS[0];
+    const m = getFirstMonsterCard();
+    let state = makeState();
+    // Don't put trap in hand
+    const fm = monster(m);
+    state = setField(state, 0, [fm]);
+    state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: fm.uid });
+    expect(state.players[0].field.find((f) => f?.uid === fm.uid)?.trap).toBeNull();
+  });
+
+  it('blocks trap on opponent monster (wrong player)', () => {
+    const trap = TRAPS[0];
+    const m = getFirstMonsterCard();
+    let state = makeState({ currentPlayer: 0 });
+    state = setHand(state, 0, [trap]);
+    const oppFm = monster(m);
+    state = setField(state, 1, [oppFm]);
+    // Player 0 tries to place trap on player 1's monster
+    state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: oppFm.uid });
+    // Should be blocked — reducer only looks at currentPlayer's field
+    expect(state.players[1].field.find((f) => f?.uid === oppFm.uid)?.trap).toBeNull();
+    expect(state.players[0].hand.some((c) => c.id === trap.id)).toBe(true);
+  });
+
+  it('blocks SELECT_TRAP_PLACE when 3 cards already played', () => {
+    const trap = TRAPS[0];
+    const [m1, m2, m3] = getDistinctMonsterCards(3);
+    let state = makeState();
+    state = setHand(state, 0, [m1, m2, m3, trap]);
+    state = dispatchMany(state, [
+      { type: 'SUMMON_MONSTER', card: m1, position: 'attack' },
+      { type: 'SUMMON_MONSTER', card: m2, position: 'attack' },
+      { type: 'SUMMON_MONSTER', card: m3, position: 'attack' },
+    ]);
+    expect(state.players[0].cardsPlayedThisTurn).toBe(3);
+    state = dispatch(state, { type: 'SELECT_TRAP_PLACE', card: trap });
+    expect(state.selection.kind).toBe('none');
+  });
+
+  it('first turn — can place trap on monster from previous turn (summonedThisTurn=false)', () => {
+    const trap = TRAPS[0];
+    const m = getFirstMonsterCard();
+    let state = makeState({ turnCount: 0, currentPlayer: 0 });
+    state = setHand(state, 0, [trap]);
+    // Monster placed on a previous turn (summonedThisTurn = false)
+    const fm = monster(m, { summonedThisTurn: false });
+    state = setField(state, 0, [fm]);
+    // SELECT_TRAP_PLACE should work on first turn
+    state = dispatch(state, { type: 'SELECT_TRAP_PLACE', card: trap });
+    expect(state.selection.kind).toBe('place-trap');
+    // PLACE_TRAP_ON_MONSTER should work
+    state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: fm.uid });
+    const placed = state.players[0].field.find((f) => f?.uid === fm.uid);
+    expect(placed?.trap?.id).toBe(trap.id);
+    expect(state.players[0].hand.some((c) => c.id === trap.id)).toBe(false);
+    expect(state.selection.kind).toBe('none');
+    expect(state.players[0].field.filter((f) => f?.uid === fm.uid).length).toBe(1);
+  });
+
+  it('first turn — cannot attack (Regla 17)', () => {
+    const m = getFirstMonsterCard();
+    let state = makeState({ turnCount: 0, currentPlayer: 0 });
+    const fm = monster(m, { position: 'attack', summonedThisTurn: false });
+    state = setField(state, 0, [fm]);
+    // START_ATTACK should be blocked on first turn
+    state = dispatch(state, { type: 'START_ATTACK', attackerUid: fm.uid });
+    expect(state.selection.kind).toBe('none');
+  });
+
+  it('later turn — trap placement still works normally', () => {
+    const trap = TRAPS[0];
+    const m = getFirstMonsterCard();
+    let state = makeState({ turnCount: 5, currentPlayer: 0 });
+    state = setHand(state, 0, [trap]);
+    const fm = monster(m, { summonedThisTurn: false });
+    state = setField(state, 0, [fm]);
+    state = dispatch(state, { type: 'SELECT_TRAP_PLACE', card: trap });
+    expect(state.selection.kind).toBe('place-trap');
+    state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: fm.uid });
+    const placed = state.players[0].field.find((f) => f?.uid === fm.uid);
+    expect(placed?.trap?.id).toBe(trap.id);
+    expect(state.players[0].hand.some((c) => c.id === trap.id)).toBe(false);
+    expect(state.selection.kind).toBe('none');
   });
 });
 
