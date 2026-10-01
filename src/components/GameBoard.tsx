@@ -733,7 +733,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       </div>
 
       {/* Player field */}
-      <div className="px-1 sm:px-2 py-1 bg-azure-950/20 border border-azure-900/30 rounded-lg mx-1 flex-none field-zone">
+      <div className="px-1 sm:px-2 py-1 bg-azure-950/20 border border-azure-900/30 rounded-lg mx-1 flex-none field-zone relative z-10">
         <div className="text-center mb-0.5">
           <span className="text-[9px] uppercase tracking-widest text-azure-400/60 font-display font-bold">Tu Campo</span>
         </div>
@@ -946,7 +946,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
           </div>
         </div>
         {/* Hand cards */}
-        <div className="overflow-x-auto overscroll-x-contain touch-pan-x snap-x py-0.5 relative">
+        <div className="overflow-x-auto lg:overflow-visible overscroll-x-contain touch-pan-x snap-x py-0.5 relative">
           {/* Left fade indicator */}
           <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-ink-800/80 to-transparent pointer-events-none z-10"></div>
           {/* Right fade indicator */}

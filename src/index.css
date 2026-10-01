@@ -334,6 +334,7 @@ img {
 .hand-card:hover {
   transform: translateY(-14px) scale(1.06);
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(230, 185, 78, 0.15);
+  z-index: 20;
 }
 .hand-card.selected {
   transform: translateY(-20px) scale(1.1);
