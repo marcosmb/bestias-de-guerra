@@ -235,7 +235,7 @@ function FieldSlot({
             e.stopPropagation();
             onZoom(fm.card);
           }}
-          className="absolute -top-1 -right-1 w-4 h-4 bg-ink-700/90 rounded-full flex items-center justify-center text-ink-300 hover:text-white hover:bg-ink-600 z-30 border border-ink-500/50"
+          className="absolute -top-1 -right-1 w-4 h-4 bg-ink-700/90 rounded-full hidden md:flex items-center justify-center text-ink-300 hover:text-white hover:bg-ink-600 z-30 border border-ink-500/50"
           title="Ampliar carta"
         >
           <ZoomIn size={8} />
@@ -969,7 +969,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
                       e.stopPropagation();
                       handleCardZoom(card);
                     }}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-ink-700/90 rounded-full flex items-center justify-center text-ink-300 hover:text-white hover:bg-ink-600 z-30 border border-ink-500/50"
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-ink-700/90 rounded-full hidden md:flex items-center justify-center text-ink-300 hover:text-white hover:bg-ink-600 z-30 border border-ink-500/50"
                     title="Ampliar carta"
                   >
                     <ZoomIn size={10} />
