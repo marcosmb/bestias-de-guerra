@@ -1935,4 +1935,89 @@ Las siguientes pruebas requieren intervención humana:
 
 ---
 
-*Última actualización: 2026-09-30*
+### Mejora 022A — Subir Bestias de Guerra a GitHub
+
+**Estado:** ⏳ Pendiente de autenticación GitHub
+
+**Fecha:** 2026-10-01
+
+**Descripción:** Preparar y subir el estado actual de `Bestias de Guerra` a un repositorio de GitHub.
+
+#### 1. Estado de Git
+
+| Aspecto | Valor |
+|---------|-------|
+| Repositorio inicializado | ✅ Sí |
+| Rama actual | `master` |
+| Commit | `4d0b3ac` — "Prepare Bestias de Guerra for online deployment" |
+| Archivos en commit | 91 |
+| Working tree | ✅ Limpio |
+| Remote | ❌ No configurado |
+
+#### 2. Archivos incluidos en el commit
+
+- ✅ Código fuente (`src/`)
+- ✅ Imágenes de cartas (`public/cards/` — 48 WebP)
+- ✅ Configuración (`package.json`, `package-lock.json`, `vite.config.ts`, `tsconfig*.json`, `tailwind.config.js`, `eslint.config.js`, `vitest.config.ts`)
+- ✅ Documentación (`README.md`, `PROYECTO_ESTADO.md`, `REGLAS_JUEGO_DEFINITIVAS.md`, `AUDITORIA_REGLAS_V1_0.md`, `PRUEBAS_FINALES_V1_0.md`, `PREPARACION_PRODUCCION.md`, `PLAYTEST_V1_0.md`, `DIFERENCIAS_REGLAS_CODIGO.md`)
+- ✅ `.gitignore` (excluye `node_modules/`, `dist/`, `.env`, logs, archivos temporales)
+
+#### 3. Archivos excluidos del commit
+
+| Archivo | Motivo |
+|---------|--------|
+| `node_modules/` | Dependencias (se regeneran con `npm install`) |
+| `dist/` | Build de producción (se regenera con `npm run build`) |
+| `.env` / `.env.*` | Variables de entorno (secretos) |
+| `*.log` | Logs |
+| `tmp/`, `temp/` | Archivos temporales |
+| `.DS_Store`, `Thumbs.db` | Archivos del sistema |
+
+#### 4. Comprobaciones antes del push
+
+| Comprobación | Resultado |
+|--------------|-----------|
+| `npm run typecheck` | ✅ Sin errores |
+| `npm run build` | ✅ 7.29 s |
+| `npm run lint` | ✅ 0 errores (2 avisos preexistentes) |
+| Tests | ✅ 96/96 |
+| Secretos en el código | ✅ Ninguno |
+| Rutas absolutas locales | ✅ Ninguna |
+| Assets incluidos | ✅ 48 imágenes + CSS + JS |
+
+#### 5. Estado de la subida
+
+**❌ Bloqueado:** GitHub CLI (`gh`) no está instalado en el sistema.
+
+El commit está creado y el working tree está limpio. Para completar la subida, el usuario debe:
+
+**Opción A — Instalar GitHub CLI:**
+```powershell
+winget install --id GitHub.cli
+gh auth login
+gh repo create bestias-de-guerra --private --source=. --push
+```
+
+**Opción B — Usar git directamente:**
+```bash
+git remote add origin https://github.com/<usuario>/bestias-de-guerra.git
+git push -u origin master
+```
+
+#### 6. Visibilidad
+
+El repositorio debe ser **private** (recomendado) hasta que se complete el despliegue en Netlify.
+
+#### 7. Netlify
+
+**NO configurado.** La Mejora 022B se encargará de la conexión con Netlify.
+
+#### 8. Incidencias
+
+- GitHub CLI no disponible en el sistema. El commit local está listo para subir en cuanto se configure el remote.
+
+**Siguiente paso:** Autenticar en GitHub y crear el repositorio remoto.
+
+---
+
+*Última actualización: 2026-10-01*
