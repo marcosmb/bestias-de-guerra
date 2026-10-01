@@ -33,7 +33,7 @@ function genUid(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function initialState(): GameState {
+export function initialState(): GameState {
   return {
     phase: 'start',
     mode: 'local',
@@ -530,7 +530,7 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
   return { ...state, players, log: log.length > 0 ? addLog(state, log.join(' ')) : state.log };
 }
 
-function reducer(state: GameState, action: Action): GameState {
+export function reducer(state: GameState, action: Action): GameState {
   switch (action.type) {
     case 'START_GAME': {
       const mode = action.mode ?? 'local';

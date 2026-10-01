@@ -147,6 +147,22 @@ function completePendingSelection(state: GameState): Action | null {
     return { type: 'CANCEL_SELECTION' };
   }
 
+  if (sel.kind === 'choose-destroy-target') {
+    // Trampa 9: destruir el monstruo rival más fuerte del campo
+    const human = state.players[0];
+    const cpu = state.players[1];
+    const allMonsters = [...monstersOf(human), ...monstersOf(cpu)];
+    if (allMonsters.length > 0) {
+      const strongest = allMonsters.sort((a, b) => {
+        const av = a.position === 'attack' ? getEffectiveAtk(a) : getEffectiveDef(a);
+        const bv = b.position === 'attack' ? getEffectiveAtk(b) : getEffectiveDef(b);
+        return bv - av;
+      })[0];
+      return { type: 'DESTROY_MONSTER', fieldUid: strongest.uid };
+    }
+    return { type: 'CANCEL_SELECTION' };
+  }
+
   return null;
 }
 
