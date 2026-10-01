@@ -360,17 +360,32 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
   const [showLog, setShowLog] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   const [selectedHandCard, setSelectedHandCard] = useState<string | null>(null);
+  const selectedCardPanelRef = useRef<HTMLDivElement>(null);
   const [selectedFieldUid, setSelectedFieldUid] = useState<string | null>(null);
   const [summonedUids, setSummonedUids] = useState<Set<string>>(new Set());
   const [lastCombat, setLastCombat] = useState<{ damage: number; player: 0 | 1 } | null>(null);
   const [zoomCard, setZoomCard] = useState<{ card: Card | null; isOpponentCard?: boolean; isHidden?: boolean } | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [combatAnim, setCombatAnim] = useState<{ 
-    attackerUid: string; 
-    defenderUid: string; 
-    isDirectAttack: boolean;
-    result: 'attacker-destroyed' | 'defender-destroyed' | 'both-destroyed' | 'none-destroyed';
+  const [combatAnim, setCombatAnim] = useState<{
+    attackerUid: string;
+    defenderUid: string | null;
+    phase: 'attacking' | 'defending' | 'damage' | 'result';
   } | null>(null);
+
+  useEffect(() => {
+    if (!selectedHandCard && !selectedFieldUid) return;
+
+    const handleOutsidePointerDown = (event: PointerEvent) => {
+      const panel = selectedCardPanelRef.current;
+      if (panel && !panel.contains(event.target as Node)) {
+        setSelectedHandCard(null);
+        setSelectedFieldUid(null);
+      }
+    };
+
+    document.addEventListener('pointerdown', handleOutsidePointerDown);
+    return () => document.removeEventListener('pointerdown', handleOutsidePointerDown);
+  }, [selectedHandCard, selectedFieldUid]);
   const [soundEnabled, setSoundEnabledState] = useState(true);
   const [volume, setVolumeState] = useState(0.5);
   const [showVolumeControl, setShowVolumeControl] = useState(false);
@@ -1003,7 +1018,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
 
       {/* Selected field monster action panel */}
       {selectedField && !selectedCard && (
-        <div className="fixed bottom-0 left-0 right-0 bg-ink-700 border-t-2 border-azure-500/40 rounded-t-2xl p-3 shadow-card-hover z-40 animate-slide-up"
+        <div ref={selectedCardPanelRef} className="fixed bottom-0 left-0 right-0 bg-ink-700 border-t-2 border-azure-500/40 rounded-t-2xl p-3 shadow-card-hover z-40 animate-slide-up"
           style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
           data-no-cancel
           onClick={() => setSelectedFieldUid(null)}
@@ -1072,7 +1087,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
 
       {/* Selected card action panel */}
       {selectedCard && (
-        <div className="fixed bottom-0 left-0 right-0 bg-ink-700 border-t-2 border-gold-500/40 rounded-t-2xl p-3 shadow-card-hover z-40 animate-slide-up"
+        <div ref={selectedCardPanelRef} className="fixed bottom-0 left-0 right-0 bg-ink-700 border-t-2 border-gold-500/40 rounded-t-2xl p-3 shadow-card-hover z-40 animate-slide-up"
           style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
           data-no-cancel
           onClick={() => setSelectedHandCard(null)}
