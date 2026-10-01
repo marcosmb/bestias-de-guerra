@@ -373,18 +373,19 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
   } | null>(null);
 
   useEffect(() => {
-    if (!selectedHandCard) return;
+    if (!selectedHandCard && !selectedFieldUid) return;
 
     const handleOutsidePointerDown = (event: PointerEvent) => {
       const panel = selectedCardPanelRef.current;
       if (panel && !panel.contains(event.target as Node)) {
         setSelectedHandCard(null);
+        setSelectedFieldUid(null);
       }
     };
 
     document.addEventListener('pointerdown', handleOutsidePointerDown);
     return () => document.removeEventListener('pointerdown', handleOutsidePointerDown);
-  }, [selectedHandCard]);
+  }, [selectedHandCard, selectedFieldUid]);
   const [soundEnabled, setSoundEnabledState] = useState(true);
   const [volume, setVolumeState] = useState(0.5);
   const [showVolumeControl, setShowVolumeControl] = useState(false);
@@ -997,7 +998,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
 
       {/* Selected field monster action panel */}
       {selectedField && !selectedCard && (
-        <div className="fixed bottom-0 left-0 right-0 bg-ink-700 border-t-2 border-azure-500/40 rounded-t-2xl p-3 shadow-card-hover z-40 animate-slide-up"
+        <div ref={selectedCardPanelRef} className="fixed bottom-0 left-0 right-0 bg-ink-700 border-t-2 border-azure-500/40 rounded-t-2xl p-3 shadow-card-hover z-40 animate-slide-up"
           style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
         >
           <div
