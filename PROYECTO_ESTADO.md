@@ -1185,9 +1185,9 @@ Los sonidos se **sintetizan proceduralmente** con Web Audio API (osciladores + r
 
 | | |
 |---|---|
-| **Regla** | "Una Trampa no puede colocarse debajo de un Monstruo en el mismo turno en que ese Monstruo acaba de ser colocado." |
-| **Código anterior** | `PLACE_TRAP_ON_MONSTER` no verificaba cuándo fue colocado el monstruo. Cualquier monstruo del campo era válido. |
-| **Corrección** | Añadido campo `summonedThisTurn: boolean` a `FieldMonster`. Se marca `true` al invocar/revivir y se resetea a `false` en `END_TURN`. `PLACE_TRAP_ON_MONSTER` rechaza monstruos con `summonedThisTurn === true`. |
+| **Regla** | "Una Trampa puede colocarse sobre un monstruo propio aunque ese monstruo haya sido invocado o colocado durante el mismo turno." |
+| **Código anterior** | `PLACE_TRAP_ON_MONSTER` rechazaba monstruos con `summonedThisTurn === true`. |
+| **Corrección** | Eliminada la restricción `summonedThisTurn` de `PLACE_TRAP_ON_MONSTER`, `hasAnyLegalAction` y la UI. Las Trampas ya pueden colocarse sobre monstruos recién invocados. |
 
 **❌ Incumplimiento 2: Regla 22.1 — Validación de objetivo de ataque en el reducer**
 
@@ -1233,7 +1233,7 @@ Los sonidos se **sintetizan proceduralmente** con Web Audio API (osciladores + r
 | 16. Límite 3 cartas | ✅ | Ataques y cambios no cuentan |
 | 17. Primer turno | ✅ | Jugador 1 no ataca |
 | 18. Colocación monstruos | ✅ | Ataque o Defensa |
-| 19. Colocación trampas | ✅ **Corregido** | No sobre monstruo recién colocado |
+| 19. Colocación trampas | ✅ **Actualizado** | Trampas permitidas sobre monstruos recién invocados |
 | 20. Colocación mágicas | ✅ | Mágica 8 sobre rival |
 | 21. Ataques | ✅ | 1/turno, Defensa no ataca |
 | 22. Elección de objetivo | ✅ **Corregido** | Validado en el reducer |
@@ -1300,9 +1300,9 @@ Los sonidos se **sintetizan proceduralmente** con Web Audio API (osciladores + r
 
 | | |
 |---|---|
-| **Regla** | "Una Trampa no puede colocarse debajo de un Monstruo en el mismo turno en que ese Monstruo acaba de ser colocado." |
-| **Código anterior** | `PLACE_TRAP_ON_MONSTER` no verificaba cuándo fue colocado el monstruo. Cualquier monstruo del campo era válido. |
-| **Corrección** | Añadido campo `summonedThisTurn: boolean` a `FieldMonster`. Se marca `true` al invocar/revivir y se resetea a `false` en `END_TURN`. `PLACE_TRAP_ON_MONSTER` rechaza monstruos con `summonedThisTurn === true`. |
+| **Regla** | "Una Trampa puede colocarse sobre un monstruo propio aunque ese monstruo haya sido invocado o colocado durante el mismo turno." |
+| **Código anterior** | `PLACE_TRAP_ON_MONSTER` rechazaba monstruos con `summonedThisTurn === true`. |
+| **Corrección** | Eliminada la restricción `summonedThisTurn` de `PLACE_TRAP_ON_MONSTER`, `hasAnyLegalAction` y la UI. Las Trampas ya pueden colocarse sobre monstruos recién invocados. |
 
 **❌ Incumplimiento 2: Regla 22.1 — Validación de objetivo de ataque en el reducer**
 
@@ -1352,7 +1352,7 @@ Los sonidos se **sintetizan proceduralmente** con Web Audio API (osciladores + r
 | 16. Límite 3 cartas | ✅ | Ataques y cambios no cuentan |
 | 17. Primer turno | ✅ | Jugador 1 no ataca |
 | 18. Colocación monstruos | ✅ | Ataque o Defensa |
-| 19. Colocación trampas | ✅ **Corregido** | No sobre monstruo recién colocado |
+| 19. Colocación trampas | ✅ **Actualizado** | Trampas permitidas sobre monstruos recién invocados |
 | 20. Colocación mágicas | ✅ | Mágica 8 sobre rival |
 | 21. Ataques | ✅ | 1/turno, Defensa no ataca |
 | 22. Elección de objetivo | ✅ **Corregido** | Validado en el reducer |

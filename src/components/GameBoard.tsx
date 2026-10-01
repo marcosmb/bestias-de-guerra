@@ -575,8 +575,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
   const isMySlotSelectable = (fm: FieldMonster | null): boolean => {
     if (!fm) return false;
     if (sel.kind === 'place-trap') {
-      // Match reducer validation: no trap already, not summoned this turn
-      return !fm.trap && !fm.summonedThisTurn;
+      return !fm.trap;
     }
     if (sel.kind === 'place-magic') return true;
     if (sel.kind === 'direct-attack' || sel.kind === 'attack-or-direct') return true;
@@ -1091,7 +1090,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
             {selectedCard.type === 'trap' && (
               <button
                 onClick={() => handlePlayTrap(selectedCard)}
-                disabled={!canPlayMore || !me.field.some((f) => f !== null && !f.trap && !f.summonedThisTurn)}
+                disabled={!canPlayMore || !me.field.some((f) => f !== null && !f.trap)}
                 className="flex-1 rounded-lg bg-gradient-to-r from-crimson-500 to-crimson-400 text-white font-display font-bold hover:from-crimson-400 hover:to-crimson-300 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
                 style={{ ...uiSm, padding: '0.7em 0' }}
               >

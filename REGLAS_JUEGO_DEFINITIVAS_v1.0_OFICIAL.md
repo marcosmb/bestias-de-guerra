@@ -349,7 +349,7 @@ Al jugar un Monstruo desde la mano, el jugador puede elegir:
 
 Las Trampas se colocan debajo de un Monstruo propio.
 
-Una Trampa no puede colocarse debajo de un Monstruo en el mismo turno en que ese Monstruo acaba de ser colocado.
+Una Trampa puede colocarse sobre un monstruo propio aunque ese monstruo haya sido invocado o colocado durante el mismo turno.
 
 Debe existir:
 

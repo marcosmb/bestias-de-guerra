@@ -473,7 +473,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     expect(state.players[0].cardsPlayedThisTurn).toBe(1);
   });
 
-  it('blocks trap on monster summoned this turn', () => {
+  it('allows trap on monster summoned this turn (new rule)', () => {
     const trap = TRAPS[0];
     const m = getFirstMonsterCard();
     let state = makeState();
@@ -481,9 +481,12 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     // Summon the monster first
     state = dispatch(state, { type: 'SUMMON_MONSTER', card: m, position: 'attack' });
     const fm = state.players[0].field.find((f) => f !== null)!;
-    // Try to place trap — should be blocked (summonedThisTurn)
+    expect(fm.summonedThisTurn).toBe(true);
+    // Place trap — should now work (summonedThisTurn no longer blocks)
     state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: fm.uid });
-    expect(state.players[0].field.find((f) => f?.uid === fm.uid)?.trap).toBeNull();
+    const placed = state.players[0].field.find((f) => f?.uid === fm.uid);
+    expect(placed?.trap?.id).toBe(trap.id);
+    expect(state.players[0].hand.some((c) => c.id === trap.id)).toBe(false);
   });
 
   it('full flow: SELECT_TRAP_PLACE → PLACE_TRAP_ON_MONSTER → trap associated, card consumed, selection cleared', () => {
@@ -585,18 +588,19 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     expect(state.selection.kind).toBe('none');
   });
 
-  it('first turn — can place trap on monster from previous turn (summonedThisTurn=false)', () => {
+  it('first turn — summon monster then place trap on it (full flow)', () => {
     const trap = TRAPS[0];
     const m = getFirstMonsterCard();
     let state = makeState({ turnCount: 0, currentPlayer: 0 });
-    state = setHand(state, 0, [trap]);
-    // Monster placed on a previous turn (summonedThisTurn = false)
-    const fm = monster(m, { summonedThisTurn: false });
-    state = setField(state, 0, [fm]);
-    // SELECT_TRAP_PLACE should work on first turn
+    state = setHand(state, 0, [m, trap]);
+    // Summon monster on first turn
+    state = dispatch(state, { type: 'SUMMON_MONSTER', card: m, position: 'attack' });
+    const fm = state.players[0].field.find((f) => f !== null)!;
+    expect(fm.summonedThisTurn).toBe(true);
+    // Select trap
     state = dispatch(state, { type: 'SELECT_TRAP_PLACE', card: trap });
     expect(state.selection.kind).toBe('place-trap');
-    // PLACE_TRAP_ON_MONSTER should work
+    // Place trap on the just-summoned monster
     state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: fm.uid });
     const placed = state.players[0].field.find((f) => f?.uid === fm.uid);
     expect(placed?.trap?.id).toBe(trap.id);
@@ -615,15 +619,17 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     expect(state.selection.kind).toBe('none');
   });
 
-  it('later turn — trap placement still works normally', () => {
+  it('normal turn — summon monster then place trap on it (full flow)', () => {
     const trap = TRAPS[0];
     const m = getFirstMonsterCard();
     let state = makeState({ turnCount: 5, currentPlayer: 0 });
-    state = setHand(state, 0, [trap]);
-    const fm = monster(m, { summonedThisTurn: false });
-    state = setField(state, 0, [fm]);
+    state = setHand(state, 0, [m, trap]);
+    // Summon monster
+    state = dispatch(state, { type: 'SUMMON_MONSTER', card: m, position: 'attack' });
+    const fm = state.players[0].field.find((f) => f !== null)!;
+    expect(fm.summonedThisTurn).toBe(true);
+    // Place trap on the just-summoned monster
     state = dispatch(state, { type: 'SELECT_TRAP_PLACE', card: trap });
-    expect(state.selection.kind).toBe('place-trap');
     state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: fm.uid });
     const placed = state.players[0].field.find((f) => f?.uid === fm.uid);
     expect(placed?.trap?.id).toBe(trap.id);

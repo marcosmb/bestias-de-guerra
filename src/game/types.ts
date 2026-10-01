@@ -229,10 +229,10 @@ export function hasAnyLegalAction(player: PlayerState, state: GameState): boolea
     // Monstruo: necesita un espacio libre en el campo
     if (monsters.length > 0 && hasEmptySlot(player)) return true;
 
-    // Trampa: necesita un monstruo propio sin Trampa y que no haya sido colocado este turno
+    // Trampa: necesita un monstruo propio sin Trampa
     if (traps.length > 0) {
       const canPlaceTrap = player.field.some(
-        (f) => f !== null && f.trap === null && !f.summonedThisTurn,
+        (f) => f !== null && f.trap === null,
       );
       if (canPlaceTrap) return true;
     }

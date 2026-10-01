@@ -604,8 +604,7 @@ export function reducer(state: GameState, action: Action): GameState {
       if (state.phase !== 'playing') return state;
       const cp = state.currentPlayer;
       const fm = findFieldMonster(state.players[cp], action.fieldUid);
-      // Regla 19: no se puede colocar una Trampa bajo un Monstruo en el mismo turno en que fue colocado.
-      if (!hasCardInHand(state.players[cp], action.card.id) || !fm || fm.trap || fm.summonedThisTurn) return state;
+      if (!hasCardInHand(state.players[cp], action.card.id) || !fm || fm.trap) return state;
       const players = [...state.players] as [PlayerState, PlayerState];
       players[cp] = updateFieldMonster(players[cp], action.fieldUid, (f) => ({ ...f, trap: action.card }));
       players[cp] = playCardFromHand(players[cp], action.card.id);
