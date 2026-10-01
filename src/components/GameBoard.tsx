@@ -613,6 +613,21 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
     }
   };
 
+  // Clic fuera: cancela selecciones temporales y paneles activos.
+  // Solo se dispara cuando el clic llega al fondo del board (e.target === e.currentTarget),
+  // los elementos interactivos hijos detienen la propagación con stopPropagation.
+  const handleBoardClickOutside = () => {
+    if (sel.kind !== 'none') {
+      dispatch({ type: 'CANCEL_SELECTION' });
+    }
+    if (selectedFieldUid !== null) {
+      setSelectedFieldUid(null);
+    }
+    if (selectedHandCard !== null) {
+      setSelectedHandCard(null);
+    }
+  };
+
   const uiXs = { fontSize: 'var(--ui-text-xs)' } as const;
   const uiSm = { fontSize: 'var(--ui-text-sm)' } as const;
   const uiBase = { fontSize: 'var(--ui-text-base)' } as const;
@@ -627,6 +642,11 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
         paddingRight: 'env(safe-area-inset-right)',
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
+      onClick={(e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('[data-no-cancel]')) return;
+        handleBoardClickOutside();
+      }}
     >
       {/* Turn banner */}
       <TurnBanner playerName={me.name} turnCount={state.turnCount} />
@@ -635,7 +655,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       {lastCombat && <DamageFloat damage={lastCombat.damage} playerIdx={lastCombat.player} />}
 
       {/* Opponent info */}
-      <div className="px-2 sm:px-3 pt-1.5 pb-1 bg-ink-800/60 flex-none backdrop-blur-sm">
+      <div className="px-2 sm:px-3 pt-1.5 pb-1 bg-ink-800/60 flex-none backdrop-blur-sm" data-no-cancel>
         <LPBar player={opp} isCurrent={false} />
         <div className="flex items-center justify-between gap-2 mt-1">
           <div className="flex items-center gap-3">
@@ -696,7 +716,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       </div>
 
       {/* Opponent hand */}
-      <div className="flex justify-center py-1 bg-ink-800/30 flex-none" aria-label={`El rival tiene ${opp.hand.length} cartas en mano`}>
+      <div className="flex justify-center py-1 bg-ink-800/30 flex-none" data-no-cancel aria-label={`El rival tiene ${opp.hand.length} cartas en mano`}>
         <div className="flex" style={{ gap: 'calc(var(--card-back-w) * -0.3)' }}>
           {Array.from({ length: opp.hand.length }).map((_, i) => (
             <CardBack key={i} size="xs" />
@@ -705,7 +725,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       </div>
 
       {/* Opponent field */}
-      <div className="px-1 sm:px-2 py-1 bg-red-950/20 border border-red-900/30 rounded-lg mx-1 flex-none field-zone">
+      <div className="px-1 sm:px-2 py-1 bg-red-950/20 border border-red-900/30 rounded-lg mx-1 flex-none field-zone" data-no-cancel>
         <div className="text-center mb-0.5">
           <span className="text-[9px] uppercase tracking-widest text-red-400/60 font-display font-bold">Campo Rival</span>
         </div>
@@ -725,7 +745,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       </div>
 
       {/* Center status */}
-      <div className="px-3 py-1 flex items-center justify-center min-h-[2rem] flex-none bg-ink-800/40 border-y border-ink-700/50">
+      <div className="px-3 py-1 flex items-center justify-center min-h-[2rem] flex-none bg-ink-800/40 border-y border-ink-700/50" data-no-cancel>
         {state.lastCombat && !trapPrompt && !dicePrompt && (
           <div className="text-center animate-fade-in">
             <span className="text-gold-200 text-shadow-strong font-medium" style={uiSm}>{state.lastCombat.log}</span>
@@ -748,7 +768,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       </div>
 
       {/* Player field */}
-      <div className="px-1 sm:px-2 py-1 bg-azure-950/20 border border-azure-900/30 rounded-lg mx-1 flex-none field-zone">
+      <div className="px-1 sm:px-2 py-1 bg-azure-950/20 border border-azure-900/30 rounded-lg mx-1 flex-none field-zone relative z-10" data-no-cancel>
         <div className="text-center mb-0.5">
           <span className="text-[9px] uppercase tracking-widest text-azure-400/60 font-display font-bold">Tu Campo</span>
         </div>
@@ -780,7 +800,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
 
       {/* Trap response modal */}
       {trapPrompt && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4 animate-backdrop-fade">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4 animate-backdrop-fade" data-no-cancel>
           <div className="bg-ink-700 rounded-2xl border-2 border-crimson-500/50 p-5 max-w-xs w-full shadow-glow-crimson animate-scale-in">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-10 h-10 rounded-full bg-crimson-500/20 flex items-center justify-center">
@@ -819,7 +839,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
 
       {/* Dice roll modal */}
       {dicePrompt && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4 animate-backdrop-fade">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4 animate-backdrop-fade" data-no-cancel>
           <div className="bg-ink-700 rounded-2xl border-2 border-gold-500/50 p-6 max-w-xs w-full text-center shadow-glow animate-scale-in">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gold-500/20 flex items-center justify-center">
               <Dices size={32} className="text-gold-400" />
@@ -848,7 +868,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
 
       {/* Revive choice modal (Mágica 5) */}
       {sel.kind === 'revive-choice' && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4 animate-backdrop-fade">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4 animate-backdrop-fade" data-no-cancel>
           <div className="bg-ink-700 rounded-2xl border-2 border-gold-500/50 p-5 max-w-xs w-full shadow-glow animate-scale-in">
             <h3 className="font-display font-bold text-gold-300 mb-1" style={uiBase}>Mágica 5: Recuperar Monstruo</h3>
             <p className="text-ink-300 mb-4" style={uiXs}>Elige dónde revivir el Monstruo más fuerte del cementerio:</p>
@@ -888,7 +908,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
 
       {/* Selection prompt bar */}
       {sel.kind !== 'none' && !trapPrompt && !dicePrompt && sel.kind !== 'revive-choice' && sel.kind !== 'choose-destroy-target' && (
-        <div className="px-3 py-2 bg-gold-500/15 border-t-2 border-gold-500/40 flex items-center justify-between flex-none animate-fade-in shadow-lg">
+        <div className="px-3 py-2 bg-gold-500/15 border-t-2 border-gold-500/40 flex items-center justify-between flex-none animate-fade-in shadow-lg" data-no-cancel>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-gold-400 animate-pulse"></div>
             <span className="text-gold-200 font-medium" style={uiSm}>{selectionPromptText()}</span>
@@ -904,7 +924,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       )}
 
       {/* Player info */}
-      <div className="px-2 sm:px-3 py-1 bg-ink-800/60 border-t border-ink-600 flex-none backdrop-blur-sm">
+      <div className="px-2 sm:px-3 py-1 bg-ink-800/60 border-t border-ink-600 flex-none backdrop-blur-sm" data-no-cancel>
         <LPBar player={me} isCurrent={true} />
         <div className="flex items-center justify-between gap-2 mt-1">
           <div className="flex items-center gap-3">
@@ -936,7 +956,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       </div>
 
       {/* Hand */}
-      <div className="bg-ink-800/40 flex-none">
+      <div className="bg-ink-800/40 flex-none" data-no-cancel>
         {/* Hand header with counter */}
         <div className="flex items-center justify-between px-2 py-0.5 bg-ink-800/60 border-b border-ink-700/50">
           <div className="flex items-center gap-1">
@@ -1000,9 +1020,12 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       {selectedField && !selectedCard && (
         <div ref={selectedCardPanelRef} className="fixed bottom-0 left-0 right-0 bg-ink-700 border-t-2 border-azure-500/40 rounded-t-2xl p-3 shadow-card-hover z-40 animate-slide-up"
           style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+          data-no-cancel
+          onClick={() => setSelectedFieldUid(null)}
         >
           <div
             className="flex items-start gap-3 mb-2"
+            onClick={(e) => e.stopPropagation()}
             style={{
               '--ui-text-xs': 'clamp(12px, 1.5vw, 16px)',
               '--ui-text-base': 'clamp(15px, 1.9vw, 20px)',
@@ -1030,7 +1053,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
               <X size={20} />
             </button>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
             {selectedField.position === 'attack' && !selectedField.hasAttacked && attackAllowed && (
               <button
                 onClick={() => {
@@ -1066,8 +1089,10 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       {selectedCard && (
         <div ref={selectedCardPanelRef} className="fixed bottom-0 left-0 right-0 bg-ink-700 border-t-2 border-gold-500/40 rounded-t-2xl p-3 shadow-card-hover z-40 animate-slide-up"
           style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+          data-no-cancel
+          onClick={() => setSelectedHandCard(null)}
         >
-          <div className="flex items-start gap-3 mb-2">
+          <div className="flex items-start gap-3 mb-2" onClick={(e) => e.stopPropagation()}>
             <CardView card={selectedCard} size="lg" />
             <div className="flex-1 min-w-0">
               <h3 className="font-display font-bold text-white" style={uiBase}>{selectedCard.name}</h3>
@@ -1081,7 +1106,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
               <X size={20} />
             </button>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
             {selectedCard.type === 'monster' && (
               <>
                 <button
@@ -1124,7 +1149,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
             )}
           </div>
           {!canPlayMore && (
-            <p className="text-crimson-400 text-center mt-1.5" style={uiXs}>Ya has jugado 3 cartas este turno</p>
+            <p className="text-crimson-400 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>Ya has jugado 3 cartas este turno</p>
           )}
         </div>
       )}
@@ -1132,6 +1157,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       {/* Bottom action bar */}
       <div className="px-2 sm:px-3 pt-2 pb-1 bg-ink-800 border-t-2 border-ink-600 flex items-center gap-2 flex-none"
         style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+        data-no-cancel
       >
         <button
           onClick={() => setShowLog(true)}
@@ -1190,7 +1216,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
 
       {/* Control de volumen */}
       {showVolumeControl && (
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-ink-800/95 border-t border-ink-600 flex-none animate-fade-in">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-ink-800/95 border-t border-ink-600 flex-none animate-fade-in" data-no-cancel>
           <VolumeX size={13} className="text-ink-400 flex-none" aria-hidden="true" />
           <input
             type="range"
@@ -1210,7 +1236,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       )}
 
       {isCpuTurn && !trapPrompt && !dicePrompt && (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/20 animate-backdrop-fade" aria-live="polite" style={{ paddingBottom: '15vh' }}>
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/20 animate-backdrop-fade" aria-live="polite" style={{ paddingBottom: '15vh' }} data-no-cancel>
           <div className="rounded-full border border-azure-400/40 bg-ink-800/90 px-4 py-2 font-display font-bold text-azure-300 shadow-glow animate-pulse flex items-center gap-2" style={uiSm}>
             <Sparkles size={16} className="animate-spin" />
             Turno de la CPU...
@@ -1220,7 +1246,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
 
       {/* Log modal */}
       {showLog && (
-        <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-50 animate-backdrop-fade" onClick={() => setShowLog(false)}>
+        <div className="fixed inset-0 bg-black/70 flex items-end justify-center z-50 animate-backdrop-fade" onClick={() => setShowLog(false)} data-no-cancel>
           <div className="bg-ink-700 rounded-t-2xl border-t-2 border-gold-500/40 p-4 w-full overscroll-contain overflow-y-auto log-scroll"
             style={{ maxWidth: '100%', maxHeight: '70dvh', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
             onClick={(e) => e.stopPropagation()}
@@ -1243,12 +1269,14 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
 
       {/* Card zoom modal */}
       {zoomCard && (
+        <div data-no-cancel>
         <CardZoomModal
           card={zoomCard.card}
           onClose={() => setZoomCard(null)}
           isOpponentCard={zoomCard.isOpponentCard}
           isHidden={zoomCard.isHidden}
         />
+        </div>
       )}
 
       {/* Toast messages */}
