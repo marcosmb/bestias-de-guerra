@@ -748,7 +748,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       </div>
 
       {/* Player field */}
-      <div className="px-1 sm:px-2 py-1 bg-azure-950/20 border border-azure-900/30 rounded-lg mx-1 flex-none field-zone relative z-10">
+      <div className="px-1 sm:px-2 py-1 bg-azure-950/20 border border-azure-900/30 rounded-lg mx-1 flex-none field-zone">
         <div className="text-center mb-0.5">
           <span className="text-[9px] uppercase tracking-widest text-azure-400/60 font-display font-bold">Tu Campo</span>
         </div>
