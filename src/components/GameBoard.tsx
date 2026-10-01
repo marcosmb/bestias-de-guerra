@@ -215,7 +215,7 @@ function FieldSlot({
     );
   }
   return (
-    <div className={`relative ${fm.position === 'defense' ? 'rotate-90 scale-[0.8]' : ''} transition-transform duration-300`}>
+    <div className={`relative z-20 hover:z-50 ${fm.position === 'defense' ? 'rotate-90 scale-[0.8]' : ''} transition-transform duration-300`}>
       <CardView
         card={fm.card}
         size="sm"
@@ -634,7 +634,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
 
   return (
     <div
-      className="board-bg flex flex-col w-full overflow-y-auto overflow-x-hidden"
+      className="board-bg flex flex-col w-full overflow-y-auto overflow-x-hidden lg:overflow-x-visible"
       style={{
         height: '100dvh',
         paddingTop: 'env(safe-area-inset-top)',
