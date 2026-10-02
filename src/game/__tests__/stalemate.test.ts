@@ -43,7 +43,7 @@ function magic(overrides: Partial<MagicCard> = {}): MagicCard {
     number: 1,
     name: 'Mágica',
     description: '',
-    effect: { kind: 'direct_attack' },
+    effect: { kind: 'draw_cards', amount: 2 },
     placement: 'instant',
     ...overrides,
   };
@@ -117,6 +117,7 @@ function makeState(
     selection: { kind: 'none' },
     log: [],
     winner: null,
+    isDraw: false,
     pendingTrap: null,
     pendingDice: null,
     lastCombat: null,
@@ -144,15 +145,16 @@ describe('Regla 27.2 — hasAnyLegalAction', () => {
     expect(hasAnyLegalAction(player, state)).toBe(false);
   });
 
-  it('un jugador con un monstruo en Ataque que no ha atacado tiene acciones legales', () => {
+  it('un monstruo en Ataque que no ha atacado NO impide el bloqueo por sí solo', () => {
     const fm = fieldMonster(monster({ atk: 5 }), { uid: 'a' });
     const player = playerWith(0, [fm], []);
     const state = makeState([fm], emptyField());
 
-    expect(hasAnyLegalAction(player, state)).toBe(true);
+    // Hay ataque disponible, pero ninguna carta jugable → no cuenta para 27.2
+    expect(hasAnyLegalAction(player, state)).toBe(false);
   });
 
-  it('un jugador con un monstruo en Defensa que no ha cambiado posición tiene acciones legales', () => {
+  it('un monstruo en Defensa sin cambios de posición NO impide el bloqueo por sí solo', () => {
     const fm = fieldMonster(monster({ atk: 5 }), {
       uid: 'd',
       position: 'defense',
@@ -161,7 +163,7 @@ describe('Regla 27.2 — hasAnyLegalAction', () => {
     const player = playerWith(0, [fm], []);
     const state = makeState([fm], emptyField());
 
-    expect(hasAnyLegalAction(player, state)).toBe(true);
+    expect(hasAnyLegalAction(player, state)).toBe(false);
   });
 
   it('un jugador con un monstruo que ya atacó y ya cambió posición no tiene acciones legales', () => {
@@ -225,13 +227,13 @@ describe('Regla 27.2 — hasAnyLegalAction', () => {
     expect(hasAnyLegalAction(player, state)).toBe(false);
   });
 
-  it('en el primer turno del jugador 1 no puede atacar pero sí cambiar posición', () => {
+  it('en el primer turno del jugador 1 no hay acción de carta aunque el monstruo pueda cambiar', () => {
     const fm = fieldMonster(monster({ atk: 5 }), { uid: 'a' });
     const player = playerWith(0, [fm], []);
     const state = makeState([fm], emptyField(), { turnCount: 0, currentPlayer: 0 });
 
-    // No puede atacar, pero sí cambiar posición → tiene acciones legales
-    expect(hasAnyLegalAction(player, state)).toBe(true);
+    // Sin cartas en mano → no hay acción de carta legal; el cambio de posición no cuenta
+    expect(hasAnyLegalAction(player, state)).toBe(false);
   });
 });
 
@@ -305,30 +307,28 @@ describe('Regla 27.2 — integración con el reducer', () => {
     expect(winner).toBeNull();
   });
 
-  it('existe al menos una acción legal → la partida NO termina', () => {
-    const fm = fieldMonster(monster({ atk: 5 }), { uid: 'a' });
-    const p1 = playerWith(0, [fm], []);
+  it('existe una carta jugable → la partida NO termina', () => {
+    const p1 = playerWith(0, emptyField(), [monster({ atk: 6 })]);
     const p2 = playerWith(1, emptyField(), []);
-    const state = makeState([fm], emptyField());
+    const state = makeState(emptyField(), emptyField(), { p1Hand: [monster({ atk: 6 })] });
 
     const p1CanAct = hasAnyLegalAction(p1, state);
     const p2CanAct = hasAnyLegalAction(p2, state);
 
-    // Al menos uno puede actuar
     expect(p1CanAct || p2CanAct).toBe(true);
   });
 
-  it('un ataque legal disponible impide declarar el final', () => {
+  it('un ataque legal disponible NO impide declarar el final', () => {
     const fm = fieldMonster(monster({ atk: 8 }), { uid: 'attacker' });
     const p1 = playerWith(0, [fm], []);
     const p2 = playerWith(1, emptyField(), []);
     const state = makeState([fm], emptyField());
 
-    expect(hasAnyLegalAction(p1, state)).toBe(true);
+    expect(hasAnyLegalAction(p1, state)).toBe(false);
     expect(hasAnyLegalAction(p2, state)).toBe(false);
   });
 
-  it('un cambio de posición legal disponible impide declarar el final', () => {
+  it('un cambio de posición legal disponible NO impide declarar el final', () => {
     const fm = fieldMonster(monster({ atk: 5 }), {
       uid: 'defender',
       position: 'defense',
@@ -337,7 +337,17 @@ describe('Regla 27.2 — integración con el reducer', () => {
     const p1 = playerWith(0, [fm], []);
     const state = makeState([fm], emptyField());
 
-    expect(hasAnyLegalAction(p1, state)).toBe(true);
+    expect(hasAnyLegalAction(p1, state)).toBe(false);
+  });
+
+  it('quedarse sin Monstruos con cartas no jugables → la partida termina', () => {
+    const p1 = playerWith(0, emptyField(), [trap()]);
+    const p2 = playerWith(1, emptyField(), []);
+    const state = makeState(emptyField(), emptyField(), { p1Hand: [trap()] });
+
+    // Trampa sin Monstruo válido → no hay acción de carta → bloqueo
+    expect(hasAnyLegalAction(p1, state)).toBe(false);
+    expect(hasAnyLegalAction(p2, state)).toBe(false);
   });
 
   it('un jugador con cartas jugables impide declarar el final', () => {

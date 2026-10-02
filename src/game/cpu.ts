@@ -1,9 +1,6 @@
 import type { Action, Difficulty, FieldMonster, GameState } from './types';
-import { canAttack, getEffectiveAtk, getEffectiveDef } from './types';
+import { canAttack, getEffectiveAtk, getEffectiveDef, MAX_CARDS_PER_TURN } from './types';
 import type { MagicCard, MonsterCard, TrapCard } from './cardData';
-
-/** Límite oficial de cartas jugadas/activadas desde la mano por turno. */
-const MAX_CARDS_PER_TURN = 3;
 
 /**
  * Valor máximo de ATQ/DEF posible en el mazo (Monstruo 12).
@@ -57,7 +54,7 @@ function availableAttackers(cpu: { field: (FieldMonster | null)[] }): FieldMonst
   return monstersOf(cpu).filter((f) => f.position === 'attack' && !f.hasAttacked);
 }
 
-/** ¿Es legal colocar una Trampa ahora? (regla 19: 1 Trampa por monstruo) */
+/** ¿Es legal colocar una Trampa ahora? (solo 1 Trampa por Monstruo; el reglamento permite colocarla en el mismo turno en que fue invocado) */
 function trapTargets(cpu: { field: (FieldMonster | null)[] }): FieldMonster[] {
   return monstersOf(cpu).filter((f) => f.trap === null);
 }
@@ -197,8 +194,10 @@ function chooseInstantMagic(state: GameState): Action | null {
       case 'revive_monster': {
         const monstersInGraveyard = cpu.graveyard.filter((c) => c.type === 'monster');
         if (monstersInGraveyard.length === 0) break;
+        // No se debe jugar si solo puede recuperarse a la mano algo que ya tienen.
+        const toHand = monstersInGraveyard.some((c) => !cpu.hand.some((h) => h.id === c.id));
         const hasSpaceInField = cpu.field.some((f) => f === null);
-        const hasSpaceInHand = cpu.hand.length < 9;
+        const hasSpaceInHand = cpu.hand.length < 9 && toHand;
         if (hasSpaceInField || hasSpaceInHand) {
           return { type: 'SELECT_MAGIC', card: magic };
         }
@@ -224,7 +223,9 @@ function chooseInstantMagic(state: GameState): Action | null {
         break;
       }
       case 'steal_hand_card': {
-        if (human.hand.length > 0 && cpu.hand.length < 9) {
+        // Solo si hay alguna carta del rival que la CPU no tenga ya en la mano.
+        const canStealUnique = human.hand.some((c) => !cpu.hand.some((h) => h.id === c.id));
+        if (canStealUnique && cpu.hand.length < 9) {
           return { type: 'SELECT_MAGIC', card: magic };
         }
         break;

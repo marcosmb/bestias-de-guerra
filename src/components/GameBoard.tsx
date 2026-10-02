@@ -366,10 +366,53 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
   const [lastCombat, setLastCombat] = useState<{ damage: number; player: 0 | 1 } | null>(null);
   const [zoomCard, setZoomCard] = useState<{ card: Card | null; isOpponentCard?: boolean; isHidden?: boolean } | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const handScrollRef = useRef<HTMLDivElement>(null);
+  const [liftDown, setLiftDown] = useState(false);
+  const handSize = state.players[state.mode === 'cpu' ? 0 : state.currentPlayer].hand.length;
+
+  /*
+   * Dirección de elevación adaptativa para las cartas de la mano.
+   *
+   * Una carta en primer plano se amplía hacia arriba por defecto. Cuando el
+   * borde superior del contenedor de la mano queda tan cerca del borde real de
+   * la pantalla que la ampliación no cabe, se marca la carta con `lift-down`
+   * para que la ampliación ocurra hacia abajo. El tamaño y la sombra no cambian:
+   * sólo la dirección, de modo que la carta siempre se ve completa.
+   *
+   * Se recalcula al redimensionar la ventana y al cambiar la mano, porque las
+   * cartas de la mano se centran y su posición depende del número de cartas.
+   */
+  useEffect(() => {
+    const update = () => {
+      const strip = handScrollRef.current;
+      if (!strip) return;
+      const stripRect = strip.getBoundingClientRect();
+      const cards = strip.querySelectorAll<HTMLElement>('[data-card-id]');
+      let needsDown = false;
+      cards.forEach((el) => {
+        const r = el.getBoundingClientRect();
+        const roomAbove = r.top - stripRect.top;
+        const roomBelow = stripRect.bottom - r.bottom;
+        // La ampliación necesita ~35 % del ancho de carta de espacio libre.
+        const needed = r.width * 0.35;
+        if (roomAbove < needed && roomBelow >= needed) needsDown = true;
+      });
+      setLiftDown(needsDown);
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, [handSize, selectedHandCard]);
+
   const [combatAnim, setCombatAnim] = useState<{
     attackerUid: string;
-    defenderUid: string | null;
-    phase: 'attacking' | 'defending' | 'damage' | 'result';
+    defenderUid: string;
+    isDirectAttack: boolean;
+    result: 'attacker-destroyed' | 'defender-destroyed' | 'both-destroyed' | 'none-destroyed';
   } | null>(null);
 
   useEffect(() => {
@@ -981,7 +1024,10 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
           </div>
         </div>
         {/* Hand cards */}
-        <div className="overflow-x-auto lg:overflow-visible overscroll-x-contain touch-pan-x snap-x py-0.5 relative">
+        <div
+          ref={handScrollRef}
+          className="hand-scroll overflow-x-auto lg:overflow-visible overscroll-x-contain touch-pan-x snap-x py-0.5 relative"
+        >
           {/* Left fade indicator */}
           <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-ink-800/80 to-transparent pointer-events-none z-10"></div>
           {/* Right fade indicator */}
@@ -991,7 +1037,11 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
               <span className="text-ink-400" style={uiSm}>No tienes cartas en mano</span>
             )}
             {me.hand.map((card) => (
-              <div key={card.id} className={`snap-center flex-none hand-card ${selectedHandCard === card.id ? 'selected' : ''}`}>
+              <div
+                key={card.id}
+                data-card-id={card.id}
+                className={`snap-center flex-none hand-card ${selectedHandCard === card.id ? 'selected' : ''} ${liftDown ? 'lift-down' : ''}`}
+              >
                 <div className="relative">
                   <CardView
                     card={card}

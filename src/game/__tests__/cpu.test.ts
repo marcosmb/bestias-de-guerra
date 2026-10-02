@@ -90,6 +90,7 @@ function makeState(
     selection: options.selection ?? { kind: 'none' },
     log: [],
     winner: null,
+    isDraw: false,
     pendingTrap: null,
     pendingDice: null,
     lastCombat: null,

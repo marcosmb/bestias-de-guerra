@@ -207,67 +207,108 @@ export function canAttack(state: GameState): boolean {
   return true;
 }
 
+/** Límite oficial de cartas jugadas o activadas desde la mano por turno. */
+export const MAX_CARDS_PER_TURN = 3;
+
 /**
- * Regla 27.2 — Determina si un jugador tiene alguna acción legal disponible.
+ * Regla 19 (oficial) — "¿Puede colocarse esta Trampa bajo este Monstruo?"
  *
- * Se considera acción legal cualquier acción que el jugador podría realizar
- * en su turno según las reglas oficiales:
- *   - jugar una carta desde la mano (Monstruo, Trampa o Mágica);
- *   - atacar con un Monstruo en Ataque que aún no lo ha hecho;
- *   - cambiar la posición de un Monstruo que aún no lo ha hecho este turno.
+ * El reglamento establece: "Una Trampa puede colocarse sobre un monstruo propio
+ * aunque ese monstruo haya sido invocado o colocado durante el mismo turno."
  *
- * Esta función NO decide cuál es la mejor acción: solo indica si existe
- * al menos una. Nunca debe usarse para terminar la partida mientras devuelva true.
+ * Por tanto las únicas condiciones son:
+ *   - que el destino sea un Monstruo propio (pertenece a `player.field`);
+ *   - que no tenga ya una Trampa asociada (máximo 1 Trampa por Monstruo).
+ *
+ * `summonedThisTurn` NO interviene: invocar en el turno actual no impide
+ * colocar una Trampa.
  */
-export function hasAnyLegalAction(player: PlayerState, state: GameState): boolean {
-  // 1) Jugar una carta desde la mano (límite de 3 cartas por turno — Regla 16)
-  if (player.cardsPlayedThisTurn < 3) {
-    const monsters = player.hand.filter((c) => c.type === 'monster');
-    const traps = player.hand.filter((c) => c.type === 'trap');
-    const magics = player.hand.filter((c) => c.type === 'magic');
+export function canPlaceTrapOn(player: PlayerState, fieldUid: string): boolean {
+  const fm = player.field.find((f) => f?.uid === fieldUid);
+  if (!fm) return false;
+  return fm.trap === null;
+}
 
-    // Monstruo: necesita un espacio libre en el campo
-    if (monsters.length > 0 && hasEmptySlot(player)) return true;
+/** ¿Existe algún Monstruo propio que admita legalmente una Trampa? */
+export function hasTrapTarget(player: PlayerState): boolean {
+  return player.field.some((f) => f !== null && f.trap === null);
+}
 
-    // Trampa: necesita un monstruo propio sin Trampa
-    if (traps.length > 0) {
-      const canPlaceTrap = player.field.some(
-        (f) => f !== null && f.trap === null,
+function opponentOf(player: PlayerState, state: GameState): PlayerState {
+  return state.players[player.index === 0 ? 1 : 0];
+}
+
+/**
+ * Devuelve true si la Mágica indicada puede resolverse con un objetivo o
+ * condición válida ahora (sin consumirla). Es la comprobación previa que
+ * decide si una Mágica puede jugarse/activarse legalmente.
+ */
+export function canActivateMagic(player: PlayerState, state: GameState, magic: MagicCard): boolean {
+  const opp = opponentOf(player, state);
+
+  switch (magic.effect.kind) {
+    case 'steal_hand_card': {
+      // Mágica 2: solo se puede tomar una carta que no tengas ya en la mano.
+      const canSteal = opp.hand.some((c) => !player.hand.some((h) => h.id === c.id));
+      return player.hand.length < MAX_HAND_SIZE && canSteal;
+    }
+    case 'revive_monster': {
+      const hasMonster = player.graveyard.some((c) => c.type === 'monster');
+      if (!hasMonster) return false;
+      // Para llevarla a la mano no puede producir un duplicado de lo que ya tienes.
+      const canGoToHand =
+        player.hand.length < MAX_HAND_SIZE &&
+        player.graveyard.some((c) => c.type === 'monster' && !player.hand.some((h) => h.id === c.id));
+      const canGoToField = hasEmptySlot(player);
+      return canGoToHand || canGoToField;
+    }
+    case 'direct_attack':
+      return player.field.some((f) => f !== null && f.position === 'attack' && !f.hasAttacked);
+    case 'atk_boost':
+    case 'def_reduce':
+    case 'dice_protection':
+      return (
+        player.field.some((f) => f !== null && f.magic === null) ||
+        opp.field.some((f) => f !== null && f.magic === null)
       );
-      if (canPlaceTrap) return true;
-    }
+    default:
+      // hand_swap, destroy_all_field, switch_all_opp_position,
+      // draw_cards, dice_damage, clean_opp_field: activables sin objetivo.
+      return true;
+  }
+}
 
-    // Mágica: necesita un objetivo válido o ser instantánea
-    if (magics.length > 0) {
-      const hasInstantMagic = magics.some((m) => m.placement === 'instant');
-      if (hasInstantMagic) return true;
+/**
+ * Regla 27.2 — El único criterio de «acción legal» que puede terminar la
+ * partida es poder jugar o activar una carta. Los ataques y los cambios de
+ * posición NO cuentan: el bloqueo solo se produce cuando ningún jugador puede
+ * jugar ni activar legalmente ninguna carta.
+ */
+export function hasPlayableCard(player: PlayerState, state: GameState): boolean {
+  if (player.cardsPlayedThisTurn >= MAX_CARDS_PER_TURN) return false;
 
-      // Mágicas de campo: necesitan un monstruo propio o rival sin Mágica
-      const hasFieldMagic = magics.some((m) => m.placement === 'field');
-      if (hasFieldMagic) {
-        const hasOwnTarget = player.field.some((f) => f !== null && f.magic === null);
-        const opp = state.players[player.index === 0 ? 1 : 0];
-        const hasOppTarget = opp.field.some((f) => f !== null && f.magic === null);
-        if (hasOwnTarget || hasOppTarget) return true;
-      }
+  for (const card of player.hand) {
+    if (card.type === 'monster') {
+      if (hasEmptySlot(player)) return true;
+    } else if (card.type === 'trap') {
+      if (hasTrapTarget(player)) return true;
+    } else if (canActivateMagic(player, state, card)) {
+      return true;
     }
   }
-
-  // 2) Atacar (Regla 21): monstruo en Ataque que aún no ha atacado
-  if (canAttack(state)) {
-    const canAttackNow = player.field.some(
-      (f) => f !== null && f.position === 'attack' && !f.hasAttacked,
-    );
-    if (canAttackNow) return true;
-  }
-
-  // 3) Cambiar posición (Regla 14): monstruo que aún no lo ha hecho este turno
-  const canChangePosition = player.field.some(
-    (f) => f !== null && !f.hasChangedPosition,
-  );
-  if (canChangePosition) return true;
 
   return false;
+}
+
+/**
+ * Regla 27.2 — Criterio oficial de «acción legal» para el fin de la partida.
+ *
+ * La partida solo puede terminar por bloqueo cuando ningún jugador puede
+ * jugar ni activar legalmente ninguna CARTA. Los ataques y los cambios de
+ * posición NO se consideran acciones legales a efectos del fin de partida.
+ */
+export function hasAnyLegalAction(player: PlayerState, state: GameState): boolean {
+  return hasPlayableCard(player, state);
 }
 
 /**

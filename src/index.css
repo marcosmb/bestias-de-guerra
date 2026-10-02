@@ -329,6 +329,7 @@ img {
 
 /* Hand card hover effect */
 .hand-card {
+  position: relative;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
 }
 .hand-card:hover {
@@ -340,6 +341,77 @@ img {
   transform: translateY(-20px) scale(1.1);
   box-shadow: 0 18px 45px rgba(230, 185, 78, 0.4), 0 0 30px rgba(230, 185, 78, 0.2);
   z-index: 20;
+}
+
+/*
+ * Cartas en primer plano — nunca recortadas por un contenedor.
+ *
+ * CAUSA REAL DEL RECORTE
+ * Al ampliar o elevar una carta, el nuevo tamaño sobresale de su caja. Cualquier
+ * ancestro con `overflow` distinto de `visible` recorta ese sobrante, y ningún
+ * `z-index` puede evitarlo: el recorte lo produce el ancestro, no la carta.
+ *
+ * Hay dos ancestros que recortan:
+ *   1) `.hand-scroll` — `overflow-x-auto` para poder desplazar la mano.
+ *   2) `.board-bg`   — `overflow-y-auto` para poder desplazar el tablero.
+ *
+ * Por encima de `lg` ambos son `overflow-visible` y no hay recorte: ese es el
+ * comportamiento correcto que ya existe en portátil/escritorio y no se toca.
+ *
+ * SOLUCIÓN (solo por debajo de `lg`: tablet y móvil)
+ * En esos tamaños los contenedores necesitan `overflow` para poder desplazarse,
+ * así que no se pueden eliminar. Lo que se hace es RESERVAR ESPACIO INTERIOR
+ * dentro de ellos, proporcional al tamaño real de la carta. De ese modo la
+ * ampliación ocurre dentro del área visible del contenedor y nunca sobresale.
+ *
+ * El margen es relativo al ancho de la carta, no a una resolución fija, así que
+ * funciona igual en cualquier tamaño de pantalla y relación de aspecto.
+ */
+@media (max-width: 1023px) {
+  :root {
+    /* Espacio reservado para que la carta ampliada quepa sin recortarse. */
+    --card-lift-room: calc(var(--card-hand-w, 90px) * 0.45);
+  }
+
+  /* La mano: espacio a los lados, arriba y abajo para la ampliación. */
+  .hand-scroll {
+    padding-left: var(--card-lift-room);
+    padding-right: var(--card-lift-room);
+    padding-top: var(--card-lift-room);
+    padding-bottom: calc(var(--card-lift-room) * 0.4);
+  }
+
+  /* El tablero: las zonas necesitan margen interior para no recortar la carta. */
+  .field-zone {
+    padding-top: calc(var(--card-field-w, 90px) * 0.22);
+    padding-bottom: calc(var(--card-field-w, 90px) * 0.22);
+    padding-left: calc(var(--card-field-w, 90px) * 0.12);
+    padding-right: calc(var(--card-field-w, 90px) * 0.12);
+  }
+
+  /* La carta ampliada queda por encima de sus vecinas dentro de la zona. */
+  .field-zone .relative:hover {
+    z-index: 25;
+  }
+
+  /* Y por encima del resto de cartas de la mano. */
+  .hand-card:hover,
+  .hand-card.selected {
+    z-index: 30;
+  }
+
+  /*
+   * Si aun así no hay hueco suficiente por ARRIBA (la carta queda pegada al
+   * borde superior del área desplazable), se amplía hacia ABAJO. Mismo tamaño,
+   * misma sombra, mismo efecto: sólo cambia la dirección para que la carta
+   * nunca quede cortada. El efecto de ampliación/elevación nunca se desactiva.
+   */
+  .hand-card.lift-down:hover {
+    transform: translateY(14px) scale(1.06);
+  }
+  .hand-card.lift-down.selected {
+    transform: translateY(20px) scale(1.1);
+  }
 }
 
 /* Card type indicators */
