@@ -1,5 +1,14 @@
-import { useEffect, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { nextCpuAction, cpuDelay } from './cpu';
+import {
+  getDefaultStorage,
+  loadHistoryFrom,
+  makeHistoryReducer,
+  saveHistoryTo,
+  type HistoryBundle,
+  type HistoryStorage,
+  type MatchHistory,
+} from './history';
 import {
   buildDeck,
   rollDie,
@@ -1123,8 +1132,87 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
   return checkStalemateEnd(newState);
 }
 
+// ============================================================================
+// HISTORIAL — inicialización y reductor envolvente
+// ============================================================================
+
+/**
+ * Envoltura del reductor real del juego. Solo observa: el `GameState` que
+ * devuelve es exactamente el que produciría `reducer`.
+ */
+const historyReducer = makeHistoryReducer(reducer);
+
+/**
+ * Arranque. NO restaura el estado de la partida desde el almacenamiento (eso
+ * sería cambiar la lógica del juego): solo deja disponible el historial de la
+ * última partida para poder consultarlo desde el menú.
+ */
+function initBundle(): HistoryBundle {
+  return { game: initialState(), history: null };
+}
+
 export function useGame() {
-  const [state, dispatch] = useReducer(reducer, undefined, initialState);
+  // ---------------------------------------------------------------------------
+  // HISTORIAL DE LA ÚLTIMA PARTIDA (capa de depuración).
+  //
+  // `reducer` es una función pura `(state, action) => state`, así que el punto
+  // único y fiel de intercepción es envolverla. El estado del juego y la
+  // firma de `dispatch` no cambian: `App.tsx` y `GameBoard.tsx` siguen
+  // recibiendo exactamente lo mismo.
+  // ---------------------------------------------------------------------------
+  const [bundle, dispatchBundle] = useReducer(historyReducer, undefined, initBundle);
+  const state = bundle.game;
+
+  // Persistencia con limiting: escribir en localStorage en cada movimiento
+  // ralentizaría la partida. Se agrupa por tiempo y se fuerza el volcado en
+  // los momentos críticos (fin de partida, recarga, salida de la página).
+  const storageRef = useRef<HistoryStorage | null>(null);
+  if (storageRef.current === null) storageRef.current = getDefaultStorage();
+  const lastWriteRef = useRef(0);
+  const lastPersistedRef = useRef<MatchHistory | null>(null);
+
+  const persistNow = useCallback((h: MatchHistory) => {
+    if (lastPersistedRef.current === h) return;
+    saveHistoryTo(storageRef.current, h);
+    lastPersistedRef.current = h;
+    lastWriteRef.current = Date.now();
+  }, []);
+
+  useEffect(() => {
+    if (!bundle.history) return;
+    const h = bundle.history;
+    if (h.finished) {
+      persistNow(h);
+      return;
+    }
+    if (Date.now() - lastWriteRef.current > 250) {
+      persistNow(h);
+    }
+  }, [bundle.history, persistNow]);
+
+  // Volcado inmediato al cerrar o recargar: garantiza que no se pierda lo que
+  // ya se había escrito en el almacenamiento.
+  useEffect(() => {
+    const flush = () => {
+      if (bundle.history) saveHistoryTo(storageRef.current, bundle.history);
+    };
+    window.addEventListener('pagehide', flush);
+    window.addEventListener('beforeunload', flush);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      window.removeEventListener('beforeunload', flush);
+    };
+  }, [bundle.history]);
+
+  const dispatch = useCallback((action: Action) => {
+    dispatchBundle({ action });
+  }, []);
+
+  /** Historial guardado en el navegador de una partida anterior. */
+  const readStoredHistory = useCallback((): MatchHistory | null => {
+    return loadHistoryFrom(storageRef.current);
+  }, []);
+
   const cpuTurnActionsRef = useRef(0);
 
   useEffect(() => {
@@ -1149,7 +1237,9 @@ export function useGame() {
     }, cpuDelay(state.difficulty));
 
     return () => window.clearTimeout(timer);
-  }, [state]);
+    // `dispatch` es estable (useCallback con dependencia []); se incluye solo
+    // para satisfacer la regla de hooks exhaustivos.
+  }, [state, dispatch]);
 
   // Reinicia el contador cuando el turno cambia de jugador.
   const previousPlayerRef = useRef(state.currentPlayer);
@@ -1160,5 +1250,12 @@ export function useGame() {
     }
   }, [state.currentPlayer]);
 
-  return { state, dispatch };
+  return {
+    state,
+    dispatch,
+    /** Historial en memoria de la partida en curso (null si aún no hay ninguna). */
+    liveHistory: bundle.history,
+    /** Historial persistente de la última partida, para la pantalla del menú. */
+    readStoredHistory,
+  };
 }
