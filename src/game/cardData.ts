@@ -1,7 +1,41 @@
 export type Suit = 'espadas' | 'bastos' | 'copas' | 'oros';
 export type CardType = 'monster' | 'trap' | 'magic';
 
+/**
+ * Propiedad de una carta (Regla 6).
+ *
+ * La propiedad pertenece SIEMPRE al jugador cuyo mazo originó la carta y NUNCA
+ * cambia. Un efecto puede alterar el CONTROL de un Monstruo (Trampa 7/10) o
+ * pasar una carta a la mano de otro jugador (Mágica 2), pero la carta sigue
+ * siendo del mismo dueño: cuando acaba en un cementerio va al de su propietario.
+ *
+ * `undefined` significa "sin propietario marcado" y solo ocurre en cartas
+ * construidas a mano en pruebas.
+ */
+export type CardOwner = 0 | 1;
+
+/**
+ * Identidad de una COPIA FÍSICA concreta de una carta.
+ *
+ * `Card.id` identifica el TIPO de carta (el Kraken, la Araña, la Mágica 8...):
+ * es el mismo valor en las dos copias que existen en la partida, una por mazo.
+ *
+ * `Card.instanceId` identifica esa copia concreta. Es único de por vida, viaja
+ * con la carta a donde vaya (mano, campo, cementerio, mano del rival) y NO
+ * cambia nunca.
+ *
+ * Hace falta porque la Mágica 2 puede robar la copia del RIVAL: es legal que una
+ * mano tenga a la vez la Araña del Jugador 1 y la Araña del Jugador 2. Dos
+ * objetos carta distintos con el MISMO `id` necesitan dos `instanceId` distintos
+ * para que React pueda identificarlos y para poder jugar uno sin jugar el otro.
+ *
+ * Nunca se usa como identidad de tipo: `id` sigue siendo el identificador de la
+ * carta y es el que consultan las reglas (efectos, cementerios, duplicados).
+ */
+export type CardInstanceId = string;
+
 export interface MonsterCard {
+  /** Identidad del TIPO de carta. Compartida por las dos copias de la partida. */
   id: string;
   type: 'monster';
   suit: 'espadas' | 'bastos';
@@ -10,9 +44,14 @@ export interface MonsterCard {
   atk: number;
   def: number;
   image: string;
+  /** Propietario original (Regla 6). Lo fija `createPlayer`. */
+  owner?: CardOwner;
+  /** Identidad de ESTA copia física. Única e inmutable. La fija `createPlayer`. */
+  instanceId?: CardInstanceId;
 }
 
 export interface TrapCard {
+  /** Identidad del TIPO de carta. Compartida por las dos copias de la partida. */
   id: string;
   type: 'trap';
   suit: 'copas';
@@ -21,9 +60,14 @@ export interface TrapCard {
   description: string;
   effect: TrapEffect;
   image: string;
+  /** Propietario original (Regla 6). Lo fija `createPlayer`. */
+  owner?: CardOwner;
+  /** Identidad de ESTA copia física. Única e inmutable. La fija `createPlayer`. */
+  instanceId?: CardInstanceId;
 }
 
 export interface MagicCard {
+  /** Identidad del TIPO de carta. Compartida por las dos copias de la partida. */
   id: string;
   type: 'magic';
   suit: 'oros';
@@ -33,6 +77,10 @@ export interface MagicCard {
   effect: MagicEffect;
   placement: 'instant' | 'field';
   image?: string;
+  /** Propietario original (Regla 6). Lo fija `createPlayer`. */
+  owner?: CardOwner;
+  /** Identidad de ESTA copia física. Única e inmutable. La fija `createPlayer`. */
+  instanceId?: CardInstanceId;
 }
 
 export type Card = MonsterCard | TrapCard | MagicCard;

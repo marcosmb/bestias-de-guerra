@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { reducer, initialState } from '../useGame';
 import type { Action, GameState, FieldMonster } from '../types';
-import { createPlayer, canPlaceTrapOn } from '../types';
+import { createPlayer, canPlaceTrapOn, ownerOf } from '../types';
 import {
   buildDeck,
   TRAPS,
@@ -227,8 +227,12 @@ describe('Gestión de cartas — una instancia por jugada', () => {
   });
 });
 
-describe('Gestión de cartas — Mágica 2 sin duplicados', () => {
-  it('no roba una carta que el jugador ya tiene en la mano', () => {
+describe('Gestión de cartas — Mágica 2 y duplicados legítimos', () => {
+  it('SÍ roba una carta que el jugador ya tiene en la mano (decisión del creador)', () => {
+    // No existe regla general que prohíba duplicados en la mano: cada mazo
+    // tiene un ejemplar de cada carta, así que puede haber dos Kraken, uno de
+    // cada jugador. La Mágica 2 puede robar la copia del rival aunque yo ya
+    // tenga un ejemplar del mismo `id`.
     const shared = monster('m-espadas-7', 7);
     const steal = magic('m2', { kind: 'steal_hand_card' });
     let state = setHand(baseState(), 0, [shared, steal]);
@@ -236,11 +240,70 @@ describe('Gestión de cartas — Mágica 2 sin duplicados', () => {
 
     state = run(state, { type: 'SELECT_MAGIC', card: steal });
 
-    // No puede robar el duplicado: la mano no cambia y la Mágica no se consume.
-    expect(duplicateIds(state.players[0].hand)).toEqual([]);
-    expect(handIds(state, 0)).toEqual([shared.id, 'm2']);
-    expect(handIds(state, 1)).toEqual([shared.id]);
-    expect(state.players[0].cardsPlayedThisTurn).toBe(0);
+    // La mano de J1 pasa a contener DOS cartas con el mismo `id`.
+    expect(handIds(state, 0).filter((id) => id === shared.id)).toHaveLength(2);
+    expect(duplicateIds(state.players[0].hand)).toEqual([shared.id]);
+    expect(handIds(state, 1)).toEqual([]);
+    // La Mágica sí se consume: era una jugada legal.
+    expect(handIds(state, 0)).not.toContain('m2');
+    expect(state.players[0].cardsPlayedThisTurn).toBe(1);
+  });
+
+  it('la carta robada conserva a su propietario original (Regla 6)', () => {
+    const shared = monster('m-espadas-7', 7);
+    const steal = magic('m2', { kind: 'steal_hand_card' });
+    // Ambos mazos son idénticos: la carta de J1 es suya, la de J2 es suya.
+    let state = setHand(baseState(), 0, [shared, steal]);
+    state = setHand(state, 1, [{ ...shared, owner: 1 }]);
+
+    state = run(state, { type: 'SELECT_MAGIC', card: steal });
+
+    const stolen = state.players[0].hand.find(
+      (c) => c.id === shared.id && c.owner === 1,
+    );
+    expect(stolen).toBeDefined();
+    // Sigue siendo del Jugador 2 aunque esté en la mano del Jugador 1.
+    expect(ownerOf(stolen!)).toBe(1);
+  });
+
+  it('una carta robada descartada va al cementerio de su propietario (Mágica 3)', () => {
+    // Mágica 3: todos descartan la mano. La carta robada con la Mágica 2 es
+    // del Jugador 2, así que su descarte va al cementerio DEL JUGADOR 2.
+    const shared = { ...monster('m-espadas-7', 7), owner: 0 as const };
+    const steal = magic('m2', { kind: 'steal_hand_card' });
+    let state = setHand(baseState(), 0, [shared, steal]);
+    state = setHand(state, 1, [{ ...shared, owner: 1 as const }]);
+
+    state = run(state, { type: 'SELECT_MAGIC', card: steal });
+    expect(state.players[0].hand.some((c) => c.owner === 1)).toBe(true);
+
+    const swap = magic('m3', { kind: 'hand_swap' });
+    state = setHand(state, 0, [swap, ...state.players[0].hand]);
+    state = run(state, { type: 'SELECT_MAGIC', card: swap });
+
+    // La copia del Jugador 1 (la que ya tenía) y la del Jugador 2 (la robada)
+    // NO pueden acabar en el mismo cementerio.
+    const gy0 = state.players[0].graveyard.filter((c) => c.id === shared.id);
+    const gy1 = state.players[1].graveyard.filter((c) => c.id === shared.id);
+    expect(gy0).toHaveLength(1);
+    expect(gy0[0].owner).toBe(0);
+    expect(gy1).toHaveLength(1);
+    expect(gy1[0].owner).toBe(1);
+  });
+
+  it('un Monstruo bajo control rival va al cementerio de su propietario', () => {
+    // Regla 6: si un efecto ha transferido el CONTROL de un Monstruo, al
+    // destruirlo la carta va al cementerio de su dueño, no al de quien lo
+    // controlaba. Se simula el control transferido con `owner`.
+    const presa = monster('m-espadas-3', 3);
+    const wipe = magic('m6', { kind: 'destroy_all_field' });
+    let state = setHand(baseState(), 0, [wipe]);
+    state = setField(state, 0, [fm('ctrl', { ...presa, owner: 1 })]);
+
+    state = run(state, { type: 'SELECT_MAGIC', card: wipe });
+
+    expect(state.players[1].graveyard.some((c) => c.id === presa.id)).toBe(true);
+    expect(state.players[0].graveyard.some((c) => c.id === presa.id)).toBe(false);
   });
 
   it('roba una carta que el jugador NO tiene (comportamiento normal)', () => {
@@ -268,13 +331,24 @@ describe('Gestión de cartas — Mágica 2 sin duplicados', () => {
     expect(handIds(state, 0)).toContain('m2'); // sigue en la mano
     expect(state.players[0].cardsPlayedThisTurn).toBe(0);
   });
+
+  it('no se consume la Mágica si el rival no tiene cartas en la mano', () => {
+    const steal = magic('m2', { kind: 'steal_hand_card' });
+    let state = setHand(baseState(), 0, [steal]);
+    state = setHand(state, 1, []);
+
+    state = run(state, { type: 'SELECT_MAGIC', card: steal });
+
+    expect(handIds(state, 0)).toContain('m2');
+    expect(state.players[0].cardsPlayedThisTurn).toBe(0);
+  });
 });
 
 describe('Gestión de cartas — Mágica 5 sin duplicados ni pérdidas', () => {
   it('no revive a la mano un Monstruo que el jugador ya posee', () => {
-    const held = monster('m-espadas-8', 8);
+    const held = { ...monster('m-espadas-8', 8), owner: 0 as const };
     const revive = magic('m5', { kind: 'revive_monster' });
-    // Cementerio con un Monstruo que el jugador ya tiene; campo lleno → no hay destino.
+    // Cementerio con un Monstruo PROPIO que el jugador ya tiene; campo lleno.
     let state = setHand(baseState(), 0, [held, revive]);
     state = setGraveyard(state, 0, [held]);
     state = setField(state, 0, Array.from({ length: 6 }, (_, i) => fm(`f${i}`, monster(`x${i}`, i + 1))));
@@ -284,6 +358,27 @@ describe('Gestión de cartas — Mágica 5 sin duplicados ni pérdidas', () => {
     expect(duplicateIds(state.players[0].hand)).toEqual([]);
     expect(handIds(state, 0)).toContain('m5'); // no se consumió
     expect(state.players[0].graveyard.some((c) => c.id === held.id)).toBe(true);
+  });
+
+  it('SÍ revive si la copia que hay en la mano es del RIVAL, no una copia propia', () => {
+    // La restricción de la Mágica 5 es sobre copias PROPIAS: recuperar la carta
+    // propia es legítimo si la única que hay en mi mano es la del rival (Mágica 2).
+    const propia = { ...monster('m-espadas-8', 8), owner: 0 as const };
+    const ajena = { ...monster('m-espadas-8', 8), owner: 1 as const };
+    const revive = magic('m5', { kind: 'revive_monster' });
+    let state = setHand(baseState(), 0, [ajena, revive]);
+    state = setGraveyard(state, 0, [propia]);
+
+    state = run(state, { type: 'SELECT_MAGIC', card: revive });
+    expect(state.selection.kind).toBe('revive-choice');
+    state = run(state, { type: 'REVIVE_CHOICE', card: revive, choice: 'hand' });
+
+    // Ahora hay dos cartas con el mismo `id`, pero con propietarios distintos:
+    // eso es legítimo, no una prohibición general de duplicados.
+    const inHand = state.players[0].hand.filter((c) => c.id === propia.id);
+    expect(inHand).toHaveLength(2);
+    expect(inHand.map((c) => c.owner).sort()).toEqual([0, 1]);
+    expect(handIds(state, 0)).not.toContain('m5'); // la Mágica sí se consumió
   });
 
   it('REVIVE_CHOICE no duplica al elegir la mano', () => {

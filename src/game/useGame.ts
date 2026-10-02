@@ -12,6 +12,7 @@ import {
 import {
   buildDeck,
   rollDie,
+  type Card,
   type MagicCard,
   type MonsterCard,
   type TrapCard,
@@ -32,16 +33,29 @@ import {
   getFirstEmptySlot,
   hasEmptySlot,
   canPlaceTrapOn,
-  hasPlayableCard,
   checkStalemate,
+  isBlockedByStalemate,
+  describeBlock,
+  magicRequiredSide,
+  ownerOf,
+  hasOwnCopy,
   MAX_CARDS_PER_TURN,
   placeFieldMonster,
   resolveCombat,
   shuffleDeck,
+  newInstanceId,
+  indexOfCardInstance,
 } from './types';
 
+/**
+ * Identidad de instancia de un Monstruo en el campo.
+ *
+ * Es el MISMO generador que usan las cartas (`newInstanceId`), así que el juego
+ * tiene un único esquema de identidad de instancia: un `FieldMonster` es una
+ * copia física concreta, igual que una carta de la mano.
+ */
 function genUid(): string {
-  return Math.random().toString(36).slice(2, 10);
+  return newInstanceId();
 }
 
 export function initialState(): GameState {
@@ -82,49 +96,94 @@ function checkWinner(players: [PlayerState, PlayerState]): { winner: 0 | 1 | nul
 }
 
 /**
- * Regla 27.2 — Comprueba si la partida debe finalizar porque ningún jugador
- * puede realizar acciones legales.
+ * Regla 27 — Resuelve el final de la partida.
  *
- * Devuelve el estado actualizado con `phase: 'game-over'` si procede,
- * o el estado sin cambios si la partida debe continuar.
+ * ORDEN (decisión del creador):
+ *   1. Regla 27.1 / 27.3 — si algún jugador tiene 0 LP se resuelve la victoria
+ *      o el empate correspondientes. **La 27.2 NO se aplica.**
+ *   2. Regla 27.2 — solo si ambos tienen LP > 0 y NINGUNO puede continuar.
  *
- * Esta función se llama después de cada acción relevante del reducer.
+ * Criterio de bloqueo (27.2). Un jugador NO está bloqueado si tiene:
+ *   A) alguna ACCIÓN LEGAL disponible, que según la Regla 15 incluye:
+ *        · jugar un Monstruo
+ *        · colocar o activar una Trampa
+ *        · utilizar una Mágica legalmente
+ *        · ATACAR con un Monstruo en Ataque que aún no ha atacado
+ *        · CAMBIAR DE POSICIÓN un Monstruo que aún no lo ha hecho
+ *      ni de
+ *   B) una vía reglamentaria de CONTINUAR la partida: tener cartas en el mazo
+ *      y sitio en la mano (por debajo de 9) significa que en su siguiente turno
+ *      recibirá cartas nuevas por el robo automático.
+ *
+ * El robo NO es una acción legal (es automático al inicio del turno, Regla
+ * 15): solo demuestra que la partida puede continuar.
+ *
+ * La cuota de 3 cartas (Regla 16) NO interviene: se reinicia cada turno, así
+ * que agotarla nunca bloquea la partida.
  */
 function checkStalemateEnd(state: GameState): GameState {
-  const [p1, p2] = state.players;
-  const p1CanAct = hasPlayableCard(p1, state);
-  const p2CanAct = hasPlayableCard(p2, state);
+  // --- 1. Regla 27.1 / 27.3 tiene prioridad absoluta ---
+  const winResult = checkWinner(state.players);
+  if (winResult.winner !== null || winResult.isDraw) {
+    return {
+      ...state,
+      phase: 'game-over' as const,
+      winner: winResult.winner,
+      isDraw: winResult.isDraw,
+      selection: { kind: 'none' },
+    };
+  }
 
-  // Si al menos un jugador puede actuar, la partida continúa
-  if (p1CanAct || p2CanAct) return state;
+  // --- 2. Regla 27.2 ---
+  if (!isBlockedByStalemate(state)) return state;
 
-  // Ningún jugador puede actuar → final de partida por Regla 27.2
   const winner = checkStalemate(state.players);
+  const [p1, p2] = state.players;
+  const condicion =
+    `${describeBlock(p1, state)} | ${describeBlock(p2, state)}`;
+  const motivo = winner === null ? 'empate' : `gana el Jugador ${winner + 1}`;
   return {
     ...state,
     phase: 'game-over' as const,
     winner,
     isDraw: winner === null,
-    log: addLog(state, 'Ningún jugador puede realizar acciones legales. Fin de la partida.'),
+    selection: { kind: 'none' },
+    log: addLog(
+      state,
+      `Ningún jugador puede continuar y no hay vía reglamentaria de seguir: ${condicion}. ` +
+      `Regla 27.2: ${motivo} (J1 ${p1.lp} LP, J2 ${p2.lp} LP).`,
+    ),
   };
 }
 
-function hasCardInHand(player: PlayerState, cardId: string): boolean {
-  return player.hand.some((card) => card.id === cardId);
+/**
+ * ¿Está ESTA copia concreta en la mano?
+ *
+ * Busca por identidad de instancia, no solo por `id`: con la Mágica 2 la mano
+ * puede tener la Araña del Jugador 1 y la Araña del Jugador 2, y son dos cartas
+ * distintas. Si la carta no está sellada (solo posible en pruebas) se recurre al
+ * `id`, que basta porque entonces no hay dos copias del mismo tipo.
+ */
+function hasCardInHand(player: PlayerState, card: Card): boolean {
+  return indexOfCardInstance(player.hand, card) !== -1;
 }
 
-function playCardFromHand(player: PlayerState, cardId: string): PlayerState {
-  return { ...removeCardFromHand(player, cardId), cardsPlayedThisTurn: player.cardsPlayedThisTurn + 1 };
+function playCardFromHand(player: PlayerState, card: Card): PlayerState {
+  return { ...removeCardFromHand(player, card), cardsPlayedThisTurn: player.cardsPlayedThisTurn + 1 };
 }
 
 /**
- * Elimina de la mano UNA sola copia de la carta indicada (por id de la
- * instancia jugada). No elimina todas las copias con el mismo id: cada mazo
- * tiene un único ejemplar de cada carta, pero efectos como la Mágica 2 podían
- * ocasionar duplicados y esta función garantiza que solo se retira uno.
+ * Elimina de la mano UNA sola copia: la carta que se ha jugado, identificada por
+ * su `instanceId`.
+ *
+ * No elimina todas las copias con el mismo `id`. Cada mazo tiene un único
+ * ejemplar de cada carta, pero la Mágica 2 puede traer la copia del RIVAL, así
+ * que una mano puede tener legítimamente dos cartas con el mismo `id`. Jugando
+ * una SOLO se retira esa: la otra permanece en la mano y conserva su propietario
+ * original.
  */
-function removeCardFromHand(player: PlayerState, cardId: string): PlayerState {
-  const idx = player.hand.findIndex((c) => c.id === cardId);
+function removeCardFromHand(player: PlayerState, card: Card): PlayerState {
+  const idx = indexOfCardInstance(player.hand, card);
   if (idx === -1) return player;
   return { ...player, hand: [...player.hand.slice(0, idx), ...player.hand.slice(idx + 1)] };
 }
@@ -137,10 +196,34 @@ function updateFieldMonster(player: PlayerState, uid: string, updater: (fm: Fiel
   return { ...player, field: player.field.map((f) => (f?.uid === uid ? updater(f) : f)) };
 }
 
-function removeFieldMonster(player: PlayerState, uid: string): PlayerState {
+/**
+ * Regla 6 / Regla 26 — Retira un Monstruo (y sus Trampa/Mágica asociadas) del
+ * campo de `playerIdx` y envía CADA carta al cementerio de su PROPIETARIO
+ * original, no al de quien lo controlaba.
+ *
+ * Es lo que exige la Regla 6: «Cuando una carta deba pasar al cementerio, va
+ * al cementerio de su propietario original, no al del jugador que la controle
+ * en ese momento» (relevante con la Trampa 7 y la Trampa 10).
+ *
+ * Muta `players` en el sitio: las llamadas ya trabajaban sobre una copia local
+ * con la forma `players[i] = removeFieldMonster(players[i], uid)`.
+ */
+function removeFieldMonster(
+  players: [PlayerState, PlayerState],
+  playerIdx: 0 | 1,
+  uid: string,
+): void {
+  const player = players[playerIdx];
   const fm = findFieldMonster(player, uid);
-  const graveyard = fm ? [...player.graveyard, fm.card, ...(fm.trap ? [fm.trap] : []), ...(fm.magic ? [fm.magic] : [])] : player.graveyard;
-  return { ...player, field: player.field.map((f) => (f?.uid === uid ? null : f)), graveyard };
+  if (!fm) return;
+
+  players[playerIdx] = { ...player, field: player.field.map((f) => (f?.uid === uid ? null : f)) };
+
+  const cartas: Card[] = [fm.card, ...(fm.trap ? [fm.trap] : []), ...(fm.magic ? [fm.magic] : [])];
+  for (const carta of cartas) {
+    const dueno = ownerOf(carta) ?? playerIdx;
+    players[dueno] = { ...players[dueno], graveyard: [...players[dueno].graveyard, carta] };
+  }
 }
 
 function applyDamage(player: PlayerState, dmg: number): PlayerState {
@@ -229,7 +312,7 @@ function applyTrapEffect(
     }
     case 'destroy_attacker':
       if (attacker) {
-        players[attackerPlayer] = removeFieldMonster(players[attackerPlayer], attackerUid);
+        removeFieldMonster(players, attackerPlayer, attackerUid);
         log.push(`¡${trap.name}! ${attacker.card.name} es destruido.`);
         destroyAttacker = true;
         negateAttack = true;
@@ -280,8 +363,15 @@ function applyTrapEffect(
   return { state: { ...state, players, log: addLog(state, log.join(' ')) }, negateAttack, destroyAttacker, skipCombat };
 }
 
-// --- Magic resolution ---
-function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string, side?: 'self' | 'enemy'): GameState {
+/**
+ * Resuelve el efecto de una Mágica.
+ *
+ * `targetUid` es opcional. El LADO del objetivo NO se toma del argumento: se
+ * deduce del propio uid (en qué campo está realmente el Monstruo) y se valida
+ * contra lo que exige la Regla 5. Así una Mágica 8 nunca puede acabar sobre un
+ * monstruo propio por pasar un `side` equivocado.
+ */
+function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string): GameState {
   const players = [...state.players] as [PlayerState, PlayerState];
   const me = state.currentPlayer;
   const opp = (me === 0 ? 1 : 0) as 0 | 1;
@@ -304,52 +394,99 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string,
       break;
     }
     case 'steal_hand_card': {
+      // Mágica 2 (decisión del creador): puede robar una carta aunque el jugador
+      // ya tenga otra con el mismo `id`. No existe regla general que prohíba
+      // duplicados en la mano: cada mazo tiene un ejemplar de cada carta, así
+      // que puede haber dos Kraken, uno de cada jugador.
+      // La carta robada CONSERVA su propietario (Regla 6).
       const oppHand = players[opp].hand;
-      const candidates = oppHand
-        .map((c, i) => ({ c, i }))
-        .filter(({ c }) => !players[me].hand.some((h) => h.id === c.id));
       if (players[me].hand.length >= MAX_HAND_SIZE) {
         resolves = false;
         log.push(`${card.name}: Tu mano está llena (máximo ${MAX_HAND_SIZE} cartas).`);
-      } else if (candidates.length === 0) {
+      } else if (oppHand.length === 0) {
         resolves = false;
-        log.push(`${card.name}: El rival no tiene cartas en mano que puedas robar sin duplicar.`);
+        log.push(`${card.name}: El rival no tiene cartas en su mano.`);
       } else {
-        const idx = candidates[Math.floor(Math.random() * candidates.length)].i;
+        const idx = Math.floor(Math.random() * oppHand.length);
         const stolen = oppHand[idx];
         players[opp] = { ...players[opp], hand: oppHand.filter((_, i) => i !== idx) };
+        // La carta entra tal cual: su `owner` sigue siendo el del rival (Regla 6).
         players[me] = { ...players[me], hand: [...players[me].hand, stolen] };
-        log.push(`${card.name}: Robas una carta de la mano del rival.`);
+        const dueno = ownerOf(stolen) ?? opp;
+        log.push(
+          `${card.name}: Robas ${stolen.name} de la mano del rival. ` +
+          `Sigue siendo propiedad del Jugador ${dueno + 1}.`,
+        );
       }
       break;
     }
     case 'hand_swap': {
-      for (let i = 0; i < 2; i++) {
+      for (const i of [0, 1] as const) {
         const p = players[i];
-        // Verificar si el jugador tiene suficientes cartas en el mazo
-        if (p.deck.length < 5) {
-          // No roba ninguna carta — solo descarta la mano
-          const graveyard = [...p.graveyard, ...p.hand];
-          players[i] = { ...p, hand: [], graveyard };
+        const puedeRobar = p.deck.length >= 5;
+        // Regla 6: cada carta descartada va al cementerio de SU propietario. Una
+        // carta robada con la Mágica 2 vuelve al cementerio del rival.
+        players[i] = { ...p, hand: [] };
+        for (const carta of p.hand) {
+          const dueno = ownerOf(carta) ?? i;
+          players[dueno] = { ...players[dueno], graveyard: [...players[dueno].graveyard, carta] };
+        }
+        if (!puedeRobar) {
           log.push(`${card.name}: Jugador ${i + 1} no tiene 5 cartas en el mazo. No roba ninguna.`);
         } else {
-          const graveyard = [...p.graveyard, ...p.hand];
-          players[i] = { ...p, hand: [], graveyard };
           players[i] = drawCards(players[i], 5);
           log.push(`${card.name}: Jugador ${i + 1} descarta y roba 5 cartas.`);
         }
       }
       break;
     }
-    case 'atk_boost': {
-      if (targetUid) {
-        const targetSide = side === 'self' ? me : opp;
-        players[targetSide] = updateFieldMonster(players[targetSide], targetUid, (fm) => ({
-          ...fm,
-          magic: card,
-          tempAtkModifier: fm.tempAtkModifier + eff.amount,
-        }));
-        log.push(`${card.name}: +${eff.amount} ATQ colocada.`);
+    case 'atk_boost':
+    case 'def_reduce':
+    case 'dice_protection': {
+      // Regla 5: las Mágicas 4 y 9 van solo sobre un Monstruo PROPIO; la
+      // Mágica 8 es la excepción y va solo sobre un Monstruo RIVAL.
+      // Sin objetivo legal la Mágica NO se consume, NO gasta cuota y NO registra
+      // un éxito falso (se marca `resolves = false`).
+      const exigido = magicRequiredSide(card);
+      // Índice del jugador cuyo campo debe alojar el objetivo (Regla 5).
+      const exigidoLado: 0 | 1 | null =
+        exigido === 'self' ? me : exigido === 'enemy' ? opp : null;
+      const ladoReal = targetUid
+        ? findFieldMonster(players[me], targetUid)
+          ? me
+          : findFieldMonster(players[opp], targetUid)
+            ? opp
+            : null
+        : null;
+
+      if (!targetUid) {
+        resolves = false;
+        log.push(`${card.name}: No se ha indicado un Monstruo sobre el que colocarla.`);
+      } else if (ladoReal === null) {
+        resolves = false;
+        log.push(`${card.name}: El Monstruo indicado ya no está en el campo.`);
+      } else if (exigidoLado !== null && ladoReal !== exigidoLado) {
+        resolves = false;
+        log.push(
+          exigido === 'self'
+            ? `${card.name}: solo puede colocarse sobre un Monstruo PROPIO.`
+            : `${card.name}: solo puede colocarse sobre un Monstruo RIVAL.`,
+        );
+      } else if (findFieldMonster(players[ladoReal], targetUid)!.magic !== null) {
+        // Regla 4 y Regla 5: máximo 1 Mágica por Monstruo.
+        resolves = false;
+        log.push(`${card.name}: ese Monstruo ya tiene una Mágica asociada.`);
+      } else {
+        players[ladoReal] = updateFieldMonster(players[ladoReal], targetUid, (fm) => {
+          if (eff.kind === 'atk_boost') return { ...fm, magic: card, tempAtkModifier: fm.tempAtkModifier + eff.amount };
+          if (eff.kind === 'def_reduce') return { ...fm, magic: card, tempDefModifier: fm.tempDefModifier - eff.amount };
+          return { ...fm, magic: card, diceProtection: true };
+        });
+        const detalle =
+          eff.kind === 'atk_boost' ? `+${eff.amount} ATQ colocada.`
+          : eff.kind === 'def_reduce' ? `-${eff.amount} DEF colocada.`
+          : 'Protección por dado colocada.';
+        log.push(`${card.name}: ${detalle}`);
       }
       break;
     }
@@ -360,13 +497,16 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string,
         log.push(`${card.name}: No hay Monstruos en el cementerio.`);
         break;
       }
-      // No se puede llevar a la mano un Monstruo que el jugador ya posee en ella.
-      const toHand = monsters.filter((c) => !players[me].hand.some((h) => h.id === c.id));
+      // Decisión del creador: NO recuperar una carta que ya esté representada en
+      // la mano por OTRA COPIA PROPIA. No es una prohibición general de
+      // duplicados: si la copia que hay en la mano es del RIVAL (Mágica 2), sí
+      // se puede recuperar la propia.
+      const toHand = monsters.filter((c) => !hasOwnCopy(players[me].hand, c));
       const canReviveToHand = players[me].hand.length < MAX_HAND_SIZE && toHand.length > 0;
       const canReviveToField = hasEmptySlot(players[me]);
       if (!canReviveToHand && !canReviveToField) {
         resolves = false;
-        log.push(`${card.name}: No hay espacio en la mano ni en el campo. La Mágica no puede utilizarse.`);
+        log.push(`${card.name}: No hay espacio en la mano ni en el campo, o la carta ya está en tu mano. La Mágica no puede utilizarse.`);
         break;
       }
       // Si solo hay una opción posible, ejecutarla directamente
@@ -415,10 +555,10 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string,
       break;
     }
     case 'destroy_all_field': {
-      for (let i = 0; i < 2; i++) {
+      for (const i of [0, 1] as const) {
         const count = players[i].field.filter(Boolean).length;
         const allFms = players[i].field.filter(Boolean) as FieldMonster[];
-        allFms.forEach((f) => { players[i] = removeFieldMonster(players[i], f.uid); });
+        allFms.forEach((f) => { removeFieldMonster(players, i, f.uid); });
         log.push(`${card.name}: ${count} cartas destruidas del Jugador ${i + 1}.`);
       }
       break;
@@ -433,30 +573,9 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string,
       log.push(`${card.name}: Todos los Monstruos del rival cambian de posición.`);
       break;
     }
-    case 'def_reduce': {
-      if (targetUid) {
-        const targetSide = side === 'self' ? me : opp;
-        players[targetSide] = updateFieldMonster(players[targetSide], targetUid, (fm) => ({
-          ...fm,
-          magic: card,
-          tempDefModifier: fm.tempDefModifier - eff.amount,
-        }));
-        log.push(`${card.name}: -${eff.amount} DEF colocada.`);
-      }
-      break;
-    }
-    case 'dice_protection': {
-      if (targetUid) {
-        const targetSide = side === 'self' ? me : opp;
-        players[targetSide] = updateFieldMonster(players[targetSide], targetUid, (fm) => ({
-          ...fm,
-          magic: card,
-          diceProtection: true,
-        }));
-        log.push(`${card.name}: Protección por dado colocada.`);
-      }
-      break;
-    }
+    // NOTA: `def_reduce` y `dice_protection` se resuelven junto a `atk_boost`
+    // en el bloque agrupado de la línea 445, que aplica la validación de lado
+    // exigida por la Regla 5. Aquí no se repiten.
     case 'draw_cards': {
       players[me] = drawCards(players[me], eff.amount);
       log.push(`${card.name}: Robas ${eff.amount} cartas.`);
@@ -467,7 +586,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string,
     }
     case 'clean_opp_field': {
       const allFms = players[opp].field.filter(Boolean) as FieldMonster[];
-      allFms.forEach((f) => { players[opp] = removeFieldMonster(players[opp], f.uid); });
+      allFms.forEach((f) => { removeFieldMonster(players, opp, f.uid); });
       log.push(`${card.name}: Campo del rival limpiado.`);
       break;
     }
@@ -475,7 +594,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string,
 
   // La Mágica solo se retira de la mano cuando el efecto se resolvió de verdad.
   if (resolves && (card.placement === 'instant' || targetUid)) {
-    players[me] = playCardFromHand(players[me], card.id);
+    players[me] = playCardFromHand(players[me], card);
   }
 
   const winResult = checkWinner(players);
@@ -508,8 +627,8 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
       if (selfFms.length >= 2 && oppFms.length >= 1) {
         const selfDestroy = selfFms.slice(0, 2);
         const oppDestroy = oppFms.slice(0, 1);
-        selfDestroy.forEach((f) => { players[playerIdx] = removeFieldMonster(players[playerIdx], f.uid); });
-        oppDestroy.forEach((f) => { players[playerIdx === 0 ? 1 : 0] = removeFieldMonster(players[playerIdx === 0 ? 1 : 0], f.uid); });
+        selfDestroy.forEach((f) => { removeFieldMonster(players, playerIdx, f.uid); });
+        oppDestroy.forEach((f) => { removeFieldMonster(players, playerIdx === 0 ? 1 : 0, f.uid); });
         // Eliminar la trampa del monstruo (si sigue existiendo)
         const trapFm = players[playerIdx].field.find((f) => f?.uid === fm.uid);
         if (trapFm) {
@@ -543,7 +662,7 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
       const newTurns = fm.pendingTurns - 1;
       if (newTurns === 0) {
         if (fm.pendingEffect === 'death' || fm.pendingEffect === 'three_turns') {
-          players[playerIdx] = removeFieldMonster(players[playerIdx], fm.uid);
+          removeFieldMonster(players, playerIdx, fm.uid);
           log.push(`${fm.card.name} muere por efecto pendiente.`);
         } else if (fm.pendingEffect === 'control') {
           players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({ ...f, pendingEffect: null, pendingTurns: 0, controlledBy: null }));
@@ -584,13 +703,17 @@ export function reducer(state: GameState, action: Action): GameState {
       return { ...state, phase: 'playing', passTarget: 0 };
     }
     case 'CONFIRM_PASS': {
+      // Solo tiene efecto si realmente estamos en el paso de turno. Sin esta
+      // guarda, un CONFIRM_PASS rezagado (o un doble clic) resucitaba una
+      // partida ya terminada y borraba el resultado de la Regla 27.
+      if (state.phase !== 'pass') return state;
       return { ...state, phase: 'playing' };
     }
     case 'SUMMON_MONSTER': {
       if (state.phase !== 'playing') return state;
       const cp = state.currentPlayer;
       if (state.players[cp].cardsPlayedThisTurn >= MAX_CARDS_PER_TURN) return state;
-      if (!hasCardInHand(state.players[cp], action.card.id)) return state;
+      if (!hasCardInHand(state.players[cp], action.card)) return state;
       if (!hasEmptySlot(state.players[cp])) return state;
       const slot = getFirstEmptySlot(state.players[cp]);
       const fm: FieldMonster = {
@@ -614,7 +737,7 @@ export function reducer(state: GameState, action: Action): GameState {
       players[cp] = {
         ...players[cp],
         field: players[cp].field.map((f, i) => (i === slot ? fm : f)) as (FieldMonster | null)[],
-        hand: removeCardFromHand(players[cp], action.card.id).hand,
+        hand: removeCardFromHand(players[cp], action.card).hand,
         cardsPlayedThisTurn: players[cp].cardsPlayedThisTurn + 1,
       };
       const posText = action.position === 'attack' ? 'Ataque' : 'Defensa (boca abajo)';
@@ -625,17 +748,17 @@ export function reducer(state: GameState, action: Action): GameState {
       if (state.phase !== 'playing') return state;
       const cp = state.currentPlayer;
       if (state.players[cp].cardsPlayedThisTurn >= MAX_CARDS_PER_TURN) return state;
-      if (!hasCardInHand(state.players[cp], action.card.id)) return state;
+      if (!hasCardInHand(state.players[cp], action.card)) return state;
       return { ...state, selection: { kind: 'place-trap', card: action.card } };
     }
     case 'PLACE_TRAP_ON_MONSTER': {
       if (state.phase !== 'playing') return state;
       const cp = state.currentPlayer;
       const fm = findFieldMonster(state.players[cp], action.fieldUid);
-      if (!hasCardInHand(state.players[cp], action.card.id) || !fm || !canPlaceTrapOn(state.players[cp], action.fieldUid)) return state;
+      if (!hasCardInHand(state.players[cp], action.card) || !fm || !canPlaceTrapOn(state.players[cp], action.fieldUid)) return state;
       const players = [...state.players] as [PlayerState, PlayerState];
       players[cp] = updateFieldMonster(players[cp], action.fieldUid, (f) => ({ ...f, trap: action.card }));
-      players[cp] = playCardFromHand(players[cp], action.card.id);
+      players[cp] = playCardFromHand(players[cp], action.card);
       const newState: GameState = { ...state, players, selection: { kind: 'none' }, log: addLog(state, `${players[cp].name} coloca ${action.card.name} bajo ${fm.card.name}.`) };
       return checkStalemateEnd(newState);
     }
@@ -643,7 +766,7 @@ export function reducer(state: GameState, action: Action): GameState {
       if (state.phase !== 'playing') return state;
       const cp = state.currentPlayer;
       if (state.players[cp].cardsPlayedThisTurn >= MAX_CARDS_PER_TURN) return state;
-      if (!hasCardInHand(state.players[cp], action.card.id)) return state;
+      if (!hasCardInHand(state.players[cp], action.card)) return state;
       const eff = action.card.effect;
       // Instant magics that need no target
       if (eff.kind === 'steal_hand_card' || eff.kind === 'hand_swap' || eff.kind === 'revive_monster' ||
@@ -666,17 +789,42 @@ export function reducer(state: GameState, action: Action): GameState {
         }
         return applyMagicEffect(state, action.card, available[0].uid);
       }
-      // Field-placed magics need target
+      // Field-placed magics need target.
+      // Si no existe ningún objetivo legal NO se abre la selección: una
+      // selección imposible de resolver dejaría la partida en un estado
+      // pendiente que el jugador no puede completar. La Mágica tampoco se
+      // consume ni gasta cuota: simplemente no se activa.
       if (eff.kind === 'atk_boost' || eff.kind === 'def_reduce' || eff.kind === 'dice_protection') {
+        const lados = magicRequiredSide(action.card) === 'self'
+          ? [cp]
+          : magicRequiredSide(action.card) === 'enemy'
+            ? [cp === 0 ? 1 : 0]
+            : [0, 1];
+        const hayObjetivo = lados.some((i) =>
+          state.players[i].field.some((f) => f !== null && f.magic === null),
+        );
+        if (!hayObjetivo) {
+          const exigido = magicRequiredSide(action.card);
+          const mensaje =
+            exigido === 'self'
+              ? 'no tienes Monstruos propios sin Mágica donde colocarla'
+              : exigido === 'enemy'
+                ? 'el rival no tiene Monstruos sin Mágica donde colocarla'
+                : 'no hay Monstruos sin Mágica donde colocarla';
+          return {
+            ...state,
+            log: addLog(state, `${action.card.name}: ${mensaje}. La Mágica no se utiliza.`),
+          };
+        }
         return { ...state, selection: { kind: 'place-magic', card: action.card } };
       }
       return state;
     }
     case 'PLACE_MAGIC_ON_MONSTER': {
-      return applyMagicEffect(state, action.card, action.fieldUid, action.side);
+      return applyMagicEffect(state, action.card, action.fieldUid);
     }
     case 'MAGIC_TARGET_MONSTER': {
-      return applyMagicEffect(state, action.card, action.fieldUid, action.side);
+      return applyMagicEffect(state, action.card, action.fieldUid);
     }
     case 'MAGIC_INSTANT': {
       return applyMagicEffect(state, action.card);
@@ -861,7 +1009,7 @@ export function reducer(state: GameState, action: Action): GameState {
             const startIdx = allMonsters.findIndex((m) => m.fm.uid === pt.defenderUid);
             const targetIdx = ((startIdx >= 0 ? startIdx : 0) + roll - 1) % allMonsters.length;
             const target = allMonsters[targetIdx];
-            players[target.player] = removeFieldMonster(players[target.player], target.fm.uid);
+            removeFieldMonster(players, target.player, target.fm.uid);
             log.push(`${target.fm.card.name} destruido por conteo.`);
           }
           // Remove trap
@@ -877,7 +1025,7 @@ export function reducer(state: GameState, action: Action): GameState {
         const pt = state.pendingTrap;
         if (pt) {
           if (roll >= 4) {
-            players[pt.attackerPlayer] = removeFieldMonster(players[pt.attackerPlayer], pt.attackerUid);
+            removeFieldMonster(players, pt.attackerPlayer, pt.attackerUid);
             log.push(`¡${roll} ≥ 4! Atacante destruido.`);
           } else {
             log.push(`${roll} < 4. Sin efecto.`);
@@ -898,7 +1046,7 @@ export function reducer(state: GameState, action: Action): GameState {
         // consume the magic card
         const me = state.currentPlayer;
         const magicCard = state.players[me].hand.find((c) => c.type === 'magic' && c.name.includes('dado'));
-        if (magicCard) players[me] = playCardFromHand(players[me], magicCard.id);
+        if (magicCard) players[me] = playCardFromHand(players[me], magicCard);
       }
 
       const winResult = checkWinner(players);
@@ -920,7 +1068,7 @@ export function reducer(state: GameState, action: Action): GameState {
       const players = [...state.players] as [PlayerState, PlayerState];
       const target = findFieldMonster(players[state.currentPlayer], action.fieldUid);
       if (!target) return state;
-      players[state.currentPlayer] = removeFieldMonster(players[state.currentPlayer], action.fieldUid);
+      removeFieldMonster(players, state.currentPlayer, action.fieldUid);
       // Eliminar la trampa del monstruo que la activó (si sigue existiendo)
       const trapUid = state.selection.kind === 'choose-destroy-target' ? state.selection.trapUid : null;
       if (trapUid) {
@@ -948,11 +1096,12 @@ export function reducer(state: GameState, action: Action): GameState {
       const monsters = players[me].graveyard.filter((c) => c.type === 'monster') as MonsterCard[];
       if (monsters.length === 0) return state;
       const log: string[] = [];
-      // Ir a la mano exige hueco y no tener ya ese ejemplar en la mano.
-      const handIds = new Set(players[me].hand.map((c) => c.id));
+      // Ir a la mano exige hueco y que la carta NO esté ya representada por otra
+      // copia PROPIA (decisión del creador). No es una prohibición general de
+      // duplicados: la copia del rival en la mano no lo impide.
       const candidates =
         action.choice === 'hand'
-          ? monsters.filter((c) => !handIds.has(c.id))
+          ? monsters.filter((c) => !hasOwnCopy(players[me].hand, c))
           : monsters;
       if (candidates.length === 0) return state;
       const sorted = [...candidates].sort((a, b) => b.atk - a.atk);
@@ -995,7 +1144,7 @@ export function reducer(state: GameState, action: Action): GameState {
         log.push(`${action.card.name}: ${revived.name} revivido del cementerio al campo en posición ${position === 'attack' ? 'Ataque' : 'Defensa'}.`);
       }
       // Consumir la carta de la mano
-      players[me] = playCardFromHand(players[me], action.card.id);
+      players[me] = playCardFromHand(players[me], action.card);
       const winResult = checkWinner(players);
       const newState: GameState = {
         ...state,
@@ -1074,7 +1223,7 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
       const { ownerWins } = resolveDiceProtection();
       if (!ownerWins) {
         // Gana el rival — el monstruo es eliminado
-        players[cp] = removeFieldMonster(players[cp], attackerUid);
+        removeFieldMonster(players, cp, attackerUid);
         players[cp] = applyDamage(players[cp], result.attackerDamage);
         if (defender.trap) players[opp] = updateFieldMonster(players[opp], defenderUid, (fm) => ({ ...fm, trap: null }));
       } else {
@@ -1083,7 +1232,7 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
         if (defender.trap) players[opp] = updateFieldMonster(players[opp], defenderUid, (fm) => ({ ...fm, trap: null }));
       }
     } else {
-      players[cp] = removeFieldMonster(players[cp], attackerUid);
+      removeFieldMonster(players, cp, attackerUid);
       if (hasReflect) {
         players[opp] = applyDamage(players[opp], result.attackerDamage);
       } else {
@@ -1108,12 +1257,12 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
       const { ownerWins } = resolveDiceProtection();
       if (!ownerWins) {
         // Gana el rival — el monstruo es eliminado
-        players[opp] = removeFieldMonster(players[opp], defenderUid);
+        removeFieldMonster(players, opp, defenderUid);
         players[opp] = applyDamage(players[opp], result.defenderDamage);
       }
       // Si gana el propietario, el monstruo sobrevive y no hay daño
     } else {
-      players[opp] = removeFieldMonster(players[opp], defenderUid);
+      removeFieldMonster(players, opp, defenderUid);
       players[opp] = applyDamage(players[opp], result.defenderDamage);
     }
   }

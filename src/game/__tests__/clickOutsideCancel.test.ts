@@ -151,9 +151,18 @@ describe('CANCEL_SELECTION — selección de objetivo de Trampa', () => {
 });
 
 describe('CANCEL_SELECTION — selección de objetivo de Mágica', () => {
+  // Regla 5: la Mágica de campo necesita un objetivo legal para abrir la
+  // selección. `makeState()` arranca con los dos campos vacíos, así que estos
+  // tests colocan un Monstruo propio antes de activar la Mágica.
+  function stateWithOwnMonster(magic: MagicCard): GameState {
+    let s = setHand(makeState(), 0, [magic]);
+    s = setField(s, 0, [monster(getMonsterWithAtk(3))]);
+    return s;
+  }
+
   it('cancela la selección de colocación de mágica', () => {
     const magic = getFieldMagicCard();
-    let state = setHand(makeState(), 0, [magic]);
+    let state = stateWithOwnMonster(magic);
     state = dispatch(state, { type: 'SELECT_MAGIC', card: magic });
     expect(state.selection.kind).toBe('place-magic');
 
@@ -163,7 +172,7 @@ describe('CANCEL_SELECTION — selección de objetivo de Mágica', () => {
 
   it('cancelar no consume la carta mágica de la mano', () => {
     const magic = getFieldMagicCard();
-    let state = setHand(makeState(), 0, [magic]);
+    let state = stateWithOwnMonster(magic);
     const handBefore = state.players[0].hand.length;
     state = dispatch(state, { type: 'SELECT_MAGIC', card: magic });
     state = dispatch(state, { type: 'CANCEL_SELECTION' });
@@ -173,11 +182,25 @@ describe('CANCEL_SELECTION — selección de objetivo de Mágica', () => {
 
   it('cancelar no incrementa cardsPlayedThisTurn', () => {
     const magic = getFieldMagicCard();
-    let state = setHand(makeState(), 0, [magic]);
+    let state = stateWithOwnMonster(magic);
     const playedBefore = state.players[0].cardsPlayedThisTurn;
     state = dispatch(state, { type: 'SELECT_MAGIC', card: magic });
     state = dispatch(state, { type: 'CANCEL_SELECTION' });
     expect(state.players[0].cardsPlayedThisTurn).toBe(playedBefore);
+  });
+
+  it('sin objetivo legal NO abre una selección imposible de resolver', () => {
+    // Con ambos campos vacíos la Mágica de campo no tiene dónde colocarse.
+    // Abrir la selección dejaría la partida en un estado pendiente que el
+    // jugador no puede completar.
+    const magic = getFieldMagicCard();
+    let state = setHand(makeState(), 0, [magic]);
+
+    state = dispatch(state, { type: 'SELECT_MAGIC', card: magic });
+
+    expect(state.selection.kind).toBe('none');
+    expect(state.players[0].hand.some((c) => c.id === magic.id)).toBe(true);
+    expect(state.players[0].cardsPlayedThisTurn).toBe(0);
   });
 });
 

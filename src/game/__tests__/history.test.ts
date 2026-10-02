@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   HISTORY_STORAGE_KEY,
   HISTORY_VERSION,
@@ -139,6 +139,21 @@ function run(b: HistoryBundle, ...actions: Action[]): HistoryBundle {
 }
 function start(): HistoryBundle {
   return hr({ game: initialState(), history: null }, { action: { type: 'START_GAME', mode: 'cpu' } });
+}
+
+/**
+ * Arranca una partida REAL contra CPU y la termina de verdad: pone al
+ * Jugador 1 a 0 LP y cierra el turno, de modo que la Regla 27.1 declara
+ * ganador al CPU y el historial queda marcado como finished.
+ */
+function partidaTerminadaCpu(): HistoryBundle {
+  const b = start();
+  const g = b.game;
+  const conLP0: GameState = {
+    ...g,
+    players: [{ ...g.players[0], lp: 0 }, g.players[1]] as [PlayerState, PlayerState],
+  };
+  return run({ ...b, game: conLP0 }, { type: 'END_TURN' });
 }
 
 /** Último elemento. `Array.prototype.at` no está en el `lib` del proyecto. */
@@ -648,6 +663,75 @@ describe('HISTORIAL DE LA ÚLTIMA PARTIDA', () => {
       expect(historyToText(hist(b))).toContain('Estado: FINALIZADA');
     });
 
+    it('REGRESIÓN · RESTART no sobrescribe el MODO real de la partida guardada', () => {
+      // `RESTART` devuelve `initialState()`, cuyo `mode` es 'local'. Antes eso
+      // reescribía el historial y una partida contra CPU acababa etiquetada como
+      // "modo local" en pantalla, en el texto copiado y en el JSON exportado.
+      let b = start();                       // START_GAME mode: 'cpu'
+      expect(hist(b).mode).toBe('cpu');
+      expect(hist(b).end).toBeNull();
+
+      // Se juega de verdad y termina (J1 a 0 LP).
+      b = run(b, { type: 'END_TURN' }, { type: 'CONFIRM_PASS' });
+      expect(hist(b).mode).toBe('cpu');
+
+      const bFin = partidaTerminadaCpu();
+      expect(hist(bFin).finished).toBe(true);
+      expect(hist(bFin).mode).toBe('cpu');
+
+      // Vuelta al menú: el historial histórico conserva TODO.
+      const b2 = run(bFin, { type: 'RESTART' });
+      expect(hist(b2).mode).toBe('cpu');
+      expect(hist(b2).finished).toBe(true);
+      expect(hist(b2).end).not.toBeNull();
+      // Y los datos son coherentes entre sí: los nombres siguen siendo CPU.
+      expect(hist(b2).end!.playerNames[1]).toBe('CPU');
+    });
+
+    it('el modo congelado sobrevive al ciclo de guardado, copia y exportación', () => {
+      let b = partidaTerminadaCpu();
+      expect(hist(b).finished).toBe(true);
+      b = run(b, { type: 'RESTART' });
+      expect(hist(b).mode).toBe('cpu');
+
+      // Guardar y recargar del almacenamiento (como en localStorage).
+      saveHistoryTo(storage, hist(b));
+      const guardado = loadHistoryFrom(storage);
+      expect(guardado).not.toBeNull();
+      expect(guardado!.mode).toBe('cpu');
+      expect(guardado!.finished).toBe(true);
+      expect(guardado!.end!.playerNames[1]).toBe('CPU');
+
+      // Texto para copiar.
+      expect(historyToText(hist(b))).toContain('Modo: cpu');
+
+      // JSON exportado (el que descarga el usuario).
+      const json = JSON.parse(serializeHistoryPretty(hist(b)));
+      expect(json.mode).toBe('cpu');
+      expect(json.end.playerNames[1]).toBe('CPU');
+      expect(json.finished).toBe(true);
+    });
+
+    it('RESTART antes del final tampoco pisa el modo de la partida en curso', () => {
+      let b = start();
+      expect(hist(b).mode).toBe('cpu');
+      b = run(b, { type: 'RESTART' });
+      expect(hist(b).mode).toBe('cpu');
+    });
+
+    it('una partida nueva SÍ tiene su propio modo', () => {
+      let b = start();                                   // cpu
+      b = partidaTerminadaCpu();
+      b = run(b, { type: 'RESTART' });
+      expect(hist(b).mode).toBe('cpu');
+
+      // Empezar de verdad otra partida reemplaza el historial anterior.
+      b = run(b, { type: 'START_GAME', mode: 'local' });
+      expect(hist(b).mode).toBe('local');
+      expect(hist(b).finished).toBe(false);
+      expect(hist(b).end).toBeNull();
+    });
+
     it('una partida nueva sí pone finished=false y borra el final', () => {
       let b = run(sobre(estado({ p0: { deck: [] }, p1: { lp: 0, deck: [], hand: [] } })), { type: 'END_TURN' });
       expect(hist(b).finished).toBe(true);
@@ -700,7 +784,7 @@ describe('HISTORIAL DE LA ÚLTIMA PARTIDA', () => {
       expect(end.rule).toBe('Regla 27.2');
       expect(end.isDraw).toBe(true);
       expect(end.winner).toBeNull();
-      expect(end.condition).toContain('acciones legales');
+      expect(end.condition).toContain('no hay vía reglamentaria de seguir');
       expect(end.reasonLabel).toContain('STALEMATE');
     });
 
@@ -712,6 +796,55 @@ describe('HISTORIAL DE LA ÚLTIMA PARTIDA', () => {
       expect(end.isDraw).toBe(false);
       expect(end.winner).toBe(0);
       expect(end.reasonLabel).toContain('VICTORIA');
+    });
+
+    it('9c · el stalemate registra manos, mazos, campo, LP, ganador y última acción', () => {
+      const b = run(
+        sobre(
+          estado({
+            p0: { lp: 70, deck: [], hand: [trp({ kind: 'dice_count_field' }, 't-a', 'TA'), trp({ kind: 'dice_count_field' }, 't-b', 'TB')] },
+            p1: { lp: 40, deck: [], hand: [] },
+          }),
+        ),
+        { type: 'END_TURN' },
+      );
+      const end = hist(b).end!;
+      expect(end.reason).toBe('victoria-stalemate');
+
+      // Motivo y regla
+      expect(end.reasonLabel).toContain('STALEMATE');
+      expect(end.rule).toBe('Regla 27.2');
+
+      // Condición que lo activó, con el desglose de cada jugador
+      expect(end.condition).toContain('no hay vía reglamentaria de seguir');
+      expect(end.condition).toContain('mazo vacío');
+      expect(end.condition).toContain('sin carta jugable');
+
+      // LP, ganador y empate
+      expect(end.lp).toEqual([70, 40]);
+      expect(end.winner).toBe(0);
+      expect(end.isDraw).toBe(false);
+
+      // Estado de manos y mazos
+      expect(end.handsLeft).toEqual([2, 0]);
+      expect(end.decksLeft).toEqual([0, 0]);
+
+      // Campo
+      expect(end.fieldsCount).toEqual([0, 0]);
+
+      // aquí el final ocurre
+      // en el primer movimiento registrado, así que no hay ninguna acción
+      // previa; el desglose "última acción vs. la que provocó el final" tiene
+      // su propio test más abajo.
+      expect(end.lastAction).toBeNull();
+      expect(end.triggerAction.actionType).toBe('END_TURN');
+      expect(end.triggerIndex).toBe(0);
+
+      // La instantánea final conserva el estado completo del campo
+      expect(end.snapshot.players[0].field.filter((f) => f.uid !== null)).toHaveLength(0);
+      expect(end.snapshot.players[1].field.filter((f) => f.uid !== null)).toHaveLength(0);
+      expect(end.snapshot.players[0].handIds).toHaveLength(2);
+      expect(end.snapshot.players[0].lp).toBe(70);
     });
 
     it('10 · winner e isDraw del historial coinciden con el GameState', () => {
@@ -896,7 +1029,7 @@ describe('HISTORIAL DE LA ÚLTIMA PARTIDA', () => {
       const texto = historyToText(hist(b));
       expect(texto).toContain('Regla aplicada: Regla 27.2');
       expect(texto).toContain('STALEMATE');
-      expect(texto).toContain('Ningún jugador puede realizar acciones legales');
+      expect(texto).toContain('Ningún jugador puede continuar y no hay vía reglamentaria de seguir');
     });
 
     it('12 · exportar genera JSON válido y completo', () => {

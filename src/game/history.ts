@@ -18,7 +18,7 @@
 
 import type { Action, FieldMonster, GameState, Phase } from './types';
 import type { GameMode, Difficulty } from './types';
-import { getEffectiveAtk, getEffectiveDef } from './types';
+import { getEffectiveAtk, getEffectiveDef, describeBlock } from './types';
 
 // ============================================================================
 // 1. MODELO DE DATOS
@@ -790,6 +790,18 @@ function countField(state: GameState, idx: 0 | 1): number {
 }
 
 /**
+ * Motivos de bloqueo de un jugador, sin el prefijo con su nombre (el historial
+ * los etiqueta por separado). Delega en `describeBlock`, que es la misma
+ * función que usa el registro del juego al aplicar la Regla 27.2, de modo que
+ * el historial y el log nunca puedan discrepar.
+ */
+function bloqueoDe(player: GameState['players'][0], state: GameState): string {
+  const completo = describeBlock(player, state);
+  const corte = completo.indexOf(': ');
+  return corte === -1 ? completo : completo.slice(corte + 2);
+}
+
+/**
  * Clasifica POR QUÉ terminó la partida. Usa el LP real, porque el reducer
  * evalúa la Regla 27.1 antes que la 27.2.
  */
@@ -827,12 +839,18 @@ export function detectEndOfGame(
   } else if (after.isDraw) {
     reason = 'empate-stalemate';
     reasonLabel = 'EMPATE por STALEMATE';
-    condition = `Ningún jugador puede realizar acciones legales y ambos tienen los mismos LP (J1 ${p0.lp}, J2 ${p1.lp}).`;
+    condition =
+      `Ningún jugador puede continuar y no hay vía reglamentaria de seguir. ` +
+      `Bloqueo de ${p0.name}: ${bloqueoDe(p0, after)} | ${bloqueoDe(p1, after)}. ` +
+      `Empate: ambos tienen ${p0.lp} LP.`;
     rule = 'Regla 27.2';
   } else {
     reason = 'victoria-stalemate';
     reasonLabel = `VICTORIA de ${after.players[after.winner ?? 0].name} por STALEMATE`;
-    condition = `Ningún jugador puede realizar acciones legales. Gana quien tiene más LP (J1 ${p0.lp}, J2 ${p1.lp}).`;
+    condition =
+      `Ningún jugador puede continuar y no hay vía reglamentaria de seguir. ` +
+      `Bloqueo de ${p0.name}: ${bloqueoDe(p0, after)} | ${bloqueoDe(p1, after)}. ` +
+      `Gana quien tiene más LP (J1 ${p0.lp}, J2 ${p1.lp}).`;
     rule = 'Regla 27.2';
   }
 
@@ -1028,14 +1046,32 @@ export function makeHistoryReducer(
       previousEntry,
     );
 
+    /*
+     * `mode` y `difficulty` NO se tocan aquí, a propósito.
+     *
+     * En el estado del juego esos dos campos SOLO cambian en dos sitios:
+     * `START_GAME` (que abre una partida nueva) y `initialState()` (que es lo
+     * que devuelve `RESTART` al volver al menú, con `mode: 'local'`). Durante
+     * una partida no se tocan nunca.
+     *
+     * Reescribirlos en cada acción hacía que un `RESTART` posterior al final
+     * etiquetara una partida contra CPU como "modo local" en pantalla, en el
+     * texto copiado y en el JSON exportado, mientras `playerNames` seguía
+     * diciendo ["Jugador 1", "CPU"]: datos contradictorios dentro del mismo
+     * historial.
+     *
+     * Como solo `START_GAME` y la carga inicial crean el historial, ahí se
+     * fija el modo y la dificultad correctos. Aquí se conservan, de modo que una
+     * partida terminada conserva para siempre sus metadatos originales y una
+     * nueva partida los reemplaza al empezar de verdad.
+     *
+     * `finished` describe la PARTIDA registrada, no la pantalla actual: un
+     * `RESTART` (vuelta al menú) no puede deshacer el hecho de que terminó.
+     */
     return {
       game: after,
       history: {
         ...bundle.history,
-        mode: after.mode,
-        difficulty: after.difficulty,
-        // `finished` describe la PARTIDA registrada, no la pantalla actual: un
-        // RESTART (vuelta al menú) no puede deshacer el hecho de que terminó.
         finished: bundle.history.finished || after.phase === 'game-over',
         end: end ?? bundle.history.end,
         entries,

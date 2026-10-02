@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import type { Card, MonsterCard, TrapCard, MagicCard } from '@/game/cardData';
 import type { Action, GameState, FieldMonster, PlayerState } from '@/game/types';
-import { canAttack, MAX_HAND_SIZE } from '@/game/types';
+import { canAttack, magicRequiredSide, cardInstanceKey, MAX_HAND_SIZE } from '@/game/types';
 import { CardView, CardBack } from './CardView';
 import { playSound, vibrate, getAudioPreferences, setSoundEnabled, setVolume, initAudio } from '@/game/audio';
 
@@ -359,6 +359,14 @@ function CombatAnimation({
 export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
   const [showLog, setShowLog] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
+  /*
+   * Carta seleccionada de la mano, identificada por su IDENTIDAD DE INSTANCIA.
+   *
+   * No puede usarse `card.id`: la Mágica 2 puede robar la copia del rival y dejar
+   * en la mano dos cartas con el mismo `id` (p. ej. la Araña de cada jugador).
+   * Con `id` las dos se seleccionarían a la vez y `find` devolvería siempre la
+   * primera, sería imposible jugar la segunda y el resaltado sería ambiguo.
+   */
   const [selectedHandCard, setSelectedHandCard] = useState<string | null>(null);
   const selectedCardPanelRef = useRef<HTMLDivElement>(null);
   const [selectedFieldUid, setSelectedFieldUid] = useState<string | null>(null);
@@ -387,7 +395,9 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       const strip = handScrollRef.current;
       if (!strip) return;
       const stripRect = strip.getBoundingClientRect();
-      const cards = strip.querySelectorAll<HTMLElement>('[data-card-id]');
+      // Un elemento por COPIA de carta: con dos cartas del mismo `id` en la mano
+      // (Mágica 2) `data-card-id` se repite, así que se mide por instancia.
+      const cards = strip.querySelectorAll<HTMLElement>('[data-card-instance]');
       let needsDown = false;
       cards.forEach((el) => {
         const r = el.getBoundingClientRect();
@@ -531,10 +541,12 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
 
   const handleHandCardClick = (card: Card) => {
     setSelectedFieldUid(null);
-    if (selectedHandCard === card.id) {
+    // La selección apunta a UNA COPIA, no a un tipo de carta.
+    const key = cardInstanceKey(card);
+    if (selectedHandCard === key) {
       setSelectedHandCard(null);
     } else {
-      setSelectedHandCard(card.id);
+      setSelectedHandCard(key);
     }
   };
 
@@ -612,8 +624,17 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
     }
   };
 
-  const selectedCard = selectedHandCard ? me.hand.find((c) => c.id === selectedHandCard) : null;
+  // `selectedHandCard` guarda la identidad de INSTANCIA, así que con dos
+  // copias del mismo `id` en la mano (Mágica 2) se localiza la exacta.
+  const selectedCard = selectedHandCard
+    ? (me.hand.find((c) => cardInstanceKey(c) === selectedHandCard) ?? null)
+    : null;
   const selectedField = selectedFieldUid ? me.field.find((f) => f?.uid === selectedFieldUid) : null;
+
+  // Regla 5 — lado exigido por la Mágica de campo seleccionada.
+  // `self` = solo Monstruos propios (Mágicas 4 y 9). `enemy` = solo rivales (Mágica 8).
+  // `null` = la Mágica no usa objetivo (no debería ocurrir en 'place-magic').
+  const magicSide: 'self' | 'enemy' | null = sel.kind === 'place-magic' ? magicRequiredSide(sel.card) : null;
 
   const isOpponentSlotSelectable = (fm: FieldMonster | null): boolean => {
     if (!fm) return false;
@@ -625,7 +646,9 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       }
       return true;
     }
-    if (sel.kind === 'place-magic') return true;
+    // Regla 4 y Regla 5: solo la Mágica 8 admite un Monstruo rival, y en
+    // cualquier caso el Monstruo no puede llevar ya una Mágica asociada.
+    if (sel.kind === 'place-magic') return magicSide === 'enemy' && fm.magic === null;
     if (sel.kind === 'choose-destroy-target') return true;
     return false;
   };
@@ -635,7 +658,8 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
     if (sel.kind === 'place-trap') {
       return !fm.trap;
     }
-    if (sel.kind === 'place-magic') return true;
+    // Las Mágicas 4 y 9 solo admiten un Monstruo propio.
+    if (sel.kind === 'place-magic') return magicSide !== 'enemy' && fm.magic === null;
     if (sel.kind === 'direct-attack' || sel.kind === 'attack-or-direct') return true;
     return false;
   };
@@ -648,7 +672,11 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       case 'attack': return 'Elige un monstruo enemigo para atacar';
       case 'attack-or-direct': return 'Elige un monstruo enemigo para atacar, o tu monstruo para ataque directo';
       case 'place-trap': return 'Elige tu monstruo para colocar la trampa';
-      case 'place-magic': return 'Elige un monstruo (tuyo o rival) para la mágica';
+      case 'place-magic':
+        // Regla 5: la Mágica 8 es la única que va sobre un Monstruo rival.
+        return magicSide === 'enemy'
+          ? 'Elige un monstruo rival para colocar la mágica'
+          : 'Elige uno de tus monstruos para colocar la mágica';
       case 'direct-attack': return 'Elige tu monstruo para atacar directamente';
       case 'choose-destroy-target': return 'Elige un monstruo del campo para destruir';
       case 'revive-choice': return 'Elige cómo recuperar el monstruo';
@@ -761,8 +789,11 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
       {/* Opponent hand */}
       <div className="flex justify-center py-1 bg-ink-800/30 flex-none" data-no-cancel aria-label={`El rival tiene ${opp.hand.length} cartas en mano`}>
         <div className="flex" style={{ gap: 'calc(var(--card-back-w) * -0.3)' }}>
-          {Array.from({ length: opp.hand.length }).map((_, i) => (
-            <CardBack key={i} size="xs" />
+          {/* La clave es la identidad de instancia de cada carta del rival, no
+              el índice: así los dorsos no se reutilizan al reordenarse la mano
+              (p. ej. tras la Mágica 2 o la Mágica 3). */}
+          {opp.hand.map((card) => (
+            <CardBack key={cardInstanceKey(card)} size="xs" />
           ))}
         </div>
       </div>
@@ -1038,16 +1069,17 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
             )}
             {me.hand.map((card) => (
               <div
-                key={card.id}
+                key={cardInstanceKey(card)}
+                data-card-instance={cardInstanceKey(card)}
                 data-card-id={card.id}
-                className={`snap-center flex-none hand-card ${selectedHandCard === card.id ? 'selected' : ''} ${liftDown ? 'lift-down' : ''}`}
+                className={`snap-center flex-none hand-card ${selectedHandCard === cardInstanceKey(card) ? 'selected' : ''} ${liftDown ? 'lift-down' : ''}`}
               >
                 <div className="relative">
                   <CardView
                     card={card}
                     size="md"
                     onClick={() => handleHandCardClick(card)}
-                    selected={selectedHandCard === card.id}
+                    selected={selectedHandCard === cardInstanceKey(card)}
                   />
                   <button
                     onClick={(e) => {
