@@ -45,8 +45,8 @@ function StartScreen({
       {mode === 'cpu' && (
         <div className="w-full max-w-xs mb-6">
           <p className="text-[10px] uppercase tracking-widest text-ink-400 mb-2">Dificultad</p>
-          <div className="grid grid-cols-3 gap-2">
-            {([['easy', 'Fácil'], ['normal', 'Normal'], ['hard', 'Difícil']] as const).map(([value, label]) => (
+          <div className="grid grid-cols-4 gap-2">
+            {([['easy', 'Fácil'], ['normal', 'Normal'], ['hard', 'Difícil'], ['expert', 'Experto']] as const).map(([value, label]) => (
               <button key={value} onClick={() => setDifficulty(value)} className={`rounded-lg border px-2 py-3 text-sm font-display font-bold transition-colors ${difficulty === value ? 'border-azure-400 bg-azure-400/15 text-azure-300' : 'border-ink-600 text-ink-300 hover:border-ink-400'}`}>
                 {label}
               </button>

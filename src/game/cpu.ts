@@ -9,6 +9,7 @@ import {
   MAX_HAND_SIZE,
 } from './types';
 import { canDirectAttack, isLegalAction, legalActions, legalTargets } from './legalActions';
+import { reducer } from './useGame';
 import type { MagicCard, MonsterCard, TrapCard } from './cardData';
 
 /**
@@ -25,7 +26,183 @@ const MAX_MONSTER_VALUE = 12;
  * conocer las jugadas disponibles: eso ahora lo dice `legalActions()`, la misma
  * fuente que consume la interfaz y que usará el futuro servidor.
  */
+/**
+ * Asiento que controla la CPU.
+ *
+ * Sigue siendo el 1: parametrizarlo por asiento es trabajo de la fase F5. Lo que
+ * sí se ha hecho en F1 es dejar de reimplementar las reglas de legalidad para
+ * conocer las jugadas disponibles: eso ahora lo dice `legalActions()`, la misma
+ * fuente que consume la interfaz y que usará el futuro servidor.
+ */
 const CPU_SEAT: 0 | 1 = 1;
+
+const MAX_CPU_ACTIONS_PER_TURN = 60;
+const CONSECUTIVE_IDENTICAL_LIMIT = 3;
+
+let cpuActionCount = 0;
+let lastCpuAction: Action | null = null;
+let consecutiveIdentical = 0;
+
+/**
+ * Configuración por dificultad.
+ * Cada nivel cambia SOLO la calidad de decisión, no las reglas.
+ */
+interface DifficultyConfig {
+  depth: number;
+  moveOrdering: boolean;
+  blunderRate: number;
+  label: string;
+}
+
+/**
+ * Configuración de las 4 dificultades.
+ * La calidad de decisión aumenta con cada nivel, no el tiempo de espera.
+ */
+const DIFFICULTY_CONFIG: Record<Difficulty, DifficultyConfig> = {
+  easy:    { depth: 0, moveOrdering: false, blunderRate: 0.30, label: 'Fácil' },
+  normal:  { depth: 1, moveOrdering: false, blunderRate: 0.00, label: 'Normal' },
+  hard:    { depth: 2, moveOrdering: true,  blunderRate: 0.00, label: 'Difícil' },
+  expert:  { depth: 3, moveOrdering: true,  blunderRate: 0.00, label: 'Experto' },
+};
+
+/**
+ * Evalúa el estado desde la perspectiva de la CPU (jugador 1).
+ * Valor > 0 = ventaja para la CPU, < 0 = ventaja para el humano.
+ *
+ * Componentes:
+ * 1. Diferencial de LP (peso 1.0)
+ * 2. Ventaja en campo (ATQ/DEF efectivos, peso 0.8)
+ * 3. Ventaja en cartas (mano + cementerio, peso 0.5)
+ * 4. Tempo: monstruos en Ataque listos para atacar (peso 0.6)
+ * 5. Amenazas: monstruos rivales que ganan en combate (peso 0.7)
+ * 6. Protecciones activas (dado, Trampas, Mágicas, peso 0.4)
+ * 7. Cuota restante (peso 0.3)
+ */
+function evaluate(state: GameState): number {
+  const cpu = state.players[CPU_SEAT];
+  const human = state.players[CPU_SEAT === 0 ? 1 : 0];
+
+  let score = 0;
+  score += (cpu.lp - human.lp) * 1.0;
+
+  const cpuField = monstersOf(cpu);
+  const humanField = monstersOf(state.players[CPU_SEAT === 0 ? 1 : 0]);
+
+  let cpuFieldPower = 0;
+  let humanFieldPower = 0;
+
+  for (const fm of cpuField) {
+    const atk = getEffectiveAtk(fm);
+    const def = getEffectiveDef(fm);
+    const mult = fm.position === 'attack' ? 1.2 : 1.0;
+    cpuFieldPower += (atk + def) * mult;
+    if (fm.magic) cpuFieldPower += 3;
+    if (fm.trap) cpuFieldPower += 2;
+    if (fm.diceProtection) cpuFieldPower += 5;
+  }
+
+  for (const fm of humanField) {
+    const atk = getEffectiveAtk(fm);
+    const def = getEffectiveDef(fm);
+    const mult = fm.position === 'attack' ? 1.2 : 1.0;
+    humanFieldPower += (atk + def) * mult;
+    if (fm.magic) humanFieldPower += 3;
+    if (fm.trap) humanFieldPower += 2;
+    if (fm.diceProtection) humanFieldPower += 5;
+  }
+
+  score += (cpuFieldPower - humanFieldPower) * 0.8;
+
+  const cpuCards = cpu.hand.length + cpu.graveyard.length * 0.3;
+  const humanCards = human.hand.length + human.graveyard.length * 0.3;
+  score += (cpuCards - humanCards) * 0.5;
+
+  const cpuReadyAttackers = cpuField.filter(f => f.position === 'attack' && !f.hasAttacked).length;
+  const humanReadyAttackers = humanField.filter(f => f.position === 'attack' && !f.hasAttacked).length;
+  score += (cpuReadyAttackers - humanReadyAttackers) * 0.6;
+
+  let threatScore = 0;
+  for (const hfm of humanField) {
+    const hAtk = hfm.position === 'attack' ? getEffectiveAtk(hfm) : getEffectiveDef(hfm);
+    for (const cfm of cpuField) {
+      const cDef = cfm.position === 'attack' ? getEffectiveAtk(cfm) : getEffectiveDef(cfm);
+      if (hAtk > cDef) { threatScore += 1; break; }
+    }
+  }
+  score -= threatScore * 0.7;
+
+  const cpuProtections = cpuField.filter(f => f.diceProtection || f.magic || f.trap).length;
+  score += cpuProtections * 0.4;
+
+  const cpuQuotaLeft = 3 - cpu.cardsPlayedThisTurn;
+  score += cpuQuotaLeft * 0.3;
+
+  return score;
+}
+
+/**
+ * Búsqueda minimax con poda alfa-beta.
+ * La CPU es MAX (quiere maximizar evaluate), el humano es MIN.
+ */
+interface SearchResult {
+  score: number;
+  bestAction: Action | null;
+}
+
+function search(
+  state: GameState,
+  depth: number,
+  alpha: number,
+  beta: number,
+  maximizingPlayer: boolean,
+  config: { depth: number; moveOrdering: boolean }
+): { score: number; bestAction: Action | null } {
+  const actingPlayer = maximizingPlayer ? CPU_SEAT : (CPU_SEAT === 0 ? 1 : 0);
+  const legal = legalActions(state, actingPlayer);
+
+  if (legal.length === 0 || depth === 0 || state.phase === 'game-over') {
+    return { score: evaluate(state), bestAction: null };
+  }
+
+  let orderedLegal = legal;
+  if (config.moveOrdering && depth > 1) {
+    orderedLegal = orderMoves(state, legal, maximizingPlayer);
+  }
+
+  if (maximizingPlayer) {
+    let maxScore = -Infinity;
+    let bestAction: Action | null = null;
+    for (const action of orderedLegal) {
+      const nextState = reducer(state, action);
+      const result = search(nextState, depth - 1, alpha, beta, false, config);
+      if (result.score > maxScore) { maxScore = result.score; bestAction = action; }
+      alpha = Math.max(alpha, maxScore);
+      if (beta <= alpha) break;
+    }
+    return { score: maxScore, bestAction };
+  } else {
+    let minScore = Infinity;
+    let bestAction: Action | null = null;
+    for (const action of orderedLegal) {
+      const nextState = reducer(state, action);
+      const result = search(nextState, depth - 1, alpha, beta, true, config);
+      if (result.score < minScore) { minScore = result.score; bestAction = action; }
+      beta = Math.min(beta, minScore);
+      if (beta <= alpha) break;
+    }
+    return { score: minScore, bestAction };
+  }
+}
+
+function orderMoves(state: GameState, actions: Action[], maximizingPlayer: boolean): Action[] {
+  const scored = actions.map(action => {
+    const nextState = reducer(state, action);
+    const evalScore = evaluate(nextState);
+    return { action, score: maximizingPlayer ? evalScore : -evalScore };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored.map(s => s.action);
+}
 
 /**
  * Información oculta (§9 y §13.2 del reglamento).

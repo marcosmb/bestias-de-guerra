@@ -36,6 +36,9 @@ export type Phase = 'start' | 'pass' | 'playing' | 'trap-response' | 'dice-roll'
 export type GameMode = 'local' | 'cpu';
 export type Difficulty = 'easy' | 'normal' | 'hard' | 'expert';
 
+/** Asiento que controla la CPU (siempre el 1 en el modo actual). */
+export const CPU_SEAT: 0 | 1 = 1;
+
 export type SelectionMode =
   | { kind: 'none' }
   | { kind: 'place-trap'; card: TrapCard }
@@ -531,4 +534,229 @@ export function checkStalemate(players: [PlayerState, PlayerState]): 0 | 1 | nul
   if (a.lp > b.lp) return 0;
   if (b.lp > a.lp) return 1;
   return null; // empate
+}
+
+// ============================================================================
+// GENERADOR DE ACCIONES LEGALES (CPU / FUTURO SERVIDOR)
+// ============================================================================
+
+/**
+ * Devuelve TODAS las acciones legales que puede ejecutar `player` en este estado.
+ * Es la FUENTE ÚNICA de verdad para la legalidad (CPU, UI, futuro servidor).
+ * 
+ * Principio: si `legalActions()` devuelve una acción `a`, entonces el reducer
+ * puede ejecutarla y cambiará el estado.
+ */
+export function legalActions(state: GameState, player: 0 | 1): Action[] {
+  const me = state.players[player];
+  const opp = state.players[player === 0 ? 1 : 0];
+  const meField = me.field.filter((f): f is FieldMonster => f !== null);
+  const oppField = state.players[player === 0 ? 1 : 0].field.filter((f: FieldMonster | null): f is FieldMonster => f !== null);
+  const out: Action[] = [];
+
+  if (state.phase === 'start' || state.phase === 'game-over') return [];
+  if (state.phase === 'pass') return player === state.currentPlayer ? [{ type: 'CONFIRM_PASS' }] : [];
+  if (state.phase === 'dice-roll') {
+    if (state.pendingDice && player === state.currentPlayer) {
+      return [1, 2, 3, 4, 5, 6].map((roll) => ({ type: 'ROLL_DICE', roll }));
+    }
+    return [];
+  }
+  if (state.phase === 'trap-response') {
+    if (!state.pendingTrap || state.pendingTrap.defenderPlayer !== player) return [];
+    return [
+      { type: 'RESOLVE_TRAP', activate: true },
+      { type: 'RESOLVE_TRAP', activate: false },
+    ];
+  }
+  if (state.phase !== 'playing' || player !== state.currentPlayer) return [];
+
+  // --- Selecciones pendientes ---
+  const sel = state.selection;
+  if (sel.kind !== 'none') {
+    const completing: Action[] = [];
+    switch (sel.kind) {
+      case 'place-trap':
+        for (const fm of state.players[player].field) {
+          if (fm && fm.trap === null) completing.push({ type: 'PLACE_TRAP_ON_MONSTER', card: sel.card, fieldUid: fm.uid });
+        }
+        break;
+      case 'place-magic':
+      case 'magic-target-monster':
+        if (magicRequiredSide(sel.card) === 'enemy') {
+          for (const fm of state.players[player === 0 ? 1 : 0].field) {
+            if (fm && fm.magic === null) completing.push({ type: 'PLACE_MAGIC_ON_MONSTER', card: sel.card, side: 'enemy', fieldUid: fm.uid });
+          }
+        } else {
+          for (const fm of state.players[player].field) {
+            if (fm && fm.magic === null) completing.push({ type: 'PLACE_MAGIC_ON_MONSTER', card: sel.card, side: 'self', fieldUid: fm.uid });
+          }
+        }
+        break;
+      case 'attack': {
+        const attacker = state.players[player].field.find((f) => f?.uid === sel.attackerUid);
+        if (attacker && attacker.position === 'attack' && !attacker.hasAttacked && canAttack(state)) {
+          for (const target of state.players[player === 0 ? 1 : 0].field) {
+            if (target && target.position === 'defense') {
+              completing.push({ type: 'DECLARE_ATTACK', attackerUid: sel.attackerUid, defenderUid: target.uid });
+            }
+          }
+        }
+        break;
+      }
+      case 'attack-or-direct': {
+        const attacker = state.players[player].field.find((f) => f?.uid === sel.attackerUid);
+        if (attacker && attacker.position === 'attack' && !attacker.hasAttacked && canAttack(state)) {
+          const opp = state.players[player === 0 ? 1 : 0];
+          const hasDefense = opp.field.some((f) => f && f.position === 'defense');
+          if (hasDefense) {
+            for (const target of opp.field) {
+              if (target && target.position === 'defense') {
+                completing.push({ type: 'DECLARE_ATTACK', attackerUid: sel.attackerUid, defenderUid: target.uid });
+              }
+            }
+          } else {
+            for (const target of opp.field) {
+              if (target && target.position === 'attack') {
+                completing.push({ type: 'DECLARE_ATTACK', attackerUid: sel.attackerUid, defenderUid: target.uid });
+              }
+            }
+            completing.push({ type: 'DIRECT_ATTACK', attackerUid: sel.attackerUid });
+          }
+        }
+        break;
+      }
+      case 'direct-attack': {
+        const attacker = state.players[player].field.find((f) => f?.uid === sel.attackerUid);
+        if (attacker && attacker.position === 'attack' && !attacker.hasAttacked && canAttack(state)) {
+          const opp = state.players[player === 0 ? 1 : 0];
+          if (!opp.field.some((f) => f && f.position === 'defense')) {
+            completing.push({ type: 'DIRECT_ATTACK', attackerUid: sel.attackerUid });
+          }
+        }
+        break;
+      }
+      case 'choose-destroy-target': {
+        for (const fm of state.players[player].field) {
+          if (fm) completing.push({ type: 'DESTROY_MONSTER', fieldUid: fm.uid });
+        }
+        break;
+      }
+      case 'revive-choice': {
+        const canGoToHand = state.players[player].hand.length < 9;
+        const canGoToField = state.players[player].field.some((f) => f === null);
+        if (canGoToHand) completing.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'hand' });
+        if (canGoToField) {
+          completing.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'field', position: 'attack' });
+          completing.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'field', position: 'defense' });
+        }
+        break;
+      }
+    }
+    completing.push({ type: 'CANCEL_SELECTION' });
+    return completing;
+  }
+
+  // --- Jugadas libres (sin selección pendiente) ---
+  const canPlayCard = me.cardsPlayedThisTurn < 3;
+
+  if (canPlayCard) {
+    for (const card of me.hand) {
+      if (card.type === 'monster') {
+        if (hasEmptySlot(state.players[player])) {
+          out.push({ type: 'SUMMON_MONSTER', card, position: 'attack' });
+          out.push({ type: 'SUMMON_MONSTER', card, position: 'defense' });
+        }
+      } else if (card.type === 'trap') {
+        if (hasTrapTarget(state.players[player])) {
+          out.push({ type: 'SELECT_TRAP_PLACE', card });
+        }
+      } else if (card.type === 'magic') {
+        if (canActivateMagic(state.players[player], state, card)) {
+          out.push({ type: 'SELECT_MAGIC', card });
+        }
+      }
+    }
+  }
+
+  // Atacar
+  if (canAttack(state)) {
+    for (const fm of meField) {
+      if (fm && fm.position === 'attack' && !fm.hasAttacked) {
+        out.push({ type: 'START_ATTACK', attackerUid: fm.uid });
+      }
+    }
+  }
+
+  // Cambio de posición
+  for (const fm of meField) {
+    if (fm && !fm.hasChangedPosition) {
+      out.push({ type: 'CHANGE_POSITION', fieldUid: fm.uid });
+    }
+  }
+
+  // Cerrar turno
+  out.push({ type: 'END_TURN' });
+
+  return out;
+}
+
+/**
+ * Verifica si una acción concreta es legal para `player` en este estado.
+ * Útil para validar entradas externas (ej. servidor online).
+ */
+export function isLegalAction(state: GameState, player: 0 | 1, action: Action): boolean {
+  return legalActions(state, player).some((a) => actionsEqual(a, action));
+}
+
+function actionsEqual(a: Action, b: Action): boolean {
+  if (a.type !== b.type) return false;
+  switch (a.type) {
+    case 'SUMMON_MONSTER': return (a as any).card === (b as any).card && (a as any).position === (b as any).position;
+    case 'SELECT_TRAP_PLACE': return (a as any).card === (b as any).card;
+    case 'PLACE_TRAP_ON_MONSTER': return (a as any).card === (b as any).card && (a as any).fieldUid === (b as any).fieldUid;
+    case 'SELECT_MAGIC': return (a as any).card === (b as any).card;
+    case 'PLACE_MAGIC_ON_MONSTER':
+    case 'MAGIC_TARGET_MONSTER': return (a as any).card === (b as any).card && (a as any).fieldUid === (b as any).fieldUid;
+    case 'MAGIC_INSTANT': return (a as any).card === (b as any).card;
+    case 'START_ATTACK': return (a as any).attackerUid === (b as any).attackerUid;
+    case 'DECLARE_ATTACK': return (a as any).attackerUid === (b as any).attackerUid && (a as any).defenderUid === (b as any).defenderUid;
+    case 'DIRECT_ATTACK': return (a as any).attackerUid === (b as any).attackerUid;
+    case 'RESOLVE_TRAP': return (a as any).activate === (b as any).activate;
+    case 'CHANGE_POSITION': return (a as any).fieldUid === (b as any).fieldUid;
+    case 'DESTROY_MONSTER': return (a as any).fieldUid === (b as any).fieldUid;
+    case 'ROLL_DICE': return (a as any).roll === (b as any).roll;
+    case 'REVIVE_CHOICE': return (a as any).card === (b as any).card && (a as any).choice === (b as any).choice && (a as any).position === (b as any).position;
+    case 'START_GAME': case 'CPU_PLAY': case 'CONFIRM_START': case 'CONFIRM_PASS': case 'END_TURN': case 'CANCEL_SELECTION': case 'RESTART':
+      return true;
+    default: return false;
+  }
+}
+
+/**
+ * Devuelve los objetivos legales para un ataque, según la Regla 22.
+ * 
+ * - 22.1 Si hay monstruos en Defensa → solo esos (obligatorio).
+ * - 22.2 Si no hay en Defensa pero sí en Ataque → cualquier monstruo + ataque directo.
+ * - 22.3 Si no hay monstruos → solo ataque directo.
+ */
+export function legalTargets(defenders: FieldMonster[]): FieldMonster[] {
+  const inDefense = defenders.filter((f) => f.position === 'defense');
+  if (inDefense.length > 0) return inDefense;
+  return defenders.filter((f) => f.position === 'attack');
+}
+
+/**
+ * Regla 22.1 — ¿Es legal el ataque directo? No lo es si el rival tiene algún
+ * Monstruo en Defensa: hay que atacar a uno de esos.
+ */
+export function canDirectAttack(defenders: FieldMonster[]): boolean {
+  return defenders.every((f) => f.position !== 'defense');
+}
+
+/**
+ * Devuelve los monstruos del campo de un jugador.
+ */
+export function monstersOf(player: PlayerState): FieldMonster[] {
+  return player.field.filter((f): f is FieldMonster => f !== null);
 }
