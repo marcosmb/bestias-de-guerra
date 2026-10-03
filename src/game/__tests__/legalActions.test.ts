@@ -165,6 +165,11 @@ describe('legalActions · contrato', () => {
       // tiene el turno.
       'RESOLVE_TRAP',
       'ROLL_DICE',
+      // Igual con `CANCEL_SELECTION`: el reducer lo acepta en cualquier fase,
+      // pero solo tiene sentido cerrar una elección cuando la partida está en
+      // juego. Es inocuo (solo limpia la selección, que `RESOLVE_TRAP` va a
+      // limpiar igualmente).
+      'CANCEL_SELECTION',
     ]);
     const LIBRES_CON_SELECCION = new Set<Action['type']>([
       'SUMMON_MONSTER',

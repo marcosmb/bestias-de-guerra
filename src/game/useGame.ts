@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { nextCpuAction, cpuDelay } from './cpu';
+import { legalActions } from './legalActions';
 import {
   getDefaultStorage,
   loadHistoryFrom,
@@ -24,6 +25,7 @@ import {
   type GameState,
   type PlayerState,
   type Position,
+  type SelectionMode,
   MAX_HAND_SIZE,
   canAttack,
   createPlayer,
@@ -379,6 +381,15 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
   const eff = card.effect;
   let resolves = true;
 
+  // Regla 16 — el límite de 3 cartas por turno se comprueba AQUÍ, en el único
+  // punto por el que una carta sale de la mano, y no solo en las acciones que
+  // ABREN una selección (`SELECT_MAGIC`).
+  //
+  // Sin esta comprobación, las acciones de un solo paso (`MAGIC_INSTANT`,
+  // `PLACE_MAGIC_ON_MONSTER` y `MAGIC_TARGET_MONSTER`)avam a la cuota y
+  // permitían jugar una carta de más por la Regla 16.
+  if (state.players[me].cardsPlayedThisTurn >= MAX_CARDS_PER_TURN) return state;
+
   switch (eff.kind) {
     case 'direct_attack': {
       // needs a monster to attack directly — handled via selection
@@ -598,7 +609,20 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
   }
 
   const winResult = checkWinner(players);
-  return { ...state, players, log: addLog(state, log.join(' ')), winner: winResult.winner, isDraw: winResult.isDraw, selection: { kind: 'none' } };
+  // Regla 27.1 — «Cuando un jugador llega a 0 PV, pierde inmediatamente la
+  // partida». Se comprueba aquí y no solo al final de un combate o de un turno:
+  // la Mágica 1 (ataque directo) puede dejar al rival sin PV, y antes esta
+  // función registraba el ganador sin pasar la fase a 'game-over', así que la
+  // partida seguía con un jugador ya derrotado.
+  return {
+    ...state,
+    players,
+    phase: winResult.winner !== null || winResult.isDraw ? ('game-over' as const) : ('playing' as const),
+    log: addLog(state, log.join(' ')),
+    winner: winResult.winner,
+    isDraw: winResult.isDraw,
+    selection: { kind: 'none' },
+  };
 }
 
 // --- Turn start/end effects ---
@@ -677,7 +701,42 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
   return { ...state, players, log: log.length > 0 ? addLog(state, log.join(' ')) : state.log };
 }
 
+/**
+ * Acciones que COMPLETAN cada elección abierta.
+ *
+ * Regla 15: el turno se desarrolla por pasos, así que una elección abierta se
+ * COMPLETA o se CANCELA, y nada más. Sin este mapa, cualquier otra jugada
+ * (invocar, cerrar el turno, cambiar de posición, abrir otra selección, o incluso
+ * una acción de completación que pertenece a OTRA elección) se aplicaba igual y,
+ * si tocaba la selección, la borraba sin haberla resuelto: la carta elegida se
+ * quedaba en la mano y el jugador perdía su turno de decidir.
+ *
+ * Es la misma tabla que usa `legalActions()`; aquí se escribe en forma de mapa
+ * para poder comprobar en O(1) y sin recalcular el conjunto completo.
+ */
+const ACCIONES_QUE_COMPLETAN: Record<SelectionMode['kind'], ReadonlySet<Action['type']>> = {
+  none: new Set<Action['type']>(),
+  'place-trap': new Set<Action['type']>(['PLACE_TRAP_ON_MONSTER']),
+  'place-magic': new Set<Action['type']>(['PLACE_MAGIC_ON_MONSTER']),
+  'magic-target-monster': new Set<Action['type']>(['MAGIC_TARGET_MONSTER']),
+  attack: new Set<Action['type']>(['DECLARE_ATTACK']),
+  'attack-or-direct': new Set<Action['type']>(['DECLARE_ATTACK', 'DIRECT_ATTACK']),
+  'direct-attack': new Set<Action['type']>(['DIRECT_ATTACK']),
+  'choose-destroy-target': new Set<Action['type']>(['DESTROY_MONSTER']),
+  'revive-choice': new Set<Action['type']>(['REVIVE_CHOICE']),
+};
+
 export function reducer(state: GameState, action: Action): GameState {
+  // Con una elección abierta, lo único legal es terminarla o cancelarla.
+  //
+  // La guarda se limita a `phase === 'playing'` porque en las fases de paso, de
+  // Trampa y de dados quien debe actuar es otro: su acción corresponde a ESA
+  // fase (`CONFIRM_PASS`, `RESOLVE_TRAP`, `ROLL_DICE`) y no a la elección.
+  if (state.phase === 'playing' && state.selection.kind !== 'none') {
+    const completa = ACCIONES_QUE_COMPLETAN[state.selection.kind];
+    if (!completa.has(action.type) && action.type !== 'CANCEL_SELECTION') return state;
+  }
+
   switch (action.type) {
     case 'START_GAME': {
       const mode = action.mode ?? 'local';
@@ -754,6 +813,10 @@ export function reducer(state: GameState, action: Action): GameState {
     case 'PLACE_TRAP_ON_MONSTER': {
       if (state.phase !== 'playing') return state;
       const cp = state.currentPlayer;
+      // Regla 16: la cuota también se comprueba aquí, no solo en
+      // `SELECT_TRAP_PLACE`. Sin esto, colocar la Trampa saltándose el paso de
+      // selección jugaba una carta extra con el contador por encima del tope.
+      if (state.players[cp].cardsPlayedThisTurn >= MAX_CARDS_PER_TURN) return state;
       const fm = findFieldMonster(state.players[cp], action.fieldUid);
       if (!hasCardInHand(state.players[cp], action.card) || !fm || !canPlaceTrapOn(state.players[cp], action.fieldUid)) return state;
       const players = [...state.players] as [PlayerState, PlayerState];
@@ -908,8 +971,19 @@ export function reducer(state: GameState, action: Action): GameState {
             newState = { ...newState, players };
           }
         }
+        // Si la Trampa ha pedido un dado (Trampas 3 y 6), la fase de dados tiene
+        // PRIORIDAD y se sale aquí. Antes se comprobaba más abajo, después del
+        // bloque `negateAttack`, que rehacía la fase a 'playing' sin limpiar
+        // `pendingDice`: el dado quedaba colgado en una fase normal, `ROLL_DICE`
+        // ya no se aceptaba y la partida se congelaba para siempre.
+        //
+        // `pendingTrap` se conserva a propósito: `ROLL_DICE` lo necesita para
+        // resolver estas dos Trampas, y lo limpia al terminar.
+        if (newState.phase === 'dice-roll') {
+          return { ...newState, selection: { kind: 'none' } };
+        }
         if (result.negateAttack) {
-          if (!result.destroyAttacker && newState.phase !== 'dice-roll') {
+          if (!result.destroyAttacker) {
             const players = [...newState.players] as [PlayerState, PlayerState];
             if (findFieldMonster(players[pt.attackerPlayer], pt.attackerUid)) {
               players[pt.attackerPlayer] = updateFieldMonster(players[pt.attackerPlayer], pt.attackerUid, (fm) => ({ ...fm, hasAttacked: true }));
@@ -921,7 +995,6 @@ export function reducer(state: GameState, action: Action): GameState {
           if (winResult.winner !== null || winResult.isDraw) return { ...newState, phase: 'game-over', winner: winResult.winner, isDraw: winResult.isDraw };
           return newState;
         }
-        if (newState.phase === 'dice-roll') return newState;
         return executeCombat({ ...newState, phase: 'playing', pendingTrap: null, selection: { kind: 'none' } }, pt.attackerUid, pt.defenderUid);
       } else {
         // Don't activate — remove trap and proceed with combat
@@ -1367,6 +1440,19 @@ export function useGame() {
   useEffect(() => {
     if (state.mode !== 'cpu' || state.currentPlayer !== 1) return;
     if (state.phase !== 'playing' && state.phase !== 'pass') return;
+
+    // Si la CPU no tiene NINGUNA jugada legal en esta fase, no se invoca.
+    //
+    // Pasa, por ejemplo, cuando el ataque del rival abre la respuesta de una
+    // Trampa que es de la CPU: quien debe decidir es el defensor, y aquí es el
+    // jugador en turno. Antes la CPU proponía `END_TURN` igualmente, el reducer
+    // lo rechazaba por la fase, el estado no cambiaba y el efecto se disparaba
+    // otra vez en bucle. `legalActions` sabe a quién le toca en cada fase, así
+    // que es también la respuesta a «¿le toca a la CPU?».
+    if (legalActions(state, 1).length === 0) {
+      cpuTurnActionsRef.current = 0;
+      return;
+    }
 
     // Red de seguridad: si el CPU encadena demasiadas acciones en un mismo turno,
     // se fuerza el cierre del turno para evitar bucles o turnos congelados.

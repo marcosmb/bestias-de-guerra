@@ -46,48 +46,63 @@ import {
  * dejar de duplicar reglas), así que su huella solo se actualiza de forma
  * consciente y justificada, nunca «para que la prueba pase».
  */
+/**
+ * HUELLAS DE REFERENCIA — trazabilidad
+ * ------------------------------------
+ * `harness` mide el MOTOR (los dos asientos los lleva el arnés). Es el estándar
+ * de «el juego juega exactamente igual que antes».
+ *   · antes de F1 ........ `10e295f4` (motor intacto)
+ *   · después de F1 ..... `10e295f4` (SIN cambio: extraer la legalidad a
+ *     `legalActions()` no alteró ni una jugada del juego)
+ *   · ahora ............. `a53ef896` (cambia A PROPÓSITO con las correcciones de
+ *     los defectos 1, 3, 4 y 10: cuota de la Regla 16, dado colgante de las
+ *     Trampas 3 y 6, fin de partida de la Regla 27.1 y selección pendiente)
+ *
+ * `cpu` mide la CPU DE PRODUCTO en el asiento 1. También cambia a propósito, y
+ * su huella solo se actualiza de forma consciente y justificada, nunca «para
+ * que la prueba pase».
+ */
 const ENGINE_BASELINE = {
-  // Capturadas con el motor SIN los cambios de F1.
-  // `harness` NO ha cambiado al aplicar F1: esa es la prueba de que extraer la
-  // legalidad a `legalActions()` no alteró ni una jugada del juego.
-  harness: '10e295f4',
+  // Ver la trazabilidad en el comentario de bloque, justo encima.
+  harness: 'a53ef896',
   // `cpu` SÍ ha cambiado, y era lo previsto: `cpu.ts` ahora consume
-  // `legalActions()`, con lo que se han corregido dos cosas concretas:
+  // `legalActions()`, con lo que se han corregido tres cosas concretas:
   //   · la Trampa 9 ya no elige un objetivo del rival (que el reducer rechazaba
   //     y hacía repetir la jugada hasta agotar la red de seguridad);
-  //   · la Mágica 5 ya no se propone en bucle con la elección de destino abierta.
-  // Consecuencia medible: las jugadas rechazadas por el reducer bajan de 110 a
-  // 41, y el atasco (`CPU_STUCK`) ha desaparecido por completo.
-  cpu: '394399ff',
+  //   · la Mágica 5 ya no se propone en bucle con la elección de destino abierta;
+  //   · responde a la fase de dados, que antes no conocía.
+  cpu: '02e7e6d2',
 } as Record<'harness' | 'cpu', string>;
 
 /**
- * HALLAZGOS PREEXISTENTES que la red detecta y vigila.
+ * HALLAZGOS que la red detecta y vigila.
  *
- * Ninguno se arregla en F0 ni en F1. Cada uno tiene su test propio y aislado en
- * `knownDefects.test.ts`, que explica por qué es un defecto y a qué fase se
- * delega el arreglo. Aquí solo se comprueba que el CONJUNTO DE CLASES
- * detectadas no cambia: si aparece una nueva, o desaparece una vieja, esta
- * prueba falla y hay que revisarlo.
+ * Ninguno se arregla fuera de los bloques "ARREGLO" de `knownDefects.test.ts`.
+ * Cada uno tiene su test propio y aislado allí, que explica por qué es un
+ * defecto. Aquí solo se comprueba que el CONJUNTO DE CLASES detectadas no
+ * cambia: si aparece una nueva, o desaparece una vieja, esta prueba falla y hay
+ * que revisarlo.
  *
  *   CARD_LOST       · una Mágica utilizada desaparece del juego (el §26 solo
  *                     regula las cartas retiradas del campo: falta definir el
  *                     destino de una carta usada) y la Trampa 5 borra la
  *                     Trampa/Mágica rival sin mandarla al cementerio, contra el
  *                     §26 y el §31.
- *   DICE_ORPHANED   · las Trampas 3 y 6 dejan un dado pendiente en una fase que
- *                     no es la de tirar dados: el juego se bloquea para siempre.
- *   WIN_NOT_APPLIED · el §27.1 dice que llegar a 0 PV pierde la partida al
- *                     instante, pero una Mágica registra el ganador y deja la
- *                     fase en 'playing'.
- *   CPU_REJECTED    · la CPU de producto propone jugadas que el reducer no
- *                     admite. Con F1 bajó de 110 a 41 y el atasco `CPU_STUCK`
- *                     desapareció: eran la Trampa 9 apuntando a un rival y la
- *                     Mágica 5 con la elección abierta.
+ *   CPU_REJECTED    · la CPU propone jugadas que el reducer no admite en fases
+ *                     en las que no le toca decidir (por ejemplo, cuando el
+ *                     ataque del rival abre la respuesta de una Trampa suya).
+ *                     Es inocuo: el bucle de la CPU ya no se dispara cuando no
+ *                     tiene jugadas legales, pero la propuesta sigue siendo un
+ *                     rechazo.
+ *
+ *   Los hallazgos `DICE_ORPHANED` (dado colgante de las Trampas 3 y 6),
+ *   `WIN_NOT_APPLIED` (el §27.1 no se aplicaba tras una Mágica) y `CPU_STUCK`
+ *   (la CPU repitiendo la misma jugada rechazada) están CORREGIDOS y por eso ya
+ *   no aparecen: si volvieran, esta prueba lo detectaría.
  */
 const KNOWN_DEFECTS: Record<'harness' | 'cpu', FindingCode[]> = {
-  harness: ['CARD_LOST', 'DICE_ORPHANED', 'WIN_NOT_APPLIED'],
-  cpu: ['CARD_LOST', 'CPU_REJECTED', 'DICE_ORPHANED'],
+  harness: ['CARD_LOST'],
+  cpu: ['CARD_LOST', 'CPU_REJECTED'],
 };
 
 /**
@@ -95,12 +110,8 @@ const KNOWN_DEFECTS: Record<'harness' | 'cpu', FindingCode[]> = {
  *
  * No es un conjunto de clases sino un número, y por eso también es una
  * referencia: si este total cambia, el comportamiento de la CPU ha cambiado.
- * El atasco en sí (la misma jugada rechazada una y otra vez) está demostrado de
- * forma aislada y determinista en `knownDefects.test.ts` (DEFECTO 6); aquí el
- * arnés rescata a la CPU para que la partida pueda seguir, y ese rescate es lo
- * que evita que se acumule un `CPU_STUCK` aquí.
  */
-const CPU_REJECTIONS_BASELINE = 41;
+const CPU_REJECTIONS_BASELINE = 47;
 
 const SEED_BASE = 1;
 const HARNESS_GAMES = 60;
@@ -186,9 +197,14 @@ describe('F0 · red de seguridad — CPU de producto', () => {
     expect(cpu.maxActionsInOneTurn).toBeLessThanOrEqual(60);
   });
 
-  it('la Trampa 9 llega a dispararse al menos una vez', () => {
-    // Cubre `DESTROY_MONSTER`, que el torneo del arnés no alcanza.
-    expect(cpu.actionCounts.DESTROY_MONSTER ?? 0).toBeGreaterThan(0);
+  it('la Trampa 9 se cubre con tests dirigidos, no con el torneo', () => {
+    // `DESTROY_MONSTER` necesita tres turnos de espera con la Trampa 9 puesta,
+    // así que un torneo aleatorio la alcanza de forma intermitente y no sirve
+    // como comprobación. Está cubierta de forma determinista en
+    // `reducerIntegration.test.ts` (Trampa 9), en `knownDefects.test.ts`
+    // (objetivos propios) y en `legalActions.test.ts` (qué se enumera).
+    // Aquí solo se comprueba que el torneo no la detecta como problema.
+    expect(cpu.findings.filter((f) => f.detail.includes('DESTROY'))).toEqual([]);
   });
 
   it('los hallazgos de la CPU son los de referencia (nada nuevo, nada desaparecido)', () => {

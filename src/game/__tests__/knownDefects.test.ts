@@ -101,55 +101,69 @@ const magic = (n: number): MagicCard => MAGICS[n - 1];
 
 // ============================================================================
 
-describe('DEFECTO 1 · la cuota de 3 cartas por turno se puede saltar (Regla 16)', () => {
-  // El reducer comprueba `cardsPlayedThisTurn` al entrar por la acción de
-  // SELECCIÓN (`SELECT_TRAP_PLACE` / `SELECT_MAGIC`) pero NO al ejecutar la
-  // acción de colocación. Es decir, las acciones de un solo paso
-  // (`PLACE_TRAP_ON_MONSTER`, `PLACE_MAGIC_ON_MONSTER`, `MAGIC_TARGET_MONSTER`
-  // y `MAGIC_INSTANT`) aplican la carta sin mirar la cuota.
+describe('ARREGLO · la cuota de 3 cartas por turno ya no se puede saltar (Regla 16)', () => {
+  // ANTES: el reducer comprobaba `cardsPlayedThisTurn` al entrar por la acción de
+  // SELECCIÓN (`SELECT_TRAP_PLACE` / `SELECT_MAGIC`) pero no al ejecutar la
+  // acción de colocación. Las acciones de un solo paso (`PLACE_TRAP_ON_MONSTER`,
+  // `PLACE_MAGIC_ON_MONSTER`, `MAGIC_TARGET_MONSTER`, `MAGIC_INSTANT`) aplicaban
+  // la carta sin mirar la cuota, así que se podían jugar más de 3 cartas.
   //
-  // La interfaz nunca llega por ese camino: siempre pasa por la selección. Por
-  // eso hoy es inocuo, y por eso es peligroso: es un hueco de validación que
-  // cualquier cliente (o una futura CPU que construya acciones por su cuenta)
-  // podría aprovechar.
+  // AHORA: la cuota se comprueba en el punto en el que una carta sale de la mano.
+  // Estos tests son la regresión que impide que el hueco vuelva a abrirse.
   //
-  // CORRESPONDE A: F3 (`isLegal`/`apply`), donde el reducer validará la acción.
-  // NOTA: `legalActions()` de F1 NUNCA genera estas acciones de un paso: obliga
-  // a pasar por la selección, que sí comprueba la cuota.
+  // Historia: detectado por la red de seguridad de F0 y escrito como
+  // `DEFECTO 1` antes de corregirlo.
 
-  it('colocar una Trampa sin selección no consulta la cuota', () => {
+  it('colocar una Trampa por la ruta directa respeta la cuota', () => {
     const t = trap(1);
-    // Cuota YA agotada de antemano.
-    const state = scene({
-      me: { cardsPlayedThisTurn: MAX_CARDS_PER_TURN, field: [fieldMonster(monster(3)), ...blankField().slice(1)], hand: [t] },
+    const conCuota = scene({
+      me: { field: [fieldMonster(monster(3)), ...blankField().slice(1)], hand: [t] },
     });
-    expect(state.players[0].cardsPlayedThisTurn).toBe(MAX_CARDS_PER_TURN);
-
-    // La ruta que usa la interfaz está correctamente bloqueada:
-    expect(reducer(state, { type: 'SELECT_TRAP_PLACE', card: t })).toBe(state);
-
-    // Pero la ruta directa SÍ se aplica y sube el contador por encima del tope.
-    const after = reducer(state, {
+    // Con cuota disponible se aplica con normalidad (no se rompe nada).
+    const aplicada = reducer(conCuota, {
       type: 'PLACE_TRAP_ON_MONSTER',
       card: t,
-      fieldUid: state.players[0].field[0]!.uid,
+      fieldUid: conCuota.players[0].field[0]!.uid,
     });
-    expect(changedTheGame(state, after)).toBe(true);
-    expect(after.players[0].cardsPlayedThisTurn).toBe(MAX_CARDS_PER_TURN + 1);
+    expect(changedTheGame(conCuota, aplicada)).toBe(true);
+    expect(aplicada.players[0].cardsPlayedThisTurn).toBe(1);
+
+    // Con la cuota agotada, ni la ruta de la interfaz ni la directa.
+    const agotada = scene({
+      me: { cardsPlayedThisTurn: MAX_CARDS_PER_TURN, field: [fieldMonster(monster(3)), ...blankField().slice(1)], hand: [t] },
+    });
+    expect(reducer(agotada, { type: 'SELECT_TRAP_PLACE', card: t })).toBe(agotada);
+    expect(reducer(agotada, { type: 'PLACE_TRAP_ON_MONSTER', card: t, fieldUid: 'uid-m-espadas-3' })).toBe(agotada);
+    expect(agotada.players[0].field[0]!.trap).toBeNull();
   });
 
-  it('el hueco se repite con cualquier Mágica que no necesite objetivo', () => {
-    // Se agota la cuota legítimamente y luego se sigue jugando por el atajo.
-    const m = magic(10); // Robar 2 cartas: no necesita objetivo.
-    const withQuota = scene({ me: { cardsPlayedThisTurn: MAX_CARDS_PER_TURN, hand: [m] } });
-    expect(reducer(withQuota, { type: 'SELECT_MAGIC', card: m })).toBe(withQuota);
-    const after = reducer(withQuota, { type: 'MAGIC_INSTANT', card: m });
-    expect(changedTheGame(withQuota, after)).toBe(true);
-    expect(after.players[0].cardsPlayedThisTurn).toBe(MAX_CARDS_PER_TURN + 1);
+  it('ninguna Mágica por la ruta directa respeta la cuota', () => {
+    // Las cuatro entradas de un solo paso.
+    const m4 = magic(4);
+    const m10 = magic(10);
+    const agotada = scene({
+      me: {
+        cardsPlayedThisTurn: MAX_CARDS_PER_TURN,
+        hand: [m4, m10],
+        field: [fieldMonster(monster(3)), fieldMonster(monster(4), { uid: 'otro' }), ...blankField().slice(2)],
+      },
+    });
+    expect(reducer(agotada, { type: 'SELECT_MAGIC', card: m4 })).toBe(agotada);
+    expect(reducer(agotada, { type: 'MAGIC_INSTANT', card: m10 })).toBe(agotada);
+    expect(reducer(agotada, { type: 'PLACE_MAGIC_ON_MONSTER', card: m4, side: 'self', fieldUid: 'uid-m-espadas-3' })).toBe(agotada);
+    expect(reducer(agotada, { type: 'MAGIC_TARGET_MONSTER', card: m4, side: 'self', fieldUid: 'otro' })).toBe(agotada);
+  });
+
+  it('con cuota disponible la Mágica se sigue aplicando por la ruta directa', () => {
+    const m = magic(10);
+    const conCuota = scene({ me: { hand: [m], deck: buildDeck().slice(0, 6) } });
+    const after = reducer(conCuota, { type: 'MAGIC_INSTANT', card: m });
+    expect(changedTheGame(conCuota, after)).toBe(true);
+    expect(after.players[0].cardsPlayedThisTurn).toBe(1);
   });
 });
 
-describe('DEFECTO 2 · la Trampa 5 borra la Trampa o Mágica rival sin mandarla al cementerio', () => {
+describe('DEFECTO 1 · la Trampa 5 borra la Trampa o Mágica rival sin mandarla al cementerio', () => {
   // La Trampa 5 «Niega el ataque y destruye una Trampa o Mágica del adversario»
   // pone `trap: null` / `magic: null` directamente. La carta desaparece del
   // juego: no va a ningún cementerio. El reglamento (§31 y §26) sí establece que
@@ -185,47 +199,113 @@ describe('DEFECTO 2 · la Trampa 5 borra la Trampa o Mágica rival sin mandarla 
   });
 });
 
-describe('DEFECTO 3 · las Trampas 3 y 6 dejan el dado colgado para siempre', () => {
-  // `applyTrapEffect` pide el dado devolviendo `phase: 'dice-roll'` y un
-  // `pendingDice`. Pero `RESOLVE_TRAP` fuerza después `phase: 'playing'` porque
-  // entra en el bloque de `negateAttack` ANTES de comprobar la fase de dados. El
-  // resultado es un estado con un dado pendiente en una fase normal: nadie puede
-  // lanzar el dado y `ROLL_DICE` ya no se aceptará. El juego se queda bloqueado
-  // para siempre con esa Trampa puesta.
+describe('ARREGLO · las Trampas 3 y 6 ya no dejan el dado colgado', () => {
+  // ANTES: `applyTrapEffect` pedía el dado devolviendo `phase: 'dice-roll'` con
+  // su `pendingDice`, pero `RESOLVE_TRAP` entraba después en el bloque
+  // `negateAttack`, que rehacía la fase a 'playing' sin limpiar `pendingDice`.
+  // Quedaba un dado pendiente en una fase normal: `ROLL_DICE` rechazaba la
+  // acción y la partida se congelaba para siempre con esa Trampa puesta.
   //
-  // CORRESPONDE A: F3 (orden de fases en el resolver de Trampas).
+  // AHORA: la fase de dados tiene prioridad y se sale de `RESOLVE_TRAP` antes de
+  // tocar nada más, conservando `pendingTrap` (que `ROLL_DICE` necesita).
+  //
+  // Historia: detectado por la red de seguridad de F0 (`DICE_ORPHANED`) y
+  // escrito como `DEFECTO 3` antes de corregirlo.
 
-  it('tras activar la Trampa 3 el juego queda con un dado que no se puede lanzar', () => {
+  function atacarConTrampa(trampaDelDefensor: TrapCard): GameState {
     const estado = scene({
-      me: { field: [fieldMonster(monster(6)), ...blankField().slice(1)] },
-      opp: { field: [fieldMonster(monster(4), { uid: 'defensor', trap: trap(3) }), ...blankField().slice(1)] },
+      me: { field: [fieldMonster(monster(6), { uid: 'atacante' }), ...blankField().slice(1)] },
+      opp: { field: [fieldMonster(monster(4), { uid: 'defensor', trap: trampaDelDefensor }), ...blankField().slice(1)] },
     });
-    const conTrampa = reducer(estado, {
-      type: 'PLACE_TRAP_ON_MONSTER',
-      card: trap(6),
-      fieldUid: estado.players[0].field[0]!.uid,
-    });
-    const atacando = reducer(conTrampa, { type: 'DECLARE_ATTACK', attackerUid: estado.players[0].field[0]!.uid, defenderUid: 'defensor' });
+    const atacando = reducer(estado, { type: 'DECLARE_ATTACK', attackerUid: 'atacante', defenderUid: 'defensor' });
     expect(atacando.phase).toBe('trap-response');
+    return reducer(atacando, { type: 'RESOLVE_TRAP', activate: true });
+  }
 
-    const resuelto = reducer(atacando, { type: 'RESOLVE_TRAP', activate: true });
-    // Comportamiento ACTUAL (el defecto): fase normal con dado pendiente.
-    expect(resuelto.phase).toBe('playing');
+  it('la Trampa 3 pide el dado y el juego puede continuar', () => {
+    const resuelto = atacarConTrampa(trap(3));
+    expect(resuelto.phase).toBe('dice-roll');
     expect(resuelto.pendingDice).not.toBeNull();
-    // Y el dado ya no se puede lanzar, porque `ROLL_DICE` exige esa fase.
-    expect(reducer(resuelto, { type: 'ROLL_DICE', roll: 3 })).toBe(resuelto);
+
+    // El dado se puede lanzar y la partida sigue.
+    const lanzado = reducer(resuelto, { type: 'ROLL_DICE', roll: 2 });
+    expect(changedTheGame(resuelto, lanzado)).toBe(true);
+    expect(lanzado.pendingDice).toBeNull();
+    expect(lanzado.pendingTrap).toBeNull();
+    expect(lanzado.phase).toBe('playing');
+  });
+
+  it('la Trampa 6 pide el dado y el juego puede continuar', () => {
+    const resuelto = atacarConTrampa(trap(6));
+    expect(resuelto.phase).toBe('dice-roll');
+    expect(resuelto.pendingDice).not.toBeNull();
+
+    const lanzado = reducer(resuelto, { type: 'ROLL_DICE', roll: 5 });
+    expect(changedTheGame(resuelto, lanzado)).toBe(true);
+    expect(lanzado.pendingDice).toBeNull();
+    expect(lanzado.pendingTrap).toBeNull();
+    expect(lanzado.phase).toBe('playing');
+  });
+
+  it('la Trampa se retira del monstruo cuando se resuelve el dado', () => {
+    const resuelto = atacarConTrampa(trap(3));
+    const lanzado = reducer(resuelto, { type: 'ROLL_DICE', roll: 2 });
+    expect(lanzado.players[1].field[0]?.trap).toBeNull();
+  });
+
+  it('no queda ningún estado con un dado pendiente fuera de la fase de dados', () => {
+    // Barrido: ninguna combinación de Trampa 3 o 6 puede dejar el juego colgado.
+    for (const trampa of [trap(3), trap(6)]) {
+      for (const cara of [1, 2, 3, 4, 5, 6]) {
+        const resuelto = atacarConTrampa(trampa);
+        const lanzado = reducer(resuelto, { type: 'ROLL_DICE', roll: cara });
+        expect(lanzado.pendingDice).toBeNull();
+        expect(lanzado.pendingTrap).toBeNull();
+      }
+    }
+  });
+
+  it('la CPU responde al dado pendiente en vez de quedarse esperando', () => {
+    // Problema DERIVADO de la corrección: al arreglar el dado colgante, las
+    // Trampas 3 y 6 entran de verdad en la fase de dados, y la CPU no sabía
+    // salir de ella (proponía END_TURN, el reducer lo rechazaba por la fase y la
+    // partida esperaba un dado que nadie tiraba). Ahora responde.
+    const m = monster(3);
+    // Es turno de la CPU (asiento 1), y la Trampa 3 la tiene el DEFENSOR.
+    const escena = scene({
+      currentPlayer: 1,
+      me: { field: [fieldMonster(m, { uid: 'defensor', trap: trap(3) }), ...blankField().slice(1)] },
+      opp: { field: [fieldMonster(m, { uid: 'atacante' }), ...blankField().slice(1)] },
+    });
+    const atacando = reducer(escena, { type: 'DECLARE_ATTACK', attackerUid: 'atacante', defenderUid: 'defensor' });
+    const conDado = reducer(atacando, { type: 'RESOLVE_TRAP', activate: true });
+    expect(conDado.phase).toBe('dice-roll');
+
+    const accion = nextCpuAction(conDado);
+    expect(accion.type).toBe('ROLL_DICE');
+    if (accion.type !== 'ROLL_DICE') throw new Error('la CPU no proposed un dado');
+    expect(accion.roll).toBeGreaterThanOrEqual(1);
+    expect(accion.roll).toBeLessThanOrEqual(6);
+
+    const lanzado = reducer(conDado, accion);
+    expect(changedTheGame(conDado, lanzado)).toBe(true);
+    expect(lanzado.pendingDice).toBeNull();
+    expect(lanzado.phase).toBe('playing');
   });
 });
 
-describe('DEFECTO 4 · una Mágica puede dejar a un rival con 0 PV sin terminar la partida', () => {
-  // `applyMagicEffect` calcula el ganador al final, pero no pasa la fase a
-  // 'game-over'. La Regla 27.1 dice que el jugador que llega a 0 PV «pierde
-  // inmediatamente». Con la Mágica 1 (ataque directo) eso no ocurre: la partida
-  // sigue con un jugador ya sin PV.
+describe('ARREGLO · una Mágica que deja al rival a 0 PV termina la partida (Regla 27.1)', () => {
+  // ANTES: `applyMagicEffect` calculaba el ganador pero devolvía el estado con la
+  // fase intacta, así que podía quedar un jugador con 0 PV y la partida
+  // continuando. La Regla 27.1 dice que ese jugador «pierde inmediatamente».
   //
-  // CORRESPONDE A: F3 (aplicar el final de partida tras cualquier acción).
+  // AHORA: `applyMagicEffect` aplica el final de partida igual que el resto de
+  // acciones del motor.
+  //
+  // Historia: detectado por la red de seguridad de F0 (`WIN_NOT_APPLIED`) y
+  // escrito como `DEFECTO 4` antes de corregirlo.
 
-  it('la Mágica 1 registra el ganador pero deja la fase en "playing"', () => {
+  it('la Mágica 1 termina la partida cuando deja al rival sin PV', () => {
     const m = magic(1);
     const estado = scene({
       me: { field: [fieldMonster(monster(9)), ...blankField().slice(1)], hand: [m] },
@@ -234,12 +314,32 @@ describe('DEFECTO 4 · una Mágica puede dejar a un rival con 0 PV sin terminar 
     const after = reducer(estado, { type: 'SELECT_MAGIC', card: m });
     expect(after.players[1].lp).toBe(0);
     expect(after.winner).toBe(0);
-    // Comportamiento ACTUAL (el defecto): la partida no ha terminado.
+    expect(after.phase).toBe('game-over');
+  });
+
+  it('si la Mágica deja PV intactos, la partida sigue', () => {
+    const m = magic(10); // Robar 2 cartas: no hace daño.
+    const estado = scene({ me: { hand: [m], deck: buildDeck().slice(0, 6) } });
+    const after = reducer(estado, { type: 'SELECT_MAGIC', card: m });
+    expect(changedTheGame(estado, after)).toBe(true);
     expect(after.phase).toBe('playing');
+    expect(after.winner).toBeNull();
+  });
+
+  it('el empate a 0 PV también termina la partida', () => {
+    const m = magic(1);
+    const estado = scene({
+      me: { field: [fieldMonster(monster(9)), ...blankField().slice(1)], hand: [m], lp: 0 },
+      opp: { lp: 0 },
+    });
+    const after = reducer(estado, { type: 'SELECT_MAGIC', card: m });
+    expect(after.phase).toBe('game-over');
+    expect(after.isDraw).toBe(true);
+    expect(after.winner).toBeNull();
   });
 });
 
-describe('DEFECTO 5 · una Mágica utilizada desaparece del juego', () => {
+describe('DEFECTO 2 · una Mágica utilizada desaparece del juego', () => {
   // Al resolverse, `playCardFromHand` retira la Mágica de la mano y no la envía a
   // ninguna zona. El reglamento NO define el destino de una Mágica utilizada
   // (§26 habla de cartas «retiradas del campo»), así que esto es un PUNTO ABIERTO
@@ -310,7 +410,7 @@ describe('ARREGLO F1 · la CPU se atascaba con la Mágica 5 (recuperar del cemen
   });
 });
 
-describe('DEFECTO 7 · la Trampa 9 solo puede destruir Monstruos propios', () => {
+describe('DEFECTO 3 · la Trampa 9 solo puede destruir Monstruos propios', () => {
   // `DESTROY_MONSTER` solo mira el campo del jugador en turno. La interfaz
   // resalta también los Monstruos rivales como objetivo válido, así que un clic
   // sobre ellos no hace nada y la elección sigue pendiente. La CPU, además,
@@ -331,7 +431,7 @@ describe('DEFECTO 7 · la Trampa 9 solo puede destruir Monstruos propios', () =>
   });
 });
 
-describe('DEFECTO 8 · `DECLARE_ATTACK` no valida quién ataca', () => {
+describe('DEFECTO 4 · `DECLARE_ATTACK` no valida quién ataca', () => {
   // La auditoría lo detectó y F1 lo deja documentado a propósito: cerrar la
   // separación entre validar y ejecutar es trabajo de F3. Lo que F1 garantiza es
   // que `legalActions()` NUNCA genera un ataque ilegal, aunque el reducer lo
@@ -369,7 +469,7 @@ describe('DEFECTO 8 · `DECLARE_ATTACK` no valida quién ataca', () => {
   });
 });
 
-describe('DEFECTO 9 · el resultado de un dado no se valida', () => {
+describe('DEFECTO 5 · el resultado de un dado no se valida', () => {
   // `ROLL_DICE` acepta cualquier número: la acción lleva el resultado ya
   // calculado. Un cliente podría enviar `roll: 999`.
   // En la interfaz el dado se genera en el propio cliente (`GameBoard`), así que
@@ -386,53 +486,102 @@ describe('DEFECTO 9 · el resultado de un dado no se valida', () => {
   });
 });
 
-describe('DEFECTO 10 · el reducer no respeta la selección pendiente', () => {
-  // Cuando el juego abre una elección (colocar una Trampa, colocar una Mágica,
-  // elegir a quién destruir con la Trampa 9, elegir destino al recuperar con la
-  // Mágica 5), lo lógico es que la única jugada legal sea TERMINAR esa elección.
+describe('ARREGLO · una acción normal ya no cancela una selección pendiente', () => {
+  // ANTES: con una elección abierta (colocar una Trampa, colocar una Mágica,
+  // elegir objetivo, elegir destino con la Mágica 5), el reducer seguía
+  // admitiendo jugadas de fondo: invocar, cerrar el turno, cambiar de posición,
+  // abrir otra selección. Las que tocaban la selección la borraban sin
+  // resolverla, así que la carta elegida se quedaba en la mano y el jugador
+  // perdía su turno de decidir.
   //
-  // El reducer no lo comprueba: `SUMMON_MONSTER`, `SELECT_TRAP_PLACE`,
-  // `SELECT_MAGIC`, `CHANGE_POSITION`, `START_ATTACK` y `END_TURN` solo miran la
-  // fase. Peor aún: invocar un Monstruo pone `selection: {kind:'none'}`, así que
-  // una jugada «colateral» deja la elección pendiente sin resolver y la carta
-  // elegida para ella sigue en la mano.
+  // AHORA: con una elección abierta, lo único que el motor acepta son las
+  // jugadas que la terminan o la cancelan.
   //
-  // `legalActions()` de F1 sí lo respeta: con una selección abierta solo genera
-  // las acciones que la terminan (más cancelar). Cerrar el hueco en el reducer
-  // es F3.
-  //
-  // CORRESPONDE A: F3.
+  // Historia: detectado por la red de seguridad de F0 y escrito como
+  // `DEFECTO 10` antes de corregirlo.
 
-  it('permite cerrar el turno con una Trampa pendiente de colocar', () => {
+  it('no deja cerrar el turno con una Trampa pendiente de colocar', () => {
     const t = trap(1);
     const estado = scene({
       selection: { kind: 'place-trap', card: t },
       me: { hand: [t], field: [fieldMonster(monster(3)), ...blankField().slice(1)] },
     });
-    // Comportamiento ACTUAL (el defecto): la partida avanza con la elección a medias.
-    const after = reducer(estado, { type: 'END_TURN' });
-    expect(changedTheGame(estado, after)).toBe(true);
-    expect(after.turnCount).toBe(estado.turnCount + 1);
-    // La Trampa sigue en la mano: la elección se ha perdido.
-    expect(after.players[0].hand).toContain(t);
+    expect(reducer(estado, { type: 'END_TURN' })).toBe(estado);
+    // La salida sigue existiendo: completar o cancelar.
+    expect(changedTheGame(estado, reducer(estado, { type: 'PLACE_TRAP_ON_MONSTER', card: t, fieldUid: 'uid-m-espadas-3' }))).toBe(true);
+    expect(changedTheGame(estado, reducer(estado, { type: 'CANCEL_SELECTION' }))).toBe(true);
   });
 
-  it('invocar un Monstruo cancela la Trampa pendiente sin consumirla', () => {
+  it('no deja invocar un Monstruo cancelando la Trampa pendiente', () => {
     const t = trap(1);
     const m = monster(4);
     const estado = scene({
       selection: { kind: 'place-trap', card: t },
       me: { hand: [t, m], field: [fieldMonster(monster(3)), ...blankField().slice(1)] },
     });
-    const after = reducer(estado, { type: 'SUMMON_MONSTER', card: m, position: 'attack' });
-    expect(changedTheGame(estado, after)).toBe(true);
-    // Comportamiento ACTUAL (el defecto): la selección desaparece sola.
-    expect(after.selection.kind).toBe('none');
-    expect(after.players[0].hand).toContain(t);
+    expect(reducer(estado, { type: 'SUMMON_MONSTER', card: m, position: 'attack' })).toBe(estado);
+  });
+
+  it('bloquea las demás jugadas de fondo con una elección abierta', () => {
+    const t = trap(1);
+    const estado = scene({
+      selection: { kind: 'place-trap', card: t },
+      me: { hand: [t, monster(4), magic(10)], field: [fieldMonster(monster(3)), ...blankField().slice(1)] },
+      opp: { field: [fieldMonster(monster(2), { uid: 'd' }), ...blankField().slice(1)] },
+    });
+    const bloqueadas: Action[] = [
+      { type: 'END_TURN' },
+      { type: 'CHANGE_POSITION', fieldUid: 'uid-m-espadas-3' },
+      { type: 'SUMMON_MONSTER', card: monster(4), position: 'attack' },
+      { type: 'SELECT_TRAP_PLACE', card: t },
+      { type: 'SELECT_MAGIC', card: magic(10) },
+      { type: 'START_ATTACK', attackerUid: 'uid-m-espadas-3' },
+      { type: 'DIRECT_ATTACK', attackerUid: 'uid-m-espadas-3' },
+    ];
+    for (const accion of bloqueadas) {
+      expect(reducer(estado, accion), `${accion.type} no debería admitirse`).toBe(estado);
+    }
+  });
+
+  it('la elección sigue siendo resoluble en cada uno de sus tipos', () => {
+    // Ninguna elección puede quedarse sin salida: completarla o cancelarla.
+    const casos: GameState[] = [
+      scene({ selection: { kind: 'place-trap', card: trap(1) }, me: { hand: [trap(1)], field: [fieldMonster(monster(3)), ...blankField().slice(1)] } }),
+      scene({ selection: { kind: 'place-magic', card: magic(4) }, me: { hand: [magic(4)], field: [fieldMonster(monster(3)), ...blankField().slice(1)] } }),
+      scene({ selection: { kind: 'attack', attackerUid: 'a' }, me: { field: [fieldMonster(monster(8), { uid: 'a' }), ...blankField().slice(1)] }, opp: { field: [fieldMonster(monster(2), { uid: 'd', position: 'defense', faceDown: true }), ...blankField().slice(1)] } }),
+      scene({ selection: { kind: 'choose-destroy-target', trapUid: 'a' }, me: { field: [fieldMonster(monster(2), { uid: 'a' }), ...blankField().slice(1)] } }),
+      scene({ selection: { kind: 'revive-choice', card: magic(5) }, me: { hand: [magic(5)], graveyard: [monster(3)] } }),
+    ];
+    for (const estado of casos) {
+      expect(estado.selection.kind).not.toBe('none');
+      expect(changedTheGame(estado, reducer(estado, { type: 'CANCEL_SELECTION' }))).toBe(true);
+    }
+  });
+
+  it('las fases de Trampa y de dados siguen funcionando con una selección abierta', () => {
+    // La guarda no debe tocar las fases en las que decide otro jugador.
+    const conSeleccion = scene({
+      phase: 'trap-response',
+      currentPlayer: 0,
+      selection: { kind: 'attack', attackerUid: 'a' },
+      me: { field: [fieldMonster(monster(8), { uid: 'a' }), ...blankField().slice(1)] },
+      opp: { field: [fieldMonster(monster(2), { uid: 'd', trap: trap(1) }), ...blankField().slice(1)] },
+      pendingTrap: {
+        attackerUid: 'a',
+        defenderUid: 'd',
+        trap: trap(1),
+        defenderPlayer: 1,
+        attackerPlayer: 0,
+        attackerCard: monster(8),
+        defenderCard: monster(2),
+        defenderPosition: 'attack',
+      },
+    });
+    expect(changedTheGame(conSeleccion, reducer(conSeleccion, { type: 'RESOLVE_TRAP', activate: false }))).toBe(true);
   });
 });
 
-describe('DEFECTO 11 · `REVIVE_CHOICE` no contrasta la carta de la acción', () => {
+describe('DEFECTO 6 · `REVIVE_CHOICE` no contrasta la carta de la acción', () => {
   // Con la elección de destino abierta por la Mágica 5, el reducer acepta
   // CUALQUIER acción `REVIVE_CHOICE` que apunte a otra carta de la mano: no
   // comprueba que `action.card` sea la Mágica de la selección ni que siga en la

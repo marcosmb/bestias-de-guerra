@@ -385,6 +385,26 @@ function choosePositionChange(state: GameState, legal: Action[]): Action | null 
 }
 
 /**
+ * Cara que la CPU tira cuando hay un dado pendiente.
+ *
+ * Determinista y repartida: tirar siempre la misma cara haría el juego
+ * predecible, pero tampoco hay motivo para usar azar (y `nextCpuAction` es pura).
+ * Se reparte contando la situation del tablero: los dados de la Trampa 3 cuentan
+ * casillas, los de la Trampa 6 umbralizan y los de la Mágica 11 hacen daño, así
+ * que todas las caras sirven igual de bien.
+ *
+ * Nota: elegir la cara por VALOR ESPERADO (la Mágica 9, la Trampa 3) es trabajo
+ * de la fase de búsqueda (F6). Aquí solo hay que responder a la fase.
+ */
+function caraDelDado(state: GameState): number {
+  const monstruos = state.players[0].field.filter(Boolean).length + state.players[1].field.filter(Boolean).length;
+  const trampas =
+    state.players[0].field.filter((f) => f?.trap).length + state.players[1].field.filter((f) => f?.trap).length;
+  const propias = state.players[CPU_SEAT].field.filter((f) => f !== null).length;
+  return ((state.turnCount + monstruos + trampas + propias) % 6) + 1;
+}
+
+/**
  * Devuelve la siguiente acción del CPU.
  *
  * Garantiza siempre una salida segura: si no hay ninguna acción legal
@@ -396,6 +416,17 @@ function choosePositionChange(state: GameState, legal: Action[]): Action | null 
  */
 export function nextCpuAction(state: GameState): Action {
   const legal = legalActions(state, CPU_SEAT);
+
+  // 0) Hay un dado pendiente (Trampas 3 y 6, Mágica 11): hay que lanzarlo.
+  //
+  //    Antes esto no existía, y al arreglar el dado colgado de las Trampas 3 y 6
+  //    la CPU se quedaba igual de congelada: proponía END_TURN, el reducer lo
+  //    rechazaba por la fase y la partida esperaba un dado que nadie tiraba. No
+  //    es «más inteligencia»: es responder a la única jugada que existe.
+  if (state.phase === 'dice-roll') {
+    const tirada = legal.find((a): a is Extract<Action, { type: 'ROLL_DICE' }> => a.type === 'ROLL_DICE');
+    if (tirada) return { ...tirada, roll: caraDelDado(state) };
+  }
 
   // Cualquier propuesta se acepta solo si `legalActions` la considera legal.
   // Es la red de seguridad que garantiza el principio «la CPU nunca juega algo
