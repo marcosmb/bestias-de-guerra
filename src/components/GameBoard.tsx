@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Swords,
   Shield,
@@ -18,7 +18,8 @@ import {
 } from 'lucide-react';
 import type { Card, MonsterCard, TrapCard, MagicCard } from '@/game/cardData';
 import type { Action, GameState, FieldMonster, PlayerState } from '@/game/types';
-import { canAttack, magicRequiredSide, cardInstanceKey, MAX_HAND_SIZE } from '@/game/types';
+import { canAttack, magicRequiredSide, cardInstanceKey, MAX_HAND_SIZE, MAX_CARDS_PER_TURN } from '@/game/types';
+import { legalActions, sameAction } from '@/game/legalActions';
 import { CardView, CardBack } from './CardView';
 import { playSound, vibrate, getAudioPreferences, setSoundEnabled, setVolume, initAudio } from '@/game/audio';
 
@@ -458,8 +459,33 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
   const opp = state.players[viewer === 0 ? 1 : 0];
   const sel = state.selection;
 
-  const canPlayMore = me.cardsPlayedThisTurn < 3;
+  const canPlayMore = me.cardsPlayedThisTurn < MAX_CARDS_PER_TURN;
   const attackAllowed = canAttack(state);
+
+  // ==========================================================================
+  // FUENTE ÚNICA DE LEGALIDAD (F1)
+  // ==========================================================================
+  //
+  // Antes esta pantalla maintainía su propia copia de las reglas de legalidad
+  // (`canPlayMore`, `me.field.some(f => f === null)`, `isMySlotSelectable`,
+  // `isOpponentSlotSelectable`…), que era la TERCERA fuente de verdad después
+  // del reducer y de los predicados de `types.ts`. Cada vez que cambiaba una
+  // regla había que acordarse de los tres sitios.
+  //
+  // Ahora todo se consulta a `legalActions(state, cp)`, la misma función que
+  // usan la CPU y que usará el servidor. Si aquí se ofrece una jugada, es que
+  // el reducer la acepta; y si el reducer la rechaza, aquí no se ofrece.
+  //
+  // OJO: se consulta al JUGADOR EN TURNO (`cp`), no al que se está mirando
+  // (`viewer`). En modo contra la CPU, durante el turno de la CPU la mano que
+  // se ve es la del humano, pero las jugadas disponibles no son suyas.
+  const legal = useMemo(() => legalActions(state, cp), [state, cp]);
+  const isLegal = (action: Action): boolean => legal.some((candidate) => sameAction(candidate, action));
+
+  /** ¿Hay alguna carta jugable ahora mismo? (Regla 16) */
+  const canPlayCard = legal.some(
+    (a) => a.type === 'SUMMON_MONSTER' || a.type === 'SELECT_TRAP_PLACE' || a.type === 'SELECT_MAGIC',
+  );
 
   // Track newly summoned monsters for animation
   useEffect(() => {
@@ -578,8 +604,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
   };
 
   const handlePlayMonster = (card: MonsterCard, position: 'attack' | 'defense') => {
-    if (!canPlayMore) return;
-    if (!me.field.some((f) => f === null)) return;
+    if (!isLegal({ type: 'SUMMON_MONSTER', card, position })) return;
     playSound('play-card');
     vibrate(30);
     dispatch({ type: 'SUMMON_MONSTER', card, position });
@@ -587,7 +612,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
   };
 
   const handlePlayTrap = (card: TrapCard) => {
-    if (!canPlayMore) return;
+    if (!isLegal({ type: 'SELECT_TRAP_PLACE', card })) return;
     playSound('place-trap');
     vibrate(30);
     dispatch({ type: 'SELECT_TRAP_PLACE', card });
@@ -595,7 +620,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
   };
 
   const handlePlayMagic = (card: MagicCard) => {
-    if (!canPlayMore) return;
+    if (!isLegal({ type: 'SELECT_MAGIC', card })) return;
     playSound('activate-magic');
     vibrate(30);
     dispatch({ type: 'SELECT_MAGIC', card });
@@ -638,31 +663,42 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
 
   const isOpponentSlotSelectable = (fm: FieldMonster | null): boolean => {
     if (!fm) return false;
-    if (sel.kind === 'attack' || sel.kind === 'attack-or-direct') {
-      const oppField = opp.field;
-      const hasOppDefense = oppField.some((f) => f !== null && f.position === 'defense');
-      if (hasOppDefense) {
-        return fm.position === 'defense';
-      }
-      return true;
-    }
-    // Regla 4 y Regla 5: solo la Mágica 8 admite un Monstruo rival, y en
-    // cualquier caso el Monstruo no puede llevar ya una Mágica asociada.
-    if (sel.kind === 'place-magic') return magicSide === 'enemy' && fm.magic === null;
-    if (sel.kind === 'choose-destroy-target') return true;
-    return false;
+    if (fm.uid !== opponentUidOf(fm)) return false;
+    // Reglas 22/5/19 y el paso de la Trampa 9: en vez de reimplementar aquí la
+    // Regla 22 y la Regla 5, se pregunta a `legalActions` si existe una jugada
+    // que apunte a ESTA casilla concreta.
+    return legal.some(
+      (a) =>
+        (a.type === 'DECLARE_ATTACK' && a.defenderUid === fm.uid) ||
+        ((a.type === 'PLACE_MAGIC_ON_MONSTER' || a.type === 'MAGIC_TARGET_MONSTER') && a.fieldUid === fm.uid),
+    );
   };
 
   const isMySlotSelectable = (fm: FieldMonster | null): boolean => {
     if (!fm) return false;
-    if (sel.kind === 'place-trap') {
-      return !fm.trap;
+    if (fm.uid !== myUidOf(fm)) return false;
+    if (sel.kind === 'direct-attack' || sel.kind === 'attack-or-direct') {
+      // Clic en un Monstruo propio para hacer el ataque directo.
+      return legal.some((a) => a.type === 'DIRECT_ATTACK');
     }
-    // Las Mágicas 4 y 9 solo admiten un Monstruo propio.
-    if (sel.kind === 'place-magic') return magicSide !== 'enemy' && fm.magic === null;
-    if (sel.kind === 'direct-attack' || sel.kind === 'attack-or-direct') return true;
-    return false;
+    return legal.some(
+      (a) =>
+        (a.type === 'PLACE_TRAP_ON_MONSTER' && a.fieldUid === fm.uid) ||
+        ((a.type === 'PLACE_MAGIC_ON_MONSTER' || a.type === 'MAGIC_TARGET_MONSTER') && a.fieldUid === fm.uid) ||
+        (a.type === 'DESTROY_MONSTER' && a.fieldUid === fm.uid),
+    );
   };
+
+  /**
+   * Un `FieldMonster` es el MISMO objeto en el estado y en la casilla que se
+   * está pintando, así que basta con comprobar de qué campo viene para no
+   * confundir un uid propio con uno rival (que son únicos, pero solo dentro del
+   * conjunto de casillas que se están evaluando).
+   */
+  const myUidOf = (fm: FieldMonster): string | null =>
+    me.field.some((f) => f?.uid === fm.uid) ? fm.uid : null;
+  const opponentUidOf = (fm: FieldMonster): string | null =>
+    opp.field.some((f) => f?.uid === fm.uid) ? fm.uid : null;
 
   const trapPrompt = state.phase === 'trap-response' && state.pendingTrap;
   const dicePrompt = state.phase === 'dice-roll' && state.pendingDice;
@@ -1136,7 +1172,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
             </button>
           </div>
           <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-            {selectedField.position === 'attack' && !selectedField.hasAttacked && attackAllowed && (
+            {isLegal({ type: 'START_ATTACK', attackerUid: selectedField.uid }) && (
               <button
                 onClick={() => {
                   dispatch({ type: 'START_ATTACK', attackerUid: selectedField.uid });
@@ -1148,7 +1184,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
                 <Swords size={16} /> Atacar
               </button>
             )}
-            {!selectedField.hasChangedPosition && (
+            {isLegal({ type: 'CHANGE_POSITION', fieldUid: selectedField.uid }) && (
               <button
                 onClick={() => {
                   dispatch({ type: 'CHANGE_POSITION', fieldUid: selectedField.uid });
@@ -1160,7 +1196,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
                 <RotateCw size={16} /> {selectedField.position === 'attack' ? 'A Defensa' : 'A Ataque'}
               </button>
             )}
-            {selectedField.hasChangedPosition && (
+            {!isLegal({ type: 'CHANGE_POSITION', fieldUid: selectedField.uid }) && (
               <p className="flex-1 text-ink-400 text-center" style={uiXs}>Ya has cambiado la posicion de este monstruo este turno</p>
             )}
           </div>
@@ -1193,7 +1229,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
               <>
                 <button
                   onClick={() => handlePlayMonster(selectedCard, 'attack')}
-                  disabled={!canPlayMore || !me.field.some((f) => f === null)}
+                  disabled={!isLegal({ type: 'SUMMON_MONSTER', card: selectedCard, position: 'attack' })}
                   className="flex-1 rounded-lg bg-gradient-to-r from-crimson-600 to-crimson-500 text-white font-display font-bold hover:from-crimson-500 hover:to-crimson-400 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
                   style={{ ...uiSm, padding: '0.7em 0' }}
                 >
@@ -1201,7 +1237,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
                 </button>
                 <button
                   onClick={() => handlePlayMonster(selectedCard, 'defense')}
-                  disabled={!canPlayMore || !me.field.some((f) => f === null)}
+                  disabled={!isLegal({ type: 'SUMMON_MONSTER', card: selectedCard, position: 'defense' })}
                   className="flex-1 rounded-lg bg-gradient-to-r from-azure-600 to-azure-500 text-white font-display font-bold hover:from-azure-500 hover:to-azure-400 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
                   style={{ ...uiSm, padding: '0.7em 0' }}
                 >
@@ -1212,7 +1248,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
             {selectedCard.type === 'trap' && (
               <button
                 onClick={() => handlePlayTrap(selectedCard)}
-                disabled={!canPlayMore || !me.field.some((f) => f !== null && !f.trap)}
+                disabled={!isLegal({ type: 'SELECT_TRAP_PLACE', card: selectedCard })}
                 className="flex-1 rounded-lg bg-gradient-to-r from-crimson-500 to-crimson-400 text-white font-display font-bold hover:from-crimson-400 hover:to-crimson-300 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
                 style={{ ...uiSm, padding: '0.7em 0' }}
               >
@@ -1222,7 +1258,7 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
             {selectedCard.type === 'magic' && (
               <button
                 onClick={() => handlePlayMagic(selectedCard)}
-                disabled={!canPlayMore}
+                disabled={!isLegal({ type: 'SELECT_MAGIC', card: selectedCard })}
                 className="flex-1 rounded-lg bg-gradient-to-r from-gold-500 to-gold-400 text-ink-900 font-display font-bold hover:from-gold-400 hover:to-gold-300 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
                 style={{ ...uiSm, padding: '0.7em 0' }}
               >
@@ -1230,8 +1266,14 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
               </button>
             )}
           </div>
-          {!canPlayMore && (
-            <p className="text-crimson-400 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>Ya has jugado 3 cartas este turno</p>
+          {cp !== viewer && (
+            <p className="text-ink-400 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>Ahora no es tu turno</p>
+          )}
+          {cp === viewer && !canPlayMore && (
+            <p className="text-crimson-400 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>Ya has jugado {MAX_CARDS_PER_TURN} cartas este turno</p>
+          )}
+          {cp === viewer && canPlayMore && !canPlayCard && (
+            <p className="text-ink-400 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>Ahora mismo no puedes jugar ninguna carta</p>
           )}
         </div>
       )}

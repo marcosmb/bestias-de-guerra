@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { nextCpuAction, legalTargets, canDirectAttack } from '../cpu';
+import { nextCpuAction } from '../cpu';
+import { legalTargets, canDirectAttack } from '../legalActions';
 import type { GameState, FieldMonster, PlayerState, Action } from '../types';
 import { createPlayer, shuffleDeck } from '../types';
 import { buildDeck } from '../cardData';
