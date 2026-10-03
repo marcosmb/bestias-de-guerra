@@ -34,7 +34,7 @@ export interface PlayerState {
 
 export type Phase = 'start' | 'pass' | 'playing' | 'trap-response' | 'dice-roll' | 'game-over';
 export type GameMode = 'local' | 'cpu';
-export type Difficulty = 'easy' | 'normal' | 'hard';
+export type Difficulty = 'easy' | 'normal' | 'hard' | 'expert';
 
 export type SelectionMode =
   | { kind: 'none' }
