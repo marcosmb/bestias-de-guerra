@@ -582,11 +582,13 @@ No se debe inventar una duración diferente a la indicada por el efecto.
 
 ## Trampa 1 — +5 LP
 
-Mientras permanezca asociada a un Monstruo:
+Al colocarse sobre un Monstruo, su efecto comienza **inmediatamente** y el propietario obtiene +5 LP.
+
+Mientras permanezca asociada a ese Monstruo y el Monstruo siga en el campo:
 
 **al comienzo de cada turno de su propietario, el propietario obtiene +5 LP.**
 
-Funciona aunque el Monstruo esté boca abajo.
+Si el Monstruo estaba boca abajo, la identidad de la Trampa permanece oculta hasta que ese Monstruo sea atacado. Al ser atacado, la Trampa se revela y su efecto continúa mientras el Monstruo siga vivo.
 
 ---
 
@@ -733,11 +735,15 @@ La propiedad original del Monstruo no cambia.
 
 ## Trampa 12 — -5 LP
 
-Mientras permanezca asociada a un Monstruo:
+Al colocarse sobre un Monstruo, su efecto comienza **inmediatamente** y el adversario pierde 5 LP.
 
-**al comienzo de cada turno de su propietario, el adversario pierde 5 LP.**
+Mientras permanezca asociada a ese Monstruo y el Monstruo siga en el campo:
 
-Funciona aunque el Monstruo esté boca abajo.
+**al comienzo de cada turno, el adversario pierde 5 LP.**
+
+Si el Monstruo estaba boca abajo, la identidad de la Trampa permanece oculta hasta que ese Monstruo sea atacado. Al ser atacado, la Trampa se revela y su efecto continúa mientras el Monstruo siga vivo.
+
+Cuando el Monstruo es destruido, la Trampa también se elimina y el registro informa del nombre de la Trampa y de que su efecto ha terminado.
 
 ---
 
@@ -996,11 +1002,13 @@ Cuando se cambie una regla:
 
 # 35. ESTADO DEL REGLAMENTO
 
-**Versión:** 1.2 — **reglamento oficial para la versión jugable actual.**
+**Versión:** 1.3 — **reglamento oficial para la versión jugable actual.**
 
-Cambios respecto a la versión 1.1:
+Cambios respecto a la versión 1.2:
 - un Monstruo que ya haya sido revelado boca arriba permanece visible para el rival al pasar a Defensa o cambiar nuevamente de posición;
-- la Trampa 2 permite al propietario elegir los 2 Monstruos propios que serán destruidos.
+- la Trampa 2 permite al propietario elegir los 2 Monstruos propios que serán destruidos;
+- las Trampas 1 y 12 tienen efecto inmediato al colocarse y mantienen su efecto mientras viva el Monstruo asociado;
+- una Trampa oculta se revela cuando su Monstruo es atacado y su efecto continúa si el Monstruo sobrevive; si el Monstruo es destruido, se informa de la eliminación de la Trampa.
 
 Esta versión consolida las reglas decididas por el creador y elimina las contradicciones principales entre los documentos anteriores.
 
