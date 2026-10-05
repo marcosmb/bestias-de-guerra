@@ -396,7 +396,7 @@ function CombatAnimation({
   );
 }
 
-export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoardProps) {
+export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic, localPlayerIndex }: GameBoardProps) {
   const [showLog, setShowLog] = useState(false);
   const [logCopied, setLogCopied] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
