@@ -664,3 +664,46 @@ describe('Reducer integration — CHANGE_POSITION', () => {
     expect(updated?.position).toBe('defense'); // still defense, not back to attack
   });
 });
+
+
+describe('Reducer integration — Trap 2 target selection', () => {
+  it('lets the trap owner choose exactly two own monsters before resolving', () => {
+    const trap = getTrapByEffect('destroy_2_self_1_opp');
+    const [m1, m2, m3] = getDistinctMonsterCards(3);
+    const rival = getMonsterWithAtk(12);
+
+    let state = makeState({ currentPlayer: 1, turnCount: 5 });
+    const trapMonster = monster(m1, { trap });
+    state = setField(state, 0, [
+      trapMonster,
+      monster(m2),
+      monster(m3),
+    ]);
+    state = setField(state, 1, [monster(rival)]);
+
+    // Termina el turno del rival y activa la Trampa al comenzar el turno del dueño.
+    state = dispatch(state, { type: 'END_TURN' });
+
+    expect(state.selection.kind).toBe('choose-trap-2-own');
+    if (state.selection.kind !== 'choose-trap-2-own') return;
+    expect(state.selection.selectedUids).toEqual([]);
+
+    const firstUid = state.players[0].field.find((f) => f?.uid !== trapMonster.uid)?.uid!;
+    state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: firstUid });
+
+    expect(state.selection.kind).toBe('choose-trap-2-own');
+    if (state.selection.kind !== 'choose-trap-2-own') return;
+    expect(state.selection.selectedUids).toEqual([firstUid]);
+    expect(state.players[0].field.some((f) => f?.uid === firstUid)).toBe(true);
+
+    const secondUid = state.players[0].field.find(
+      (f) => f !== null && f.uid !== firstUid,
+    )?.uid!;
+    state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: secondUid });
+
+    expect(state.selection.kind).toBe('none');
+    expect(state.players[0].field.some((f) => f?.uid === firstUid)).toBe(false);
+    expect(state.players[0].field.some((f) => f?.uid === secondUid)).toBe(false);
+    expect(state.players[1].field.filter(Boolean)).toHaveLength(0);
+  });
+});
