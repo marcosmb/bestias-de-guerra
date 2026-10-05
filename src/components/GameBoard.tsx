@@ -778,6 +778,13 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
         return;
       }
       dispatch(action);
+    } else if (sel.kind === 'choose-trap-2-own') {
+      const action = { type: 'TRAP_2_SELECT_OWN' as const, fieldUid: uid };
+      if (!isLegal(action)) {
+        addToast('¡Jugada errónea! Elige un Monstruo propio que todavía no hayas seleccionado para esta Trampa.', 'warning');
+        return;
+      }
+      dispatch(action);
     }
   };
 
@@ -825,6 +832,9 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
       // Clic en un Monstruo propio para hacer el ataque directo.
       return legal.some((a) => a.type === 'DIRECT_ATTACK');
     }
+    if (sel.kind === 'choose-trap-2-own') {
+      return legal.some((a) => a.type === 'TRAP_2_SELECT_OWN' && a.fieldUid === fm.uid);
+    }
     return legal.some(
       (a) =>
         (a.type === 'PLACE_TRAP_ON_MONSTER' && a.fieldUid === fm.uid) ||
@@ -859,6 +869,10 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
           : 'Elige uno de tus monstruos para colocar la mágica';
       case 'direct-attack': return 'Elige tu monstruo para atacar directamente';
       case 'choose-destroy-target': return 'Elige un monstruo del campo para destruir';
+      case 'choose-trap-2-own':
+        return sel.selectedUids.length === 0
+          ? 'Trampa: elige los 2 Monstruos propios que quieres destruir'
+          : 'Trampa: elige 1 Monstruo propio más para completar la destrucción';
       case 'revive-choice': return 'Elige cómo recuperar el monstruo';
       default: return '';
     }
