@@ -1082,6 +1082,19 @@ export function reducer(state: GameState, action: Action): GameState {
       // Regla 27.2: comprobar si ningún jugador puede realizar acciones legales
       return checkStalemateEnd(newState);
     }
+    case 'CLOSE_DICE_RESULT': {
+      if (state.phase !== 'dice-roll' || state.diceResult === null) return state;
+
+      // Cierre de seguridad de la ventana de resultado. La tirada ya se ha
+      // resuelto al ejecutar ROLL_DICE; aquí solo se libera la interfaz.
+      return {
+        ...state,
+        phase: 'playing',
+        pendingDice: null,
+        diceResult: null,
+      };
+    }
+
     case 'ROLL_DICE': {
       if (state.phase !== 'dice-roll' || !state.pendingDice) return state;
       const roll = action.roll;
