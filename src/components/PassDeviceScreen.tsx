@@ -7,7 +7,7 @@ interface PassDeviceProps {
   message?: string;
 }
 
-export function PassDeviceScreen({ playerName, onConfirm, message }: PassDeviceProps) {
+export function PassDeviceScreen({ playerName, onConfirm, onBack, message }: PassDeviceProps) {
   return (
     <div className="bg-ink-900 flex flex-col items-center justify-center px-6 animate-fade-in relative" style={{ minHeight: '100dvh' }}>
       {onBack && (
