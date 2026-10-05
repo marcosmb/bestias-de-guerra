@@ -268,7 +268,7 @@ function App() {
     const inGameFlow = flow === 'play' || flow === 'pass';
     const isGameOver = state.phase === 'game-over';
     setMusicTrack(inGameFlow && !isGameOver ? 'game' : 'menu');
-  }, [flow, state.phase]);
+  }, [flow, state.phase, musicEnabled]);
   const openHistory = () => {
     setStoredHistory(readStoredHistory());
     setFlow('history');
