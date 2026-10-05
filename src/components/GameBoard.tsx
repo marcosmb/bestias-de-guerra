@@ -1056,7 +1056,13 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
               fm={fm}
               isOpponent={false}
               onClick={fm ? () => {
-                if (sel.kind === 'place-trap' || sel.kind === 'place-magic' || sel.kind === 'direct-attack' || sel.kind === 'attack-or-direct') {
+                if (
+                  sel.kind === 'place-trap' ||
+                  sel.kind === 'place-magic' ||
+                  sel.kind === 'direct-attack' ||
+                  sel.kind === 'attack-or-direct' ||
+                  sel.kind === 'choose-trap-2-own'
+                ) {
                   handleMyFieldClick(fm.uid);
                 } else if (sel.kind === 'attack') {
                   // ignore, already attacking
