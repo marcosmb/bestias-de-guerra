@@ -290,7 +290,7 @@ function App() {
   const toggleMusic = () => {
     setMusicEnabledState((current) => {
       const next = !current;
-      console.log('[MUSICA][TOGGLE]', { current, next });
+      console.log('[MUSICA][TOGGLE_GLOBAL]', { current, next });
       setMusicEnabled(next);
       return next;
     });
@@ -488,6 +488,8 @@ function App() {
             leaveRoom();
             setFlow('menu');
           }}
+          musicEnabled={musicEnabled}
+          onToggleMusic={toggleMusic}
           localPlayerIndex={playerRole === 'player1' ? 0 : 1}
         />
         {waitingForOpponent && isHost && roomId && playerRole === 'player1' && (
@@ -517,6 +519,8 @@ function App() {
         dispatch({ type: 'RESTART' });
         setFlow('menu');
       }}
+      musicEnabled={musicEnabled}
+      onToggleMusic={toggleMusic}
     />
   );
 }
