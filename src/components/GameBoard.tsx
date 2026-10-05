@@ -1594,9 +1594,15 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                 </button>
               </div>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 select-text">
               {state.log.slice().reverse().map((entry, i) => (
-                <div key={i} className="text-ink-200 py-1 border-b border-ink-600/50" style={uiXs}>{entry}</div>
+                <div
+                  key={i}
+                  className="text-ink-200 py-1 border-b border-ink-600/50 select-text cursor-text whitespace-pre-wrap"
+                  style={{ ...uiXs, userSelect: 'text', WebkitUserSelect: 'text' }}
+                >
+                  {entry}
+                </div>
               ))}
               {state.log.length === 0 && <p className="text-ink-400" style={uiXs}>Sin eventos todavía</p>}
             </div>
