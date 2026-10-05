@@ -239,10 +239,19 @@ function selectionActions(state: GameState, player: 0 | 1, me: PlayerState, opp:
     }
 
     case 'choose-destroy-target': {
-      // Trampa 9: el jugador elige un Monstruo de SU campo. El reducer solo
-      // mira el campo del jugador en turno, así que un Monstruo rival no es un
-      // objetivo válido aunque la interfaz lo resalte (DEFECTO 7).
+      // Trampa 9: el jugador elige un Monstruo de SU campo.
       return monstersOf(me).map((fm) => ({ type: 'DESTROY_MONSTER', fieldUid: fm.uid }));
+    }
+
+    case 'choose-trap-2-own': {
+      // Trampa 2: el propietario de la Trampa debe elegir exactamente 2
+      // Monstruos propios. No se puede elegir dos veces el mismo Monstruo.
+      return monstersOf(me)
+        .filter((fm) => !sel.selectedUids.includes(fm.uid))
+        .map((fm) => ({
+          type: 'TRAP_2_SELECT_OWN' as const,
+          fieldUid: fm.uid,
+        }));
     }
 
     case 'revive-choice': {
