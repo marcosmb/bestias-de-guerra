@@ -658,16 +658,15 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
       const selfFms = players[playerIdx].field.filter(Boolean) as FieldMonster[];
       const oppFms = players[playerIdx === 0 ? 1 : 0].field.filter(Boolean) as FieldMonster[];
       if (selfFms.length >= 2 && oppFms.length >= 1) {
-        const selfDestroy = selfFms.slice(0, 2);
-        const oppDestroy = oppFms.slice(0, 1);
-        selfDestroy.forEach((f) => { removeFieldMonster(players, playerIdx, f.uid); });
-        oppDestroy.forEach((f) => { removeFieldMonster(players, playerIdx === 0 ? 1 : 0, f.uid); });
-        // Eliminar la trampa del monstruo (si sigue existiendo)
-        const trapFm = players[playerIdx].field.find((f) => f?.uid === fm.uid);
-        if (trapFm) {
-          players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({ ...f, trap: null }));
-        }
-        log.push(`${fm.trap.name}: Destruyes ${selfDestroy.length} tuyos y ${oppDestroy.length} del rival.`);
+        // La Trampa 2 siempre se activa, pero los 2 Monstruos propios no se
+        // eligen automáticamente: los elige su propietario.
+        log.push(`${fm.trap.name}: Elige los 2 Monstruos propios que quieres destruir por efecto de la Trampa.`);
+        return {
+          ...state,
+          players,
+          selection: { kind: 'choose-trap-2-own', trapUid: fm.uid, selectedUids: [] },
+          log: log.length > 0 ? addLog(state, log.join(' '), playerIdx) : state.log,
+        };
       } else {
         const propiosNecesarios = 2;
         const propiosDisponibles = selfFms.length;
@@ -742,6 +741,7 @@ const ACCIONES_QUE_COMPLETAN: Record<SelectionMode['kind'], ReadonlySet<Action['
   'attack-or-direct': new Set<Action['type']>(['DECLARE_ATTACK', 'DIRECT_ATTACK']),
   'direct-attack': new Set<Action['type']>(['DIRECT_ATTACK']),
   'choose-destroy-target': new Set<Action['type']>(['DESTROY_MONSTER']),
+  'choose-trap-2-own': new Set<Action['type']>(['TRAP_2_SELECT_OWN']),
   'revive-choice': new Set<Action['type']>(['REVIVE_CHOICE']),
 };
 
@@ -1156,6 +1156,56 @@ export function reducer(state: GameState, action: Action): GameState {
         winner: winResult.winner,
         isDraw: winResult.isDraw,
       };
+    }
+    case 'TRAP_2_SELECT_OWN': {
+      if (state.selection.kind !== 'choose-trap-2-own') return state;
+      const sel = state.selection;
+      if (sel.selectedUids.includes(action.fieldUid)) return state;
+
+      const players = [...state.players] as [PlayerState, PlayerState];
+      const owner = state.currentPlayer;
+      const selected = findFieldMonster(players[owner], action.fieldUid);
+      if (!selected) return state;
+
+      const selectedUids = [...sel.selectedUids, action.fieldUid];
+      if (selectedUids.length < 2) {
+        return {
+          ...state,
+          selection: { ...sel, selectedUids },
+          log: addLog(state, `${selected.card.name} seleccionado para la Trampa. Elige 1 Monstruo propio más.`),
+        };
+      }
+
+      const opponent = (owner === 0 ? 1 : 0) as 0 | 1;
+      const opponentTarget = players[opponent].field.find((f): f is FieldMonster => f !== null);
+      if (!opponentTarget) return state;
+
+      const first = findFieldMonster(players[owner], selectedUids[0]);
+      const second = findFieldMonster(players[owner], selectedUids[1]);
+      const trapFm = players[owner].field.find((f) => f?.uid === sel.trapUid);
+      selectedUids.forEach((uid) => removeFieldMonster(players, owner, uid));
+      removeFieldMonster(players, opponent, opponentTarget.uid);
+
+      // Si el Monstruo que llevaba la Trampa no fue uno de los elegidos,
+      // la Trampa se consume al resolver el efecto.
+      if (trapFm && !selectedUids.includes(sel.trapUid)) {
+        const remainingTrapFm = players[owner].field.find((f) => f?.uid === sel.trapUid);
+        if (remainingTrapFm) {
+          players[owner] = updateFieldMonster(players[owner], sel.trapUid, (f) => ({ ...f, trap: null }));
+        }
+      }
+
+      const winResult = checkWinner(players);
+      const newState: GameState = {
+        ...state,
+        players,
+        phase: winResult.winner !== null || winResult.isDraw ? 'game-over' : 'playing',
+        selection: { kind: 'none' },
+        log: addLog(state, `Trampa 2: destruyes ${first?.card.name ?? 'un Monstruo'}, ${second?.card.name ?? 'un Monstruo'} y ${opponentTarget.card.name} del rival.`, owner),
+        winner: winResult.winner,
+        isDraw: winResult.isDraw,
+      };
+      return checkStalemateEnd(newState);
     }
     case 'DESTROY_MONSTER': {
       if (state.selection.kind !== 'choose-destroy-target') return state;
