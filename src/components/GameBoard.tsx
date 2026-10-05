@@ -447,6 +447,40 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
   const [volume, setVolumeState] = useState(0.5);
   const [showVolumeControl, setShowVolumeControl] = useState(false);
 
+  // En móviles, la UI del navegador (por ejemplo la barra inferior de Brave)
+  // puede ocupar parte del viewport visual. Medimos la diferencia entre el
+  // layout viewport y el visual viewport para reservar ese espacio en la barra
+  // de acciones inferior, manteniendo sus controles por encima de esa UI.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const root = document.documentElement;
+
+    const updateBrowserBottomInset = () => {
+      if (!viewport) {
+        root.style.setProperty('--browser-bottom-inset', '0px');
+        return;
+      }
+
+      const bottomInset = Math.max(
+        0,
+        window.innerHeight - (viewport.offsetTop + viewport.height),
+      );
+      root.style.setProperty('--browser-bottom-inset', Math.ceil(bottomInset) + 'px');
+    };
+
+    updateBrowserBottomInset();
+    window.addEventListener('resize', updateBrowserBottomInset);
+    viewport?.addEventListener('resize', updateBrowserBottomInset);
+    viewport?.addEventListener('scroll', updateBrowserBottomInset);
+
+    return () => {
+      window.removeEventListener('resize', updateBrowserBottomInset);
+      viewport?.removeEventListener('resize', updateBrowserBottomInset);
+      viewport?.removeEventListener('scroll', updateBrowserBottomInset);
+      root.style.removeProperty('--browser-bottom-inset');
+    };
+  }, []);
+
   // Inicializar audio
   useEffect(() => {
     initAudio();
@@ -1286,7 +1320,7 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
 
       {/* Bottom action bar */}
       <div className="px-2 sm:px-3 pt-2 pb-1 bg-ink-800 border-t-2 border-ink-600 flex items-center gap-2 flex-none"
-        style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+        style={{ paddingBottom: 'max(0.5rem, calc(env(safe-area-inset-bottom) + var(--browser-bottom-inset, 0px)))' }}
         data-no-cancel
       >
         <button
