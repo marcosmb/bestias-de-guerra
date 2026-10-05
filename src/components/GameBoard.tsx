@@ -15,6 +15,8 @@ import {
   ZoomIn,
   Volume2,
   VolumeX,
+  Copy,
+  Check,
 } from 'lucide-react';
 import type { Card, MonsterCard, TrapCard, MagicCard } from '@/game/cardData';
 import type { Action, GameState, FieldMonster, PlayerState } from '@/game/types';
@@ -401,6 +403,7 @@ function CombatAnimation({
 
 export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoardProps) {
   const [showLog, setShowLog] = useState(false);
+  const [logCopied, setLogCopied] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   /*
    * Carta seleccionada de la mano, identificada por su IDENTIDAD DE INSTANCIA.
@@ -485,6 +488,32 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
     document.addEventListener('pointerdown', handleOutsidePointerDown);
     return () => document.removeEventListener('pointerdown', handleOutsidePointerDown);
   }, [selectedHandCard, selectedFieldUid]);
+  const copyGameLog = async () => {
+    const text = state.log.join('\n');
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+      }
+
+      setLogCopied(true);
+      window.setTimeout(() => setLogCopied(false), 1600);
+    } catch {
+      setLogCopied(false);
+      addToast('No se ha podido copiar el registro.', 'warning');
+    }
+  };
+
   const [soundEnabled, setSoundEnabledState] = useState(true);
   const [volume, setVolumeState] = useState(0.5);
   const [showVolumeControl, setShowVolumeControl] = useState(false);
@@ -1476,11 +1505,24 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
             style={{ maxWidth: '100%', maxHeight: '70dvh', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 gap-2">
               <h3 className="font-display font-bold text-gold-300" style={uiBase}>Registro de juego</h3>
-              <button onClick={() => setShowLog(false)} className="text-ink-300 hover:text-white btn-press">
-                <X size={18} />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={copyGameLog}
+                  disabled={state.log.length === 0}
+                  className="px-2.5 py-1.5 rounded-lg border border-ink-500/70 bg-ink-800 text-ink-200 hover:text-white hover:border-gold-400/60 disabled:opacity-40 disabled:cursor-not-allowed btn-press flex items-center gap-1.5"
+                  title="Copiar registro"
+                  aria-label="Copiar registro"
+                >
+                  {logCopied ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
+                  <span style={uiXs}>{logCopied ? 'Copiado' : 'Copiar'}</span>
+                </button>
+                <button onClick={() => setShowLog(false)} className="text-ink-300 hover:text-white btn-press">
+                  <X size={18} />
+                </button>
+              </div>
             </div>
             <div className="space-y-1">
               {state.log.slice().reverse().map((entry, i) => (
