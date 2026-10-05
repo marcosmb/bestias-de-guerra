@@ -198,6 +198,7 @@ function FieldSlot({
   animateSummon,
   onZoom,
   attackTarget = false,
+  trapTargetSelected = false,
 }: {
   fm: FieldMonster | null;
   isOpponent: boolean;
@@ -208,6 +209,7 @@ function FieldSlot({
   animateSummon?: boolean;
   onZoom?: (card: Card) => void;
   attackTarget?: boolean;
+  trapTargetSelected?: boolean;
 }) {
   if (!fm) {
     return (
@@ -237,7 +239,9 @@ function FieldSlot({
         className={
           attackTarget
             ? 'ring-4 ring-crimson-300 animate-pulse shadow-[0_0_24px_rgba(248,113,113,0.9)] scale-110'
-            : selectable
+            : trapTargetSelected
+              ? 'ring-4 ring-gold-300 shadow-[0_0_24px_rgba(250,204,21,0.8)] scale-105'
+              : selectable
               ? 'ring-2 ring-gold-300 animate-pulse shadow-glow scale-105'
               : ''
         }
@@ -1062,6 +1066,7 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
                 }
               } : undefined}
               selectable={isMySlotSelectable(fm)}
+              trapTargetSelected={sel.kind === 'choose-trap-2-own' && sel.selectedUids.includes(fm?.uid ?? '')}
               showTrap={true}
               showMagic={true}
               animateSummon={summonedUids.has(fm?.uid ?? '')}
