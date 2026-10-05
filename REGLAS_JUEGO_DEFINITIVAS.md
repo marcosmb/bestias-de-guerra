@@ -582,8 +582,6 @@ No se debe inventar una duración diferente a la indicada por el efecto.
 
 ## Trampa 1 — +5 LP
 
-Al colocarse sobre un Monstruo, su efecto comienza **inmediatamente** y el propietario obtiene +5 LP.
-
 Mientras permanezca asociada a ese Monstruo y el Monstruo siga en el campo:
 
 **al comienzo de cada turno de su propietario, el propietario obtiene +5 LP.**
