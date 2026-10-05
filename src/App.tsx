@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Difficulty, GameMode } from '@/game/types';
-import { Swords, ChevronRight, History, Wifi, Cpu, User, Link2, Copy, X } from 'lucide-react';
+import { Swords, ChevronRight, History, Wifi, Cpu, User, Link2, Copy, X, ArrowLeft } from 'lucide-react';
 import { useGame } from '@/game/useGame';
 import { useOnlineGame } from '@/hooks/useOnlineGame';
 import { PassDeviceScreen } from '@/components/PassDeviceScreen';
@@ -327,10 +327,12 @@ function App() {
               maxLength={6}
             />
             <button
+              type="button"
               onClick={handleBack}
-              className="mt-4 text-ink-400 hover:text-ink-200 text-sm"
+              className="w-full px-4 py-3 rounded-lg bg-ink-800 border border-ink-600 text-ink-200 font-display font-bold hover:border-ink-400 hover:bg-ink-700 transition-colors flex items-center justify-center gap-2"
             >
-              Volver al menú
+              <ArrowLeft size={18} />
+              Atrás
             </button>
           </div>
         </div>
@@ -344,6 +346,10 @@ function App() {
       <PassDeviceScreen
         playerName={targetName}
         message={`Pasa el dispositivo a ${targetName}. Es su turno.`}
+        onBack={() => {
+          dispatch({ type: 'RESTART' });
+          setFlow('menu');
+        }}
         onConfirm={() => {
           dispatch({ type: 'CONFIRM_PASS' });
           setFlow('play');
