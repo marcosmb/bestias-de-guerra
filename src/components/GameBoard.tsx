@@ -305,12 +305,12 @@ function CombatAnimation({
   useEffect(() => {
     if (!combatState) return;
 
-    const attackTimer = setTimeout(() => setPhase('impact'), 520);
-    const impactTimer = setTimeout(() => setPhase('result'), 780);
+    const attackTimer = setTimeout(() => setPhase('impact'), 1050);
+    const impactTimer = setTimeout(() => setPhase('result'), 1450);
     const completeTimer = setTimeout(() => {
       setVisible(false);
       onComplete();
-    }, 1450);
+    }, 2350);
 
     return () => {
       clearTimeout(attackTimer);
