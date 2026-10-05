@@ -84,8 +84,8 @@ export function initialState(): GameState {
   };
 }
 
-function addLog(state: GameState, msg: string): string[] {
-  return [...state.log.slice(-50), msg];
+function addLog(state: GameState, msg: string, actor: 0 | 1 = state.currentPlayer): string[] {
+  return [...state.log.slice(-50), `Jugador ${actor + 1}: ${msg}`];
 }
 
 function checkWinner(players: [PlayerState, PlayerState]): { winner: 0 | 1 | null; isDraw: boolean } {
@@ -363,7 +363,7 @@ function applyTrapEffect(
       break;
   }
 
-  return { state: { ...state, players, log: addLog(state, log.join(' ')) }, negateAttack, destroyAttacker, skipCombat };
+  return { state: { ...state, players, log: log.length > 0 ? addLog(state, log.join(' '), defenderPlayer) : state.log }, negateAttack, destroyAttacker, skipCombat };
 }
 
 /**
@@ -1053,7 +1053,7 @@ export function reducer(state: GameState, action: Action): GameState {
         selection: { kind: 'none' },
         passTarget: nextPlayer,
         phase: state.mode === 'cpu' || state.mode === 'online' ? 'playing' : 'pass',
-        log: addLog(state, `Turno de ${players[nextPlayer].name}.`),
+        log: addLog(state, `Comienza su turno.`, nextPlayer),
       };
       // Apply turn start passive effects
       newState = applyTurnStartEffects(newState, nextPlayer);
