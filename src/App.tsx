@@ -34,6 +34,24 @@ function StartScreen({
   const [mode, setMode] = useState<GameMode>('local');
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
 
+  useEffect(() => {
+    const debugPointer = (event: PointerEvent) => {
+      const button = document.querySelector('[data-music-toggle]') as HTMLButtonElement | null;
+      const underPointer = document.elementFromPoint(event.clientX, event.clientY);
+      const rect = button?.getBoundingClientRect();
+      console.log('[MUSICA][POINTER]', {
+        target: event.target instanceof Element ? event.target.tagName + '.' + event.target.className : event.target,
+        underPointer: underPointer instanceof Element ? underPointer.tagName + '.' + underPointer.className : underPointer,
+        isOverMusicButton: !!rect && event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom,
+        pointerEvents: button ? getComputedStyle(button).pointerEvents : 'button-not-found',
+        zIndex: button ? getComputedStyle(button).zIndex : 'button-not-found',
+      });
+    };
+
+    document.addEventListener('pointerdown', debugPointer, true);
+    return () => document.removeEventListener('pointerdown', debugPointer, true);
+  }, []);
+
   return (
     <div className="bg-ink-900 min-h-[100dvh] flex items-center justify-center px-3 sm:px-6 py-6">
       <div className="w-full max-w-md mx-auto">
@@ -260,6 +278,7 @@ function App() {
   const toggleMusic = () => {
     setMusicEnabledState((current) => {
       const next = !current;
+      console.log('[MUSICA][TOGGLE]', { current, next });
       setMusicEnabled(next);
       return next;
     });
