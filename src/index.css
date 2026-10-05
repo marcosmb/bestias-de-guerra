@@ -209,6 +209,129 @@ img {
   animation: floatDamage 1s ease-out forwards;
 }
 
+/* ===== ILLUSION COMBAT ===== */
+
+.combat-phantom-monster {
+  top: 50%;
+  z-index: 35;
+  width: clamp(96px, 18vw, 170px);
+  height: clamp(132px, 27vw, 236px);
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.35))
+    drop-shadow(0 0 28px rgba(239, 68, 68, 0.55));
+  opacity: 0;
+}
+
+.combat-phantom-art {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 2px solid rgba(248, 113, 113, 0.75);
+  background: rgba(15, 15, 30, 0.25);
+  box-shadow:
+    inset 0 0 24px rgba(255, 255, 255, 0.12),
+    0 0 35px rgba(239, 68, 68, 0.5);
+  transform: scale(1.05);
+}
+
+.combat-phantom-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.1), transparent 30%, rgba(239,68,68,0.18)),
+    radial-gradient(circle at center, transparent 35%, rgba(0,0,0,0.32) 100%);
+  mix-blend-mode: screen;
+}
+
+.combat-phantom-art img {
+  width: 170%;
+  height: 170%;
+  margin: -35%;
+  object-fit: cover;
+  opacity: 0.82;
+  filter: saturate(1.2) contrast(1.05);
+  transform: scale(1.06);
+}
+
+.combat-phantom-aura {
+  position: absolute;
+  inset: -18px;
+  border-radius: 28px;
+  background: radial-gradient(circle, rgba(248,113,113,0.28) 0%, transparent 65%);
+  filter: blur(8px);
+  animation: combatPhantomPulse 0.8s ease-in-out infinite;
+}
+
+.combat-phantom-from-bottom {
+  animation: combatPhantomFromBottom 0.52s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.combat-phantom-from-top {
+  animation: combatPhantomFromTop 0.52s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.combat-attack-trail {
+  animation: combatAttackTrail 0.52s ease-out forwards;
+}
+
+.combat-impact-burst {
+  animation: combatImpactBurst 0.26s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+@keyframes combatPhantomFromBottom {
+  0% {
+    transform: translate(-50%, 26vh) scale(0.35) rotate(5deg);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.95;
+  }
+  72% {
+    transform: translate(-50%, -6vh) scale(1.08) rotate(-1deg);
+    opacity: 0.92;
+  }
+  100% {
+    transform: translate(-50%, -9vh) scale(1) rotate(0deg);
+    opacity: 0.96;
+  }
+}
+
+@keyframes combatPhantomFromTop {
+  0% {
+    transform: translate(-50%, -26vh) scale(0.35) rotate(-5deg);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.95;
+  }
+  72% {
+    transform: translate(-50%, 6vh) scale(1.08) rotate(1deg);
+    opacity: 0.92;
+  }
+  100% {
+    transform: translate(-50%, 9vh) scale(1) rotate(0deg);
+    opacity: 0.96;
+  }
+}
+
+@keyframes combatPhantomPulse {
+  0%, 100% { transform: scale(0.92); opacity: 0.45; }
+  50% { transform: scale(1.08); opacity: 0.75; }
+}
+
+@keyframes combatAttackTrail {
+  0% { transform: scaleY(0.15); transform-origin: center; opacity: 0; }
+  20% { opacity: 0.9; }
+  100% { transform: scaleY(1); opacity: 0.15; }
+}
+
+@keyframes combatImpactBurst {
+  0% { transform: translate(-50%, -50%) scale(0.35); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
 /* Turn banner */
 @keyframes turnBanner {
   0% { transform: scaleX(0); opacity: 0; }
