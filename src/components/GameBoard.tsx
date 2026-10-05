@@ -277,7 +277,7 @@ function DamageFloat({ damage, playerIdx }: { damage: number; playerIdx: 0 | 1 }
   return (
     <div className={`fixed z-50 pointer-events-none ${playerIdx === 0 ? 'bottom-[35%] left-1/2 -translate-x-1/2' : 'top-[15%] left-1/2 -translate-x-1/2'}`}>
       <div className="animate-float-damage font-display font-black text-red-400 text-4xl text-shadow-strong">
-        -{damage}
+        -{damage} PV
       </div>
     </div>
   );
@@ -589,16 +589,32 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
 
       // Show toast for combat
       addToast(state.lastCombat.log, 'combat');
+
+      // Mensaje explícito de pérdida de PV, para que el daño no pase desapercibido.
+      // Se mantiene la lógica de "Pierdes/rebota" que ya usa la interfaz de daño
+      // para identificar si el daño lo recibió el jugador local.
+      const defenderIsMe = (state.lastCombat?.log.includes('Pierdes') || state.lastCombat?.log.includes('rebota'));
+      const attackerIsMe = defenderIsMe;
+      if (defenderDamage > 0) {
+        addToast(
+          defenderIsMe ? `¡-${defenderDamage} PV! Has perdido vida` : `¡-${defenderDamage} PV al rival!`,
+          'combat',
+        );
+      }
+      if (attackerDamage > 0) {
+        addToast(
+          attackerIsMe ? `¡-${attackerDamage} PV! Has perdido vida` : `¡-${attackerDamage} PV al rival!`,
+          'combat',
+        );
+      }
       
       // Show damage for the player who received it
       if (defenderDamage > 0) {
         // Defender received damage
-        const defenderIsMe = (state.lastCombat?.log.includes('Pierdes') || state.lastCombat?.log.includes('rebota'));
         setLastCombat({ damage: defenderDamage, player: defenderIsMe ? viewer : (viewer === 0 ? 1 : 0) as 0 | 1 });
         setTimeout(() => setLastCombat(null), 1000);
       } else if (attackerDamage > 0) {
         // Attacker received damage
-        const attackerIsMe = (state.lastCombat?.log.includes('Pierdes') || state.lastCombat?.log.includes('rebota'));
         setLastCombat({ damage: attackerDamage, player: attackerIsMe ? viewer : (viewer === 0 ? 1 : 0) as 0 | 1 });
         setTimeout(() => setLastCombat(null), 1000);
       }
