@@ -662,7 +662,17 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
         }
         log.push(`${fm.trap.name}: Destruyes ${selfDestroy.length} tuyos y ${oppDestroy.length} del rival.`);
       } else {
-        log.push(`${fm.trap.name}: No hay suficientes Monstruos para activarse.`);
+        const propiosNecesarios = 2;
+        const propiosDisponibles = selfFms.length;
+        const rivalesNecesarios = 1;
+        const rivalesDisponibles = oppFms.length;
+        const motivo =
+          propiosDisponibles < propiosNecesarios && rivalesDisponibles < rivalesNecesarios
+            ? `no tienes los 2 Monstruos propios necesarios y el rival tampoco tiene un Monstruo disponible`
+            : propiosDisponibles < propiosNecesarios
+              ? `solo tienes ${propiosDisponibles} Monstruo${propiosDisponibles === 1 ? '' : 's'} propio${propiosDisponibles === 1 ? '' : 's'} y necesitas al menos 2`
+              : `el rival no tiene ningún Monstruo disponible para destruir`;
+        log.push(`${fm.trap.name}: La Trampa se activa, pero no tiene efecto porque ${motivo}.`);
       }
     }
     // Trap 9: Tres turnos — cuenta 3 turnos y luego permite elegir un monstruo para destruir
