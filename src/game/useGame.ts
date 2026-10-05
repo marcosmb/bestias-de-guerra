@@ -855,11 +855,7 @@ export function reducer(state: GameState, action: Action): GameState {
       players[cp] = playCardFromHand(players[cp], action.card);
 
       let logMessage = `${players[cp].name} coloca una Trampa bajo ${fm.card.name}.`;
-      if (action.card.effect.kind === 'heal_per_turn') {
-        const amount = action.card.effect.amount;
-        players[cp] = applyHeal(players[cp], amount);
-        logMessage += ` Su efecto empieza inmediatamente: +${amount} PV.`;
-      } else if (action.card.effect.kind === 'damage_per_turn') {
+      if (action.card.effect.kind === 'damage_per_turn') {
         const opponent = (cp === 0 ? 1 : 0) as 0 | 1;
         const amount = action.card.effect.amount;
         players[opponent] = applyDamage(players[opponent], amount);
