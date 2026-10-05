@@ -230,6 +230,27 @@ function removeFieldMonster(
   }
 }
 
+function consumeAttachedTrap(
+  players: [PlayerState, PlayerState],
+  playerIdx: 0 | 1,
+  uid: string,
+): void {
+  const player = players[playerIdx];
+  const fm = findFieldMonster(player, uid);
+  if (!fm?.trap) return;
+
+  const trap = fm.trap;
+  const owner = ownerOf(trap) ?? playerIdx;
+  players[owner] = {
+    ...players[owner],
+    graveyard: [...players[owner].graveyard, trap],
+  };
+  players[playerIdx] = updateFieldMonster(players[playerIdx], uid, (fieldMonster) => ({
+    ...fieldMonster,
+    trap: null,
+  }));
+}
+
 function applyDamage(player: PlayerState, dmg: number): PlayerState {
   return { ...player, lp: Math.max(0, player.lp - dmg) };
 }
@@ -1027,6 +1048,14 @@ export function reducer(state: GameState, action: Action): GameState {
         // `pendingTrap` se conserva a propósito: `ROLL_DICE` lo necesita para
         // resolver estas dos Trampas, y lo limpia al terminar.
         if (newState.phase === 'dice-roll') {
+          // Las Trampas de dado son de un solo uso: se consumen al activarse,
+          // independientemente de que la tirada acierte o falle.
+          const diceTrapKinds = new Set(['dice_count_field', 'dice_4plus_destroy']);
+          if (diceTrapKinds.has(pt.trap.effect.kind)) {
+            const players = [...newState.players] as [PlayerState, PlayerState];
+            consumeAttachedTrap(players, pt.defenderPlayer, pt.defenderUid);
+            newState = { ...newState, players };
+          }
           return { ...newState, selection: { kind: 'none' } };
         }
         if (result.negateAttack) {
@@ -1147,10 +1176,8 @@ export function reducer(state: GameState, action: Action): GameState {
             removeFieldMonster(players, target.player, target.fm.uid);
             log.push(`${target.fm.card.name} destruido por conteo.`);
           }
-          // Remove trap
-          if (findFieldMonster(players[pt.defenderPlayer], pt.defenderUid)) {
-            players[pt.defenderPlayer] = updateFieldMonster(players[pt.defenderPlayer], pt.defenderUid, (fm) => ({ ...fm, trap: null }));
-          }
+          // La Trampa 3 ya fue consumida al activarse (RESOLVE_TRAP).
+          // Aquí solo se resuelve el resultado del dado.
           // Mark attacker as having attacked
           if (findFieldMonster(players[pt.attackerPlayer], pt.attackerUid)) {
             players[pt.attackerPlayer] = updateFieldMonster(players[pt.attackerPlayer], pt.attackerUid, (fm) => ({ ...fm, hasAttacked: true }));
@@ -1168,9 +1195,8 @@ export function reducer(state: GameState, action: Action): GameState {
               players[pt.attackerPlayer] = updateFieldMonster(players[pt.attackerPlayer], pt.attackerUid, (fm) => ({ ...fm, hasAttacked: true }));
             }
           }
-          if (findFieldMonster(players[pt.defenderPlayer], pt.defenderUid)) {
-            players[pt.defenderPlayer] = updateFieldMonster(players[pt.defenderPlayer], pt.defenderUid, (fm) => ({ ...fm, trap: null }));
-          }
+          // La Trampa 6 ya fue consumida al activarse (RESOLVE_TRAP).
+          // Aquí solo se resuelve el resultado del dado.
         }
       } else if (reason.includes('dado') || reason.includes('Daño por dado')) {
         // Magic 11: dice damage
