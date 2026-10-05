@@ -654,7 +654,10 @@ Cuando se activa:
 
 - se lanza un dado;
 - con 4, 5 o 6, el Monstruo atacante es destruido;
-- con 1, 2 o 3, el Monstruo no es destruido por este efecto.
+- con 1, 2 o 3, el Monstruo no es destruido por este efecto;
+- la Trampa se consume después de esta activación y pasa al cementerio, tanto si acierta como si falla.
+
+La Trampa 6 es de **un solo uso**.
 
 ---
 
