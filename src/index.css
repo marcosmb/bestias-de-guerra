@@ -272,6 +272,47 @@ img {
   animation: combatPhantomFromTop 1.05s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+
+.combat-phantom-direct-from-bottom {
+  animation: combatPhantomDirectFromBottom 1.05s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.combat-phantom-direct-from-top {
+  animation: combatPhantomDirectFromTop 1.05s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes combatPhantomDirectFromBottom {
+  0% {
+    transform: translate(-50%, 26vh) scale(0.35) rotate(5deg);
+    opacity: 0;
+  }
+  18% { opacity: 0.95; }
+  72% {
+    transform: translate(-50%, -31vh) scale(1.08) rotate(-1deg);
+    opacity: 0.92;
+  }
+  100% {
+    transform: translate(-50%, -34vh) scale(0.92) rotate(0deg);
+    opacity: 0.96;
+  }
+}
+
+@keyframes combatPhantomDirectFromTop {
+  0% {
+    transform: translate(-50%, -26vh) scale(0.35) rotate(-5deg);
+    opacity: 0;
+  }
+  18% { opacity: 0.95; }
+  72% {
+    transform: translate(-50%, 31vh) scale(1.08) rotate(1deg);
+    opacity: 0.92;
+  }
+  100% {
+    transform: translate(-50%, 34vh) scale(0.92) rotate(0deg);
+    opacity: 0.96;
+  }
+}
+
 .combat-attack-trail {
   animation: combatAttackTrail 1.05s ease-out forwards;
 }
