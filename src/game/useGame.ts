@@ -580,7 +580,14 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
       players[opp] = {
         ...players[opp],
         field: players[opp].field.map((f) =>
-          f ? { ...f, position: f.position === 'attack' ? 'defense' as Position : 'attack' as Position, faceDown: f.position === 'attack' } : f,
+          f ? {
+            ...f,
+            position: f.position === 'attack' ? 'defense' as Position : 'attack' as Position,
+            // Regla 13: al cambiar de posición, el Monstruo queda boca arriba.
+            // Si estaba oculto en Defensa, al pasar a Ataque se revela; si estaba
+            // boca arriba en Ataque, al pasar a Defensa sigue siendo visible.
+            faceDown: false,
+          } : f,
         ),
       };
       log.push(`${card.name}: Todos los Monstruos del rival cambian de posición.`);
@@ -1024,7 +1031,9 @@ export function reducer(state: GameState, action: Action): GameState {
       players[cp] = updateFieldMonster(players[cp], action.fieldUid, (f) => ({
         ...f,
         position: f.position === 'attack' ? 'defense' : 'attack',
-        faceDown: f.position === 'attack',
+        // Regla 13: un Monstruo que cambia de posición queda boca arriba y ya
+        // no vuelve a ocultarse por cambios de posición.
+        faceDown: false,
         hasChangedPosition: true,
       }));
       const newState: GameState = { ...state, players, log: addLog(state, `${fm.card.name} cambia a ${fm.position === 'attack' ? 'Defensa' : 'Ataque'}.`) };
