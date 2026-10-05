@@ -296,7 +296,11 @@ function getMusicElement(): HTMLAudioElement | null {
   return musicElement;
 }
 
-function retryMusicPlayback(): void {
+function retryMusicPlayback(event?: Event): void {
+  if (event?.target instanceof Element && event.target.closest('[data-music-toggle]')) {
+    console.log('[MUSICA][UNLOCK][IGNORADO_BOTON]');
+    return;
+  }
   if (!requestedMusicTrack || !musicPreferences.enabled) return;
   const element = getMusicElement();
   if (!element) return;
