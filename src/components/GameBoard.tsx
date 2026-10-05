@@ -619,8 +619,6 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
         defenderUid: state.lastCombat.defenderUid ?? 'defender',
         isDirectAttack: state.lastCombat.defenderUid?.startsWith('lp-') ?? false,
         attackerPlayer: state.lastCombat.attackerPlayer ?? state.currentPlayer,
-        attackerCard: state.lastCombat.attackerCard,
-        defenderCard: state.lastCombat.defenderCard,
         result,
       });
 
