@@ -289,7 +289,7 @@ function App() {
     };
 
     return (
-      <div className="bg-ink-900 flex flex-col items-center justify-center px-6 py-8 min-h-[100dvh]">
+      <div className="bg-ink-900 flex flex-col items-center justify-center px-6 py-8 min-h-[100dvh] relative">
         <div className="w-full max-w-md">
           <h2 className="font-display text-2xl font-bold text-gold-300 mb-6 text-center">Jugar Online</h2>
           <p className="text-ink-300 text-center mb-6">
@@ -326,14 +326,14 @@ function App() {
               className="w-full px-4 py-3 rounded-lg bg-ink-800 border border-ink-600 text-ink-100 placeholder-ink-400 focus:border-azure-400 focus:outline-none text-center text-lg tracking-widest"
               maxLength={6}
             />
-            <button
-              type="button"
-              onClick={handleBack}
-              className="w-full px-4 py-3 rounded-lg bg-ink-800 border border-ink-600 text-ink-200 font-display font-bold hover:border-ink-400 hover:bg-ink-700 transition-colors flex items-center justify-center gap-2"
-            >
-              <ArrowLeft size={18} />
-              Atrás
-            </button>
+          <button
+            type="button"
+            onClick={handleBack}
+            className="absolute top-4 left-4 px-3 py-2 rounded-lg bg-ink-800 border border-ink-600 text-ink-200 font-display font-bold hover:border-ink-400 hover:bg-ink-700 transition-colors flex items-center gap-1.5 z-10"
+          >
+            <ArrowLeft size={18} />
+            Atrás
+          </button>
           </div>
         </div>
       </div>
