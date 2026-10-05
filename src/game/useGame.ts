@@ -1289,7 +1289,14 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
     players[opp] = updateFieldMonster(players[opp], defenderUid, (fm) => ({ ...fm, faceDown: false }));
   }
 
-  const result: CombatResult = resolveCombat(attacker, defender);
+  const result: CombatResult = {
+    ...resolveCombat(attacker, defender),
+    attackerUid,
+    defenderUid,
+    attackerPlayer: cp,
+    attackerCard: attacker.card,
+    defenderCard: defender.card,
+  };
   const hasReflect = defender.trap?.effect.kind === 'reflect_damage';
 
   if (result.attackerDestroyed) {
