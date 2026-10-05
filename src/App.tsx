@@ -119,7 +119,7 @@ function StartScreen({
           }`}
           title={musicEnabled ? 'Desactivar música' : 'Activar música'}
           aria-label={musicEnabled ? 'Desactivar música' : 'Activar música'}
-        >        >
+        >
           {musicEnabled ? <Music size={15} /> : <VolumeX size={15} />}
           {musicEnabled ? 'Desactivar música' : 'Activar música'}
         </button>
