@@ -32,7 +32,7 @@ export function CardReferenceScreen({ onBack }: CardReferenceScreenProps) {
   const magics = allCards.filter((card) => card.type === 'magic');
 
   return (
-    <div className="bg-ink-900 min-h-[100dvh] text-ink-100 flex flex-col">
+    <div className="bg-ink-900 h-[100dvh] min-h-0 text-ink-100 flex flex-col">
       <header className="shrink-0 flex items-center gap-3 px-4 sm:px-6 py-3 border-b border-ink-700 bg-ink-900/95">
         <button type="button" onClick={onBack} className="px-3 py-2 rounded-lg bg-ink-800 border border-ink-600 text-ink-200 font-display font-bold hover:border-gold-400 hover:bg-ink-700 transition-colors flex items-center gap-1.5 btn-press">
           <ArrowLeft size={18} /> Atrás
@@ -40,7 +40,7 @@ export function CardReferenceScreen({ onBack }: CardReferenceScreenProps) {
         <div><h1 className="font-display font-black text-gold-300 text-xl">Cartas</h1><p className="text-ink-400 text-xs">Todas las cartas y sus efectos</p></div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
+      <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 py-5">
         <section className="max-w-7xl mx-auto space-y-7">
           <div>
             <h2 className="font-display font-bold text-azure-300 text-lg mb-3">Espadas y Bastos · Monstruos</h2>
