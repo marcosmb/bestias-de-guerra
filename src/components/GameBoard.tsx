@@ -24,12 +24,14 @@ import type { Action, GameState, FieldMonster, PlayerState } from '@/game/types'
 import { canAttack, magicRequiredSide, cardInstanceKey, MAX_HAND_SIZE, MAX_CARDS_PER_TURN } from '@/game/types';
 import { legalActions, sameAction } from '@/game/legalActions';
 import { CardView, CardBack } from './CardView';
-import { playSound, vibrate, getAudioPreferences, getMusicPreferences, setSoundEnabled, setMusicEnabled, setVolume, initAudio } from '@/game/audio';
+import { playSound, vibrate, getAudioPreferences, setSoundEnabled, setVolume, initAudio } from '@/game/audio';
 
 interface GameBoardProps {
   state: GameState;
   dispatch: React.Dispatch<Action>;
   onExit: () => void;
+  musicEnabled: boolean;
+  onToggleMusic: () => void;
   // Para modo online: índice del jugador local (0 = host/player1, 1 = guest/player2)
   // En modo local/CPU no se usa (se determina por currentPlayer)
   localPlayerIndex?: 0 | 1;
@@ -508,7 +510,6 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
   };
 
   const [soundEnabled, setSoundEnabledState] = useState(true);
-  const [musicEnabled, setMusicEnabledState] = useState(true);
   const [volume, setVolumeState] = useState(0.5);
   const [showVolumeControl, setShowVolumeControl] = useState(false);
 
@@ -550,9 +551,7 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
   useEffect(() => {
     initAudio();
     const prefs = getAudioPreferences();
-    const musicPrefs = getMusicPreferences();
     setSoundEnabledState(prefs.enabled);
-    setMusicEnabledState(musicPrefs.enabled);
     setVolumeState(prefs.volume);
   }, []);
 
@@ -720,12 +719,6 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
     const newValue = !soundEnabled;
     setSoundEnabledState(newValue);
     setSoundEnabled(newValue);
-  };
-
-  const toggleMusic = () => {
-    const newValue = !musicEnabled;
-    setMusicEnabledState(newValue);
-    setMusicEnabled(newValue);
   };
 
   const changeVolume = (newVolume: number) => {
