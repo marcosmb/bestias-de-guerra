@@ -1253,12 +1253,24 @@ function executeDirectAttack(state: GameState, attackerUid: string): GameState {
   players[opp] = applyDamage(players[opp], dmg);
   players[cp] = updateFieldMonster(players[cp], attackerUid, (fm) => ({ ...fm, hasAttacked: true }));
   const winResult = checkWinner(players);
+  const combat: CombatResult = {
+    attackerDestroyed: false,
+    defenderDestroyed: false,
+    attackerDamage: 0,
+    defenderDamage: dmg,
+    log: `${attacker.card.name} ataca directamente. ${dmg} PV al rival.`,
+    attackerUid,
+    defenderUid: 'lp-' + opp,
+    attackerPlayer: cp,
+    attackerCard: attacker.card,
+  };
   return {
     ...state,
     players,
     phase: winResult.winner !== null || winResult.isDraw ? 'game-over' : 'playing',
     selection: { kind: 'none' },
     log: addLog(state, `${attacker.card.name} ataca directamente. ${dmg} PV al rival.`),
+    lastCombat: combat,
     winner: winResult.winner,
     isDraw: winResult.isDraw,
   };
