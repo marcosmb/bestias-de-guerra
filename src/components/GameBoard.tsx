@@ -284,15 +284,18 @@ function DamageFloat({ damage, playerIdx }: { damage: number; playerIdx: 0 | 1 }
 }
 
 // Animación de combate
-function CombatAnimation({ 
-  combatState, 
-  onComplete 
-}: { 
-  combatState: { 
-    attackerUid: string; 
-    defenderUid: string; 
+function CombatAnimation({
+  combatState,
+  onComplete
+}: {
+  combatState: {
+    attackerUid: string;
+    defenderUid: string;
     isDirectAttack: boolean;
     result: 'attacker-destroyed' | 'defender-destroyed' | 'both-destroyed' | 'none-destroyed';
+    attackerPlayer?: 0 | 1;
+    attackerCard?: MonsterCard;
+    defenderCard?: MonsterCard;
   } | null;
   onComplete: () => void;
 }) {
@@ -301,13 +304,13 @@ function CombatAnimation({
 
   useEffect(() => {
     if (!combatState) return;
-    
-    const attackTimer = setTimeout(() => setPhase('impact'), 300);
-    const impactTimer = setTimeout(() => setPhase('result'), 600);
+
+    const attackTimer = setTimeout(() => setPhase('impact'), 520);
+    const impactTimer = setTimeout(() => setPhase('result'), 780);
     const completeTimer = setTimeout(() => {
       setVisible(false);
       onComplete();
-    }, 1200);
+    }, 1450);
 
     return () => {
       clearTimeout(attackTimer);
@@ -318,37 +321,73 @@ function CombatAnimation({
 
   if (!combatState || !visible) return null;
 
-  const isAttackerTop = combatState.attackerUid.startsWith('top');
+  const isAttackerTop = combatState.attackerPlayer === 1;
   const attackDirection = isAttackerTop ? 'down' : 'up';
+  const attackerImage = combatState.attackerCard?.image ?? (
+    combatState.attackerCard
+      ? '/cards/' + combatState.attackerCard.suit + '-' + combatState.attackerCard.number + '.webp'
+      : null
+  );
+  const defenderImage = combatState.defenderCard?.image ?? (
+    combatState.defenderCard
+      ? '/cards/' + combatState.defenderCard.suit + '-' + combatState.defenderCard.number + '.webp'
+      : null
+  );
 
   return (
-    <div className="fixed inset-0 z-30 pointer-events-none">
-      {/* Attack line */}
+    <div className="fixed inset-0 z-30 pointer-events-none overflow-hidden">
       {phase === 'attack' && (
-        <div 
-          className={`absolute left-1/2 -translate-x-1/2 w-1 bg-gradient-to-b from-crimson-500 to-transparent animate-pulse ${
-            attackDirection === 'down' ? 'top-[20%] h-[30%]' : 'bottom-[20%] h-[30%]'
-          }`}
-          style={{ opacity: 0.6 }}
+        <div
+          className={
+            'absolute left-1/2 -translate-x-1/2 w-1.5 rounded-full bg-gradient-to-b from-crimson-300 via-crimson-500 to-transparent combat-attack-trail ' +
+            (attackDirection === 'down' ? 'top-[18%] h-[38%]' : 'bottom-[18%] h-[38%]')
+          }
         />
       )}
-      
-      {/* Impact effect */}
-      {phase === 'impact' && (
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-          <div className="w-16 h-16 rounded-full bg-crimson-500/30 animate-ping" />
+
+      {phase === 'attack' && attackerImage && (
+        <div
+          className={
+            'absolute left-1/2 -translate-x-1/2 combat-phantom-monster ' +
+            (attackDirection === 'down' ? 'combat-phantom-from-top' : 'combat-phantom-from-bottom')
+          }
+        >
+          <div className="combat-phantom-aura" />
+          <div className="combat-phantom-art">
+            <img src={attackerImage} alt="" aria-hidden="true" />
+          </div>
+          <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-white/80 font-display font-bold text-xs tracking-widest uppercase">
+            {combatState.attackerCard?.name}
+          </div>
         </div>
       )}
 
-      {/* Result indicator */}
+      {phase === 'impact' && (
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 combat-impact-burst">
+          <div className="absolute inset-0 rounded-full bg-white/80 blur-sm animate-ping" />
+          <div className="relative w-24 h-24 rounded-full border-4 border-crimson-300/90 bg-crimson-400/20 shadow-[0_0_60px_rgba(248,113,113,0.8)]">
+            <div className="absolute inset-4 rounded-full border-2 border-white/80" />
+          </div>
+          {defenderImage && (
+            <div className="absolute left-1/2 top-1/2 w-20 h-24 -translate-x-1/2 -translate-y-1/2 opacity-35 mix-blend-screen animate-pulse rounded-lg overflow-hidden">
+              <img src={defenderImage} alt="" aria-hidden="true" className="w-full h-full object-cover" />
+            </div>
+          )}
+        </div>
+      )}
+
       {phase === 'result' && (
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-          <div className={`px-4 py-2 rounded-lg font-display font-bold text-lg ${
-            combatState.result === 'both-destroyed' ? 'bg-crimson-900/90 text-crimson-200' :
-            combatState.result === 'attacker-destroyed' ? 'bg-crimson-900/90 text-crimson-200' :
-            combatState.result === 'defender-destroyed' ? 'bg-crimson-900/90 text-crimson-200' :
-            'bg-ink-800/90 text-ink-200'
-          }`}>
+          <div className={
+            'px-4 py-2 rounded-lg font-display font-bold text-lg animate-combat-result ' +
+            (
+              combatState.result === 'both-destroyed' ||
+              combatState.result === 'attacker-destroyed' ||
+              combatState.result === 'defender-destroyed'
+                ? 'bg-crimson-900/90 text-crimson-200'
+                : 'bg-ink-800/90 text-ink-200'
+            )
+          }>
             {combatState.result === 'both-destroyed' && '¡Ambos destruidos!'}
             {combatState.result === 'attacker-destroyed' && '¡Atacante destruido!'}
             {combatState.result === 'defender-destroyed' && '¡Defensor destruido!'}
@@ -427,6 +466,9 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
     defenderUid: string;
     isDirectAttack: boolean;
     result: 'attacker-destroyed' | 'defender-destroyed' | 'both-destroyed' | 'none-destroyed';
+    attackerPlayer?: 0 | 1;
+    attackerCard?: MonsterCard;
+    defenderCard?: MonsterCard;
   } | null>(null);
 
   useEffect(() => {
@@ -565,9 +607,12 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
       
       // Show combat animation
       setCombatAnim({
-        attackerUid: 'top',
-        defenderUid: 'bottom',
+        attackerUid: state.lastCombat.attackerUid ?? 'attacker',
+        defenderUid: state.lastCombat.defenderUid ?? 'defender',
         isDirectAttack: false,
+        attackerPlayer: state.lastCombat.attackerPlayer ?? state.currentPlayer,
+        attackerCard: state.lastCombat.attackerCard,
+        defenderCard: state.lastCombat.defenderCard,
         result,
       });
 
