@@ -258,9 +258,11 @@ function App() {
   const [copied, setCopied] = useState(false);
 
   const toggleMusic = () => {
-    const next = !musicEnabled;
-    setMusicEnabledState(next);
-    setMusicEnabled(next);
+    setMusicEnabledState((current) => {
+      const next = !current;
+      setMusicEnabled(next);
+      return next;
+    });
   };
 
   useEffect(() => {
