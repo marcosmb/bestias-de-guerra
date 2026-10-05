@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Difficulty, GameMode } from '@/game/types';
-import { Swords, ChevronRight, History, Wifi, Cpu, User, Link2, Copy, X, ArrowLeft, BookOpen, Layers3 } from 'lucide-react';
+import { Swords, ChevronRight, History, Wifi, Cpu, User, Link2, Copy, X, ArrowLeft, BookOpen, Layers3, Music, VolumeX } from 'lucide-react';
 import { useGame } from '@/game/useGame';
 import { useOnlineGame } from '@/hooks/useOnlineGame';
 import { PassDeviceScreen } from '@/components/PassDeviceScreen';
@@ -20,12 +20,16 @@ function StartScreen({
   onOpenCards,
   onOpenRules,
   hasHistory,
+  musicEnabled,
+  onToggleMusic,
 }: {
   onStart: (mode: GameMode, difficulty: Difficulty) => void;
   onOpenHistory: () => void;
   onOpenCards: () => void;
   onOpenRules: () => void;
   hasHistory: boolean;
+  musicEnabled: boolean;
+  onToggleMusic: () => void;
 }) {
   const [mode, setMode] = useState<GameMode>('local');
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
@@ -73,6 +77,22 @@ function StartScreen({
             </button>
           ))}
         </div>
+      </div>
+      <div className="w-full max-w-md mx-auto mb-5 flex justify-center">
+        <button
+          type="button"
+          onClick={onToggleMusic}
+          className={`rounded-lg border px-4 py-2 text-xs font-display font-bold transition-colors flex items-center justify-center gap-2 ${
+            musicEnabled
+              ? 'border-gold-400 bg-gold-400/15 text-gold-300'
+              : 'border-ink-600 bg-ink-800 text-ink-400 hover:border-ink-400'
+          }`}
+          title={musicEnabled ? 'Desactivar música' : 'Activar música'}
+          aria-label={musicEnabled ? 'Desactivar música' : 'Activar música'}
+        >
+          {musicEnabled ? <Music size={15} /> : <VolumeX size={15} />}
+          {musicEnabled ? 'Música activada' : 'Música desactivada'}
+        </button>
       </div>
       {mode === 'cpu' ? (
         <>
@@ -209,7 +229,7 @@ function App() {
   useEffect(() => {
     initAudio();
     const prefs = getMusicPreferences();
-    setMusicEnabled(prefs.enabled);
+    setMusicEnabledState(prefs.enabled);
     setMusicVolume(prefs.volume);
   }, []);
 
@@ -234,6 +254,15 @@ function App() {
   const [onlinePlayerName, setOnlinePlayerName] = useState<string>('');
   const [storedHistory, setStoredHistory] = useState<MatchHistory | null>(null);
   const [copied, setCopied] = useState(false);
+  const [musicEnabled, setMusicEnabledState] = useState(true);
+
+  const toggleMusic = () => {
+    setMusicEnabledState((current) => {
+      const next = !current;
+      setMusicEnabled(next);
+      return next;
+    });
+  };
 
   useEffect(() => {
     const inGameFlow = flow === 'play' || flow === 'pass';
