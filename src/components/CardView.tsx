@@ -59,6 +59,7 @@ interface CardViewProps {
   faceDown?: boolean;
   isField?: boolean;
   fieldMonster?: FieldMonster;
+  isOpponent?: boolean;
   showTrap?: boolean;
   showMagic?: boolean;
   className?: string;
@@ -80,6 +81,7 @@ export function CardView({
   faceDown = false,
   isField = false,
   fieldMonster,
+  isOpponent = false,
   showTrap = false,
   showMagic = false,
   className = '',
@@ -160,7 +162,7 @@ export function CardView({
           <AssociatedCardMiniature
             card={fieldMonster.trap}
             type="trap"
-            hidden={!!(isField && fieldMonster && fieldMonster.trap && !fieldMonster.trapRevealed && faceDown === false)}
+            hidden={!!(isOpponent && fieldMonster && !fieldMonster.trapRevealed)}
           />
         )}
         {showMagic && fieldMonster?.magic && (
