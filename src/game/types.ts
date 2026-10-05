@@ -19,6 +19,8 @@ export interface FieldMonster {
   tempAtkModifier: number;
   tempDefModifier: number;
   diceProtection: boolean;
+  /** true cuando la Trampa asociada ya ha sido descubierta por el rival. */
+  trapRevealed?: boolean;
 }
 
 export interface PlayerState {
