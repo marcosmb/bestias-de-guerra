@@ -80,6 +80,7 @@ function makeState(
     difficulty: options.difficulty ?? 'normal',
     currentPlayer: 1,
     turnCount: options.turnCount ?? 1,
+    stateVersion: 0,
     players: [
       playerWith(0, humanField, options.humanHand ?? []),
       playerWith(1, cpuField, options.cpuHand ?? [], {

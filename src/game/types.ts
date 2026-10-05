@@ -33,7 +33,7 @@ export interface PlayerState {
 }
 
 export type Phase = 'start' | 'pass' | 'playing' | 'trap-response' | 'dice-roll' | 'game-over';
-export type GameMode = 'local' | 'cpu';
+export type GameMode = 'local' | 'cpu' | 'online';
 export type Difficulty = 'easy' | 'normal' | 'hard' | 'expert';
 
 /** Asiento que controla la CPU (siempre el 1 en el modo actual). */
@@ -93,6 +93,7 @@ export interface GameState {
   difficulty: Difficulty;
   currentPlayer: 0 | 1;
   turnCount: number;
+  stateVersion: number;
   players: [PlayerState, PlayerState];
   selection: SelectionMode;
   log: string[];
@@ -712,13 +713,13 @@ export function isLegalAction(state: GameState, player: 0 | 1, action: Action): 
 function actionsEqual(a: Action, b: Action): boolean {
   if (a.type !== b.type) return false;
   switch (a.type) {
-    case 'SUMMON_MONSTER': return (a as any).card === (b as any).card && (a as any).position === (b as any).position;
-    case 'SELECT_TRAP_PLACE': return (a as any).card === (b as any).card;
-    case 'PLACE_TRAP_ON_MONSTER': return (a as any).card === (b as any).card && (a as any).fieldUid === (b as any).fieldUid;
-    case 'SELECT_MAGIC': return (a as any).card === (b as any).card;
+    case 'SUMMON_MONSTER': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card) && (a as any).position === (b as any).position;
+    case 'SELECT_TRAP_PLACE': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card);
+    case 'PLACE_TRAP_ON_MONSTER': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card) && (a as any).fieldUid === (b as any).fieldUid;
+    case 'SELECT_MAGIC': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card);
     case 'PLACE_MAGIC_ON_MONSTER':
-    case 'MAGIC_TARGET_MONSTER': return (a as any).card === (b as any).card && (a as any).fieldUid === (b as any).fieldUid;
-    case 'MAGIC_INSTANT': return (a as any).card === (b as any).card;
+    case 'MAGIC_TARGET_MONSTER': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card) && (a as any).fieldUid === (b as any).fieldUid;
+    case 'MAGIC_INSTANT': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card);
     case 'START_ATTACK': return (a as any).attackerUid === (b as any).attackerUid;
     case 'DECLARE_ATTACK': return (a as any).attackerUid === (b as any).attackerUid && (a as any).defenderUid === (b as any).defenderUid;
     case 'DIRECT_ATTACK': return (a as any).attackerUid === (b as any).attackerUid;
@@ -726,7 +727,7 @@ function actionsEqual(a: Action, b: Action): boolean {
     case 'CHANGE_POSITION': return (a as any).fieldUid === (b as any).fieldUid;
     case 'DESTROY_MONSTER': return (a as any).fieldUid === (b as any).fieldUid;
     case 'ROLL_DICE': return (a as any).roll === (b as any).roll;
-    case 'REVIVE_CHOICE': return (a as any).card === (b as any).card && (a as any).choice === (b as any).choice && (a as any).position === (b as any).position;
+    case 'REVIVE_CHOICE': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card) && (a as any).choice === (b as any).choice && (a as any).position === (b as any).position;
     case 'START_GAME': case 'CPU_PLAY': case 'CONFIRM_START': case 'CONFIRM_PASS': case 'END_TURN': case 'CANCEL_SELECTION': case 'RESTART':
       return true;
     default: return false;

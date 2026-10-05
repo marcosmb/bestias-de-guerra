@@ -897,6 +897,7 @@ function emptyState(): GameState {
     difficulty: 'normal',
     currentPlayer: 0,
     turnCount: 0,
+    stateVersion: 0,
     players: [
       makeEmptyPlayer(0, 'Jugador 1'),
       makeEmptyPlayer(1, 'Jugador 2'),

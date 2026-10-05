@@ -67,6 +67,7 @@ export function initialState(): GameState {
     difficulty: 'normal',
     currentPlayer: 0,
     turnCount: 0,
+    stateVersion: 0,
     players: [
       createPlayer(0, 'Jugador 1', []),
       createPlayer(1, 'Jugador 2', []),
@@ -1051,7 +1052,7 @@ export function reducer(state: GameState, action: Action): GameState {
         turnCount: newTurn,
         selection: { kind: 'none' },
         passTarget: nextPlayer,
-        phase: state.mode === 'cpu' ? 'playing' : 'pass',
+        phase: state.mode === 'cpu' || state.mode === 'online' ? 'playing' : 'pass',
         log: addLog(state, `Turno de ${players[nextPlayer].name}.`),
       };
       // Apply turn start passive effects

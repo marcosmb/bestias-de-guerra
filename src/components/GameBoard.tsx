@@ -27,6 +27,9 @@ interface GameBoardProps {
   state: GameState;
   dispatch: React.Dispatch<Action>;
   onExit: () => void;
+  // Para modo online: índice del jugador local (0 = host/player1, 1 = guest/player2)
+  // En modo local/CPU no se usa (se determina por currentPlayer)
+  localPlayerIndex?: 0 | 1;
 }
 
 // Mensaje temporal (toast)
@@ -357,7 +360,7 @@ function CombatAnimation({
   );
 }
 
-export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
+export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoardProps) {
   const [showLog, setShowLog] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   /*
@@ -454,7 +457,10 @@ export function GameBoard({ state, dispatch, onExit }: GameBoardProps) {
 
   const cp = state.currentPlayer;
   const isCpuTurn = state.mode === 'cpu' && cp === 1;
-  const viewer = state.mode === 'cpu' ? 0 : cp;
+  // En modo online, el espectador es el jugador local (fijo), no el currentPlayer
+  const viewer = state.mode === 'online' 
+    ? (localPlayerIndex ?? 0) 
+    : (state.mode === 'cpu' ? 0 : cp);
   const me = state.players[viewer];
   const opp = state.players[viewer === 0 ? 1 : 0];
   const sel = state.selection;
