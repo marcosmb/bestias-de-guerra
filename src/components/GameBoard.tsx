@@ -232,6 +232,7 @@ function FieldSlot({
         faceDown={isOpponent && fm.faceDown}
         isField
         fieldMonster={fm}
+        isOpponent={isOpponent}
         showTrap={showTrap}
         showMagic={showMagic}
         onClick={onClick}
