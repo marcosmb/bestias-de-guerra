@@ -309,8 +309,6 @@ export function setMusicTrack(track: MusicTrack | null): void {
   const element = getMusicElement();
   if (!element) return;
 
-  // OFF siempre tiene prioridad: ninguna pista puede reproducirse mientras
-  // la preferencia de música esté desactivada.
   if (!track || !musicPreferences.enabled) {
     element.pause();
     element.currentTime = 0;
@@ -319,31 +317,34 @@ export function setMusicTrack(track: MusicTrack | null): void {
     return;
   }
 
-  if (currentMusicTrack !== track) {
+  if (currentMusicTrack !== track || !element.src) {
     element.pause();
     element.currentTime = 0;
     element.src = MUSIC_SOURCES[track];
-    element.volume = musicPreferences.volume;
     element.loop = true;
     currentMusicTrack = track;
   }
 
   element.volume = musicPreferences.volume;
-  void element.play()
-    .then(() => removeMusicUnlockListeners())
-    .catch(() => installMusicUnlockListeners());
+
+  // play() se intenta siempre que la música esté activada. Cada clic en el
+  // interruptor pasa por esta misma ruta, por lo que apagar/encender es reversible.
+  void element.play().then(() => {
+    removeMusicUnlockListeners();
+  }).catch(() => {
+    installMusicUnlockListeners();
+  });
 }
 
 export function setMusicEnabled(enabled: boolean): void {
   musicPreferences.enabled = enabled;
   saveMusicPreferences();
 
-  const element = musicElement;
+  const element = getMusicElement();
   if (!enabled) {
     removeMusicUnlockListeners();
     element?.pause();
     if (element) element.currentTime = 0;
-    currentMusicTrack = null;
     return;
   }
 
