@@ -197,6 +197,7 @@ function FieldSlot({
   showMagic,
   animateSummon,
   onZoom,
+  attackTarget = false,
 }: {
   fm: FieldMonster | null;
   isOpponent: boolean;
@@ -206,6 +207,7 @@ function FieldSlot({
   showMagic?: boolean;
   animateSummon?: boolean;
   onZoom?: (card: Card) => void;
+  attackTarget?: boolean;
 }) {
   if (!fm) {
     return (
@@ -232,7 +234,13 @@ function FieldSlot({
         showMagic={showMagic}
         onClick={onClick}
         animateSummon={animateSummon}
-        className={selectable ? 'ring-2 ring-gold-300 animate-pulse shadow-glow scale-105' : ''}
+        className={
+          attackTarget
+            ? 'ring-4 ring-crimson-300 animate-pulse shadow-[0_0_24px_rgba(248,113,113,0.9)] scale-110'
+            : selectable
+              ? 'ring-2 ring-gold-300 animate-pulse shadow-glow scale-105'
+              : ''
+        }
       />
       {/* Zoom button for own field cards */}
       {!isOpponent && onZoom && (
@@ -983,6 +991,11 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
               isOpponent
               onClick={fm ? () => handleOpponentFieldClick(fm.uid) : undefined}
               selectable={isOpponentSlotSelectable(fm)}
+              attackTarget={
+                !!fm &&
+                (sel.kind === 'attack' || sel.kind === 'attack-or-direct') &&
+                isOpponentSlotSelectable(fm)
+              }
               showTrap={false}
               showMagic={false}
             />
