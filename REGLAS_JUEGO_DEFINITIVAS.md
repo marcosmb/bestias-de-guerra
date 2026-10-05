@@ -1,6 +1,6 @@
 # GUÍA COMPLETA DEL JUEGO DE CARTAS
 
-## REGLAMENTO OFICIAL DEL JUEGO — VERSIÓN 1.0
+## REGLAMENTO OFICIAL DEL JUEGO — VERSIÓN 1.1
 
 > **DOCUMENTO PROTEGIDO — REGLAS OFICIALES DEL JUEGO**
 >
@@ -246,9 +246,21 @@ Un Monstruo puede estar en una de dos posiciones.
 
 ## 13.2. Defensa
 
-- Boca abajo.
 - Horizontal.
+- Puede estar boca abajo mientras todavía no haya sido revelado.
 - Utiliza su DEF cuando es atacado.
+
+### Regla de visibilidad permanente
+
+Un Monstruo que ya haya sido mostrado **boca arriba** permanece visible para el rival aunque después pase a **Defensa**.
+
+Por tanto:
+
+- Ataque → Defensa: queda en Defensa **boca arriba**.
+- Defensa boca abajo → Ataque: se revela y queda **boca arriba**.
+- Una vez revelado, un Monstruo **no vuelve a ocultarse** por cambiar de posición mientras permanezca en el campo.
+
+Solo un Monstruo que todavía no haya sido revelado puede permanecer boca abajo en Defensa.
 
 Cuando un Monstruo en Defensa boca abajo es atacado, se revela antes de resolver el combate.
 
@@ -269,12 +281,16 @@ No puede realizar dos cambios voluntarios durante el mismo turno.
 
 El cambio voluntario de posición **no consume una de las 3 cartas del turno**.
 
+Al cambiar de posición, el Monstruo queda **boca arriba**. Si estaba boca arriba en Ataque y pasa a Defensa, el rival continúa viéndolo. Si estaba boca abajo en Defensa y pasa a Ataque, se revela.
+
+Una vez que un Monstruo ha sido revelado, sus cambios posteriores de posición no vuelven a ocultarlo.
+
 Un Monstruo puede:
 
 - atacar y después cambiar a Defensa;
 - cambiar de Defensa a Ataque y después atacar.
 
-Los cambios provocados por efectos de cartas no consumen el cambio voluntario de posición del turno.
+Los cambios provocados por efectos de cartas no consumen el cambio voluntario de posición del turno y aplican la misma regla de visibilidad.
 
 ---
 
@@ -342,6 +358,8 @@ Al jugar un Monstruo desde la mano, el jugador puede elegir:
 
 - boca abajo;
 - horizontal.
+
+Un Monstruo colocado inicialmente en Defensa permanece boca abajo hasta que sea revelado. Una vez revelado, no volverá a ocultarse por un cambio posterior de posición.
 
 ---
 
@@ -975,7 +993,9 @@ Cuando se cambie una regla:
 
 # 35. ESTADO DEL REGLAMENTO
 
-**Versión:** 1.0 — **reglamento oficial para la versión jugable actual.**
+**Versión:** 1.1 — **reglamento oficial para la versión jugable actual.**
+
+Cambio respecto a la versión 1.0: un Monstruo que ya haya sido revelado boca arriba permanece visible para el rival al pasar a Defensa o cambiar nuevamente de posición.
 
 Esta versión consolida las reglas decididas por el creador y elimina las contradicciones principales entre los documentos anteriores.
 
