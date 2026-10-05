@@ -258,18 +258,16 @@ function App() {
   const [copied, setCopied] = useState(false);
 
   const toggleMusic = () => {
-    setMusicEnabledState((current) => {
-      const next = !current;
-      setMusicEnabled(next);
-      return next;
-    });
+    const next = !musicEnabled;
+    setMusicEnabledState(next);
+    setMusicEnabled(next);
   };
 
   useEffect(() => {
     const inGameFlow = flow === 'play' || flow === 'pass';
     const isGameOver = state.phase === 'game-over';
     setMusicTrack(inGameFlow && !isGameOver ? 'game' : 'menu');
-  }, [flow, state.phase, musicEnabled]);
+  }, [flow, state.phase]);
   const openHistory = () => {
     setStoredHistory(readStoredHistory());
     setFlow('history');
