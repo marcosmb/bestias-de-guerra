@@ -284,10 +284,13 @@ function getMusicElement(): HTMLAudioElement | null {
     musicElement.preload = 'auto';
     musicElement.loop = true;
     musicElement.addEventListener('ended', () => {
-      if (musicElement) {
-        musicElement.currentTime = 0;
-        void musicElement.play().catch(() => {});
+      if (!musicElement || !musicPreferences.enabled) {
+        console.log('[MUSICA][ENDED][IGNORADO]', { enabled: musicPreferences.enabled });
+        return;
       }
+      musicElement.currentTime = 0;
+      console.log('[MUSICA][ENDED][REINICIO]');
+      void musicElement.play().catch((error) => console.log('[MUSICA][ENDED][ERROR]', error));
     });
   }
   return musicElement;
