@@ -211,6 +211,149 @@ export function setVolume(volume: number): void {
 // Inicializar preferencias al cargar
 export function initAudio(): void {
   preferences = loadPreferences();
+  musicPreferences = loadMusicPreferences();
+  if (requestedMusicTrack && musicPreferences.enabled) {
+    setMusicTrack(requestedMusicTrack);
+  }
+}
+
+
+export type MusicTrack = 'menu' | 'game';
+
+interface MusicPreferences {
+  enabled: boolean;
+  volume: number;
+}
+
+const MUSIC_STORAGE_KEY = 'bestias-guerra-music';
+const MUSIC_SOURCES: Record<MusicTrack, string> = {
+  menu: '/audio/musica-menu.mp3',
+  game: '/audio/musica-partida.mp3',
+};
+
+let musicElement: HTMLAudioElement | null = null;
+let currentMusicTrack: MusicTrack | null = null;
+let requestedMusicTrack: MusicTrack | null = null;
+let musicPreferences: MusicPreferences = { enabled: true, volume: 0.35 };
+let musicUnlockInstalled = false;
+
+function loadMusicPreferences(): MusicPreferences {
+  try {
+    const stored = localStorage.getItem(MUSIC_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as Partial<MusicPreferences>;
+      return {
+        enabled: parsed.enabled ?? true,
+        volume: Math.max(0, Math.min(1, parsed.volume ?? 0.35)),
+      };
+    }
+  } catch {
+    // Ignorar errores de localStorage
+  }
+  return { enabled: true, volume: 0.35 };
+}
+
+function saveMusicPreferences(): void {
+  try {
+    localStorage.setItem(MUSIC_STORAGE_KEY, JSON.stringify(musicPreferences));
+  } catch {
+    // Ignorar errores de localStorage
+  }
+}
+
+function removeMusicUnlockListeners(): void {
+  if (typeof window === 'undefined' || !musicUnlockInstalled) return;
+  window.removeEventListener('pointerdown', retryMusicPlayback);
+  window.removeEventListener('keydown', retryMusicPlayback);
+  window.removeEventListener('touchstart', retryMusicPlayback);
+  musicUnlockInstalled = false;
+}
+
+function installMusicUnlockListeners(): void {
+  if (typeof window === 'undefined' || musicUnlockInstalled) return;
+  window.addEventListener('pointerdown', retryMusicPlayback, { passive: true });
+  window.addEventListener('keydown', retryMusicPlayback, { passive: true });
+  window.addEventListener('touchstart', retryMusicPlayback, { passive: true });
+  musicUnlockInstalled = true;
+}
+
+function getMusicElement(): HTMLAudioElement | null {
+  if (typeof window === 'undefined') return null;
+  if (!musicElement) {
+    musicElement = new Audio();
+    musicElement.preload = 'auto';
+    musicElement.loop = true;
+    musicElement.addEventListener('ended', () => {
+      if (musicElement) {
+        musicElement.currentTime = 0;
+        void musicElement.play().catch(() => {});
+      }
+    });
+  }
+  return musicElement;
+}
+
+function retryMusicPlayback(): void {
+  if (!requestedMusicTrack || !musicPreferences.enabled) return;
+  const element = getMusicElement();
+  if (!element) return;
+  element.volume = musicPreferences.volume;
+  void element.play()
+    .then(() => removeMusicUnlockListeners())
+    .catch(() => installMusicUnlockListeners());
+}
+
+export function setMusicTrack(track: MusicTrack | null): void {
+  requestedMusicTrack = track;
+
+  const element = getMusicElement();
+  if (!element) return;
+
+  if (!track || !musicPreferences.enabled) {
+    element.pause();
+    element.currentTime = 0;
+    currentMusicTrack = null;
+    return;
+  }
+
+  if (currentMusicTrack !== track) {
+    element.pause();
+    element.currentTime = 0;
+    element.src = MUSIC_SOURCES[track];
+    element.volume = musicPreferences.volume;
+    element.loop = true;
+    currentMusicTrack = track;
+  }
+
+  void element.play()
+    .then(() => removeMusicUnlockListeners())
+    .catch(() => installMusicUnlockListeners());
+}
+
+export function setMusicEnabled(enabled: boolean): void {
+  musicPreferences.enabled = enabled;
+  saveMusicPreferences();
+
+  if (!enabled) {
+    musicElement?.pause();
+    return;
+  }
+
+  if (requestedMusicTrack) {
+    setMusicTrack(requestedMusicTrack);
+  }
+}
+
+export function setMusicVolume(volume: number): void {
+  musicPreferences.volume = Math.max(0, Math.min(1, volume));
+  saveMusicPreferences();
+  if (musicElement) {
+    musicElement.volume = musicPreferences.volume;
+  }
+}
+
+export function getMusicPreferences(): MusicPreferences {
+  return { ...musicPreferences };
 }
 
 // Feedback táctil (vibración)
