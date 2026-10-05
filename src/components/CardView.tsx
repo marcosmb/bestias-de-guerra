@@ -157,7 +157,11 @@ export function CardView({
         <div className="card-type-indicator monster"></div>
         {/* Associated cards miniatures */}
         {showTrap && fieldMonster?.trap && (
-          <AssociatedCardMiniature card={fieldMonster.trap} type="trap" />
+          <AssociatedCardMiniature
+            card={fieldMonster.trap}
+            type="trap"
+            hidden={!!(isField && fieldMonster && fieldMonster.trap && !fieldMonster.trapRevealed && faceDown === false)}
+          />
         )}
         {showMagic && fieldMonster?.magic && (
           <AssociatedCardMiniature card={fieldMonster.magic} type="magic" />
