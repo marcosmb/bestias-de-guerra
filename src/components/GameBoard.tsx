@@ -351,7 +351,9 @@ function CombatAnimation({
         <div
           className={
             'absolute left-1/2 -translate-x-1/2 combat-phantom-monster ' +
-            (attackDirection === 'down' ? 'combat-phantom-from-top' : 'combat-phantom-from-bottom')
+            (combatState.isDirectAttack
+              ? (attackDirection === 'down' ? 'combat-phantom-direct-from-top' : 'combat-phantom-direct-from-bottom')
+              : (attackDirection === 'down' ? 'combat-phantom-from-top' : 'combat-phantom-from-bottom'))
           }
         >
           <div className="combat-phantom-aura" />
