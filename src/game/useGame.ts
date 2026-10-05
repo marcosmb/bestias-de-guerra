@@ -638,20 +638,32 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
 function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
   const players = [...state.players] as [PlayerState, PlayerState];
   const log: string[] = [];
+
+  // Trampa 12 es continua: se aplica al comienzo de cada turno mientras el
+  // Monstruo portador siga vivo. Si sigue oculta, no revelamos su identidad.
+  for (const ownerIdx of [0, 1] as const) {
+    const opponentIdx = (ownerIdx === 0 ? 1 : 0) as 0 | 1;
+    for (const fm of players[ownerIdx].field) {
+      if (!fm?.trap || fm.trap.effect.kind !== 'damage_per_turn') continue;
+      const amount = fm.trap.effect.amount;
+      players[opponentIdx] = applyDamage(players[opponentIdx], amount);
+      log.push(
+        fm.trapRevealed
+          ? `${fm.trap.name}: el rival pierde ${amount} PV por su efecto continuo.`
+          : `Una Trampa activa hace perder ${amount} PV al rival.`,
+      );
+    }
+  }
+
   const p = players[playerIdx];
 
   for (const fm of p.field) {
     if (!fm) continue;
-    // Trap 1: +5 PV per turn
+    // Trampa 1: +5 PV al comienzo de cada turno de su propietario.
     if (fm.trap?.effect.kind === 'heal_per_turn') {
-      players[playerIdx] = applyHeal(players[playerIdx], (fm.trap.effect as { amount: number }).amount);
-      log.push(`${fm.trap.name}: +${(fm.trap.effect as { amount: number }).amount} PV.`);
-    }
-    // Trap 12: -5 PV to opponent per turn
-    if (fm.trap?.effect.kind === 'damage_per_turn') {
-      const oppIdx = (playerIdx === 0 ? 1 : 0) as 0 | 1;
-      players[oppIdx] = applyDamage(players[oppIdx], (fm.trap.effect as { amount: number }).amount);
-      log.push(`${fm.trap.name}: Rival pierde ${(fm.trap.effect as { amount: number }).amount} PV.`);
+      const amount = fm.trap.effect.amount;
+      players[playerIdx] = applyHeal(players[playerIdx], amount);
+      log.push(fm.trapRevealed ? `${fm.trap.name}: +${amount} PV por su efecto continuo.` : `Una Trampa activa te hace recuperar ${amount} PV.`);
     }
     // Trap 2: Destrucción 2+1 — se activa al comienzo del turno
     if (fm.trap?.effect.kind === 'destroy_2_self_1_opp') {
@@ -839,10 +851,30 @@ export function reducer(state: GameState, action: Action): GameState {
       const fm = findFieldMonster(state.players[cp], action.fieldUid);
       if (!hasCardInHand(state.players[cp], action.card) || !fm || !canPlaceTrapOn(state.players[cp], action.fieldUid)) return state;
       const players = [...state.players] as [PlayerState, PlayerState];
-      players[cp] = updateFieldMonster(players[cp], action.fieldUid, (f) => ({ ...f, trap: action.card }));
+      players[cp] = updateFieldMonster(players[cp], action.fieldUid, (f) => ({ ...f, trap: action.card, trapRevealed: false }));
       players[cp] = playCardFromHand(players[cp], action.card);
-      const newState: GameState = { ...state, players, selection: { kind: 'none' }, log: addLog(state, `${players[cp].name} coloca ${action.card.name} bajo ${fm.card.name}.`) };
-      return checkStalemateEnd(newState);
+
+      let logMessage = `${players[cp].name} coloca una Trampa bajo ${fm.card.name}.`;
+      if (action.card.effect.kind === 'heal_per_turn') {
+        const amount = action.card.effect.amount;
+        players[cp] = applyHeal(players[cp], amount);
+        logMessage += ` Su efecto empieza inmediatamente: +${amount} PV.`;
+      } else if (action.card.effect.kind === 'damage_per_turn') {
+        const opponent = (cp === 0 ? 1 : 0) as 0 | 1;
+        const amount = action.card.effect.amount;
+        players[opponent] = applyDamage(players[opponent], amount);
+        logMessage += ` Su efecto empieza inmediatamente: el rival pierde ${amount} PV.`;
+      }
+
+      const winResult = checkWinner(players);
+      const newState: GameState = {
+        ...state, players,
+        phase: winResult.winner !== null || winResult.isDraw ? 'game-over' : 'playing',
+        selection: { kind: 'none' },
+        log: addLog(state, logMessage),
+        winner: winResult.winner, isDraw: winResult.isDraw,
+      };
+      return winResult.winner !== null || winResult.isDraw ? newState : checkStalemateEnd(newState);
     }
     case 'SELECT_MAGIC': {
       if (state.phase !== 'playing') return state;
@@ -1379,7 +1411,10 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
   const defender = findFieldMonster(players[opp], defenderUid);
   if (!attacker || !defender) return state;
 
-  if (defender.faceDown) {
+  const discoveredTrap = defender.trap;
+  if (discoveredTrap) {
+    players[opp] = updateFieldMonster(players[opp], defenderUid, (fm) => ({ ...fm, faceDown: false, trapRevealed: true }));
+  } else if (defender.faceDown) {
     players[opp] = updateFieldMonster(players[opp], defenderUid, (fm) => ({ ...fm, faceDown: false }));
   }
 
@@ -1392,6 +1427,7 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
     defenderCard: defender.card,
   };
   const hasReflect = defender.trap?.effect.kind === 'reflect_damage';
+  const trapDiscoveryLog = defender.trap ? ` ¡Trampa descubierta: ${defender.trap.name}. ${defender.trap.description}` : '';
 
   if (result.attackerDestroyed) {
     // Check dice protection
@@ -1450,7 +1486,12 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
     phase: winResult.winner !== null || winResult.isDraw ? ('game-over' as const) : ('playing' as const),
     selection: { kind: 'none' },
     lastCombat: result,
-    log: addLog(state, result.log),
+    log: addLog(
+      state,
+      result.log + trapDiscoveryLog + (result.defenderDestroyed && defender.trap
+        ? ` La Trampa ${defender.trap.name} se elimina porque su Monstruo ha sido destruido.`
+        : ''),
+    ),
     winner: winResult.winner,
     isDraw: winResult.isDraw,
   };
