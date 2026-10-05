@@ -296,8 +296,6 @@ function CombatAnimation({
     isDirectAttack: boolean;
     result: 'attacker-destroyed' | 'defender-destroyed' | 'both-destroyed' | 'none-destroyed';
     attackerPlayer?: 0 | 1;
-    attackerCard?: MonsterCard;
-    defenderCard?: MonsterCard;
   } | null;
   onComplete: () => void;
 }) {
@@ -325,17 +323,6 @@ function CombatAnimation({
 
   const isAttackerTop = combatState.attackerPlayer === 1;
   const attackDirection = isAttackerTop ? 'down' : 'up';
-  const attackerImage = combatState.attackerCard?.image ?? (
-    combatState.attackerCard
-      ? '/cards/' + combatState.attackerCard.suit + '-' + combatState.attackerCard.number + '.webp'
-      : null
-  );
-  const defenderImage = combatState.defenderCard?.image ?? (
-    combatState.defenderCard
-      ? '/cards/' + combatState.defenderCard.suit + '-' + combatState.defenderCard.number + '.webp'
-      : null
-  );
-
   return (
     <div className="fixed inset-0 z-30 pointer-events-none overflow-hidden">
       {phase === 'attack' && (
@@ -345,25 +332,6 @@ function CombatAnimation({
             (attackDirection === 'down' ? 'top-[18%] h-[38%]' : 'bottom-[18%] h-[38%]')
           }
         />
-      )}
-
-      {phase === 'attack' && attackerImage && (
-        <div
-          className={
-            'absolute left-1/2 -translate-x-1/2 combat-phantom-monster ' +
-            (combatState.isDirectAttack
-              ? (attackDirection === 'down' ? 'combat-phantom-direct-from-top' : 'combat-phantom-direct-from-bottom')
-              : (attackDirection === 'down' ? 'combat-phantom-from-top' : 'combat-phantom-from-bottom'))
-          }
-        >
-          <div className="combat-phantom-aura" />
-          <div className="combat-phantom-art">
-            <img src={attackerImage} alt="" aria-hidden="true" />
-          </div>
-          <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-white/80 font-display font-bold text-xs tracking-widest uppercase">
-            {combatState.attackerCard?.name}
-          </div>
-        </div>
       )}
 
       {phase === 'impact' && (
@@ -379,11 +347,6 @@ function CombatAnimation({
           <div className="relative w-24 h-24 rounded-full border-4 border-crimson-300/90 bg-crimson-400/20 shadow-[0_0_60px_rgba(248,113,113,0.8)]">
             <div className="absolute inset-4 rounded-full border-2 border-white/80" />
           </div>
-          {defenderImage && !combatState.isDirectAttack && (
-            <div className="absolute left-1/2 top-1/2 w-20 h-24 -translate-x-1/2 -translate-y-1/2 opacity-35 mix-blend-screen animate-pulse rounded-lg overflow-hidden">
-              <img src={defenderImage} alt="" aria-hidden="true" className="w-full h-full object-cover" />
-            </div>
-          )}
           {combatState.isDirectAttack && (
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap">
               <div className="font-display font-black text-3xl text-red-300 text-shadow-strong">
