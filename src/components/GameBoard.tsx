@@ -736,11 +736,40 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
 
   const handleOpponentFieldClick = (uid: string) => {
     if (sel.kind === 'attack' || sel.kind === 'attack-or-direct') {
-      dispatch({ type: 'DECLARE_ATTACK', attackerUid: sel.attackerUid, defenderUid: uid });
+      const target = opp.field.find((fm) => fm?.uid === uid) ?? null;
+      const defenseTargets = opp.field.filter((fm): fm is FieldMonster => fm !== null && fm.position === 'defense');
+
+      if (target && defenseTargets.length > 0 && target.position === 'attack') {
+        addToast('¡Jugada errónea! Debes atacar primero a un Monstruo que esté en Defensa.', 'warning');
+        return;
+      }
+
+      const attackAction = {
+        type: 'DECLARE_ATTACK' as const,
+        attackerUid: sel.attackerUid,
+        defenderUid: uid,
+      };
+
+      if (!isLegal(attackAction)) {
+        addToast('¡Jugada errónea! Ese Monstruo no puede ser objetivo de este ataque.', 'warning');
+        return;
+      }
+
+      dispatch(attackAction);
     } else if (sel.kind === 'place-magic') {
-      dispatch({ type: 'PLACE_MAGIC_ON_MONSTER', card: sel.card, side: 'enemy', fieldUid: uid });
+      const action = { type: 'PLACE_MAGIC_ON_MONSTER' as const, card: sel.card, side: 'enemy' as const, fieldUid: uid };
+      if (!isLegal(action)) {
+        addToast('¡Jugada errónea! Ese Monstruo no puede recibir esta Mágica.', 'warning');
+        return;
+      }
+      dispatch(action);
     } else if (sel.kind === 'choose-destroy-target') {
-      dispatch({ type: 'DESTROY_MONSTER', fieldUid: uid });
+      const action = { type: 'DESTROY_MONSTER' as const, fieldUid: uid };
+      if (!isLegal(action)) {
+        addToast('¡Jugada errónea! Ese Monstruo no es un objetivo válido.', 'warning');
+        return;
+      }
+      dispatch(action);
     }
   };
 
