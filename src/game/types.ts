@@ -85,6 +85,12 @@ export interface CombatResult {
   attackerDamage: number;
   defenderDamage: number;
   log: string;
+  /** Datos públicos necesarios para la animación visual del combate. */
+  attackerUid?: string;
+  defenderUid?: string;
+  attackerPlayer?: 0 | 1;
+  attackerCard?: MonsterCard;
+  defenderCard?: MonsterCard;
 }
 
 export interface GameState {
