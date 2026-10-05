@@ -76,6 +76,7 @@ export type Action =
   | { type: 'END_TURN' }
   | { type: 'CANCEL_SELECTION' }
   | { type: 'ROLL_DICE'; roll: number }
+  | { type: 'CLOSE_DICE_RESULT' }
   | { type: 'DESTROY_MONSTER'; fieldUid: string }
   | { type: 'TRAP_2_SELECT_OWN'; fieldUid: string }
   | { type: 'REVIVE_CHOICE'; card: MagicCard; choice: 'hand' | 'field'; position?: Position }
