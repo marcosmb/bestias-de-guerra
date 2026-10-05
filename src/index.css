@@ -265,15 +265,15 @@ img {
 }
 
 .combat-phantom-from-bottom {
-  animation: combatPhantomFromBottom 0.52s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: combatPhantomFromBottom 1.05s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .combat-phantom-from-top {
-  animation: combatPhantomFromTop 0.52s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: combatPhantomFromTop 1.05s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .combat-attack-trail {
-  animation: combatAttackTrail 0.52s ease-out forwards;
+  animation: combatAttackTrail 1.05s ease-out forwards;
 }
 
 .combat-impact-burst {
