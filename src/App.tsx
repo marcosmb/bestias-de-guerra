@@ -91,7 +91,7 @@ function StartScreen({
           aria-label={musicEnabled ? 'Desactivar música' : 'Activar música'}
         >
           {musicEnabled ? <Music size={15} /> : <VolumeX size={15} />}
-          {musicEnabled ? 'Música activada' : 'Música desactivada'}
+          {musicEnabled ? 'Desactivar música' : 'Activar música'}
         </button>
       </div>
       {mode === 'cpu' ? (
@@ -226,11 +226,13 @@ function WaitingOpponentModal({ roomCode, roomUrl, onCopyLink, onClose }: { room
 function App() {
   const { state, dispatch, liveHistory, readStoredHistory } = useGame();
 
-  useEffect(() => {
+  const [musicEnabled, setMusicEnabledState] = useState(() => {
     initAudio();
-    const prefs = getMusicPreferences();
-    setMusicEnabledState(prefs.enabled);
-    setMusicVolume(prefs.volume);
+    return getMusicPreferences().enabled;
+  });
+
+  useEffect(() => {
+    setMusicVolume(getMusicPreferences().volume);
   }, []);
 
   const { 
@@ -254,7 +256,6 @@ function App() {
   const [onlinePlayerName, setOnlinePlayerName] = useState<string>('');
   const [storedHistory, setStoredHistory] = useState<MatchHistory | null>(null);
   const [copied, setCopied] = useState(false);
-  const [musicEnabled, setMusicEnabledState] = useState(true);
 
   const toggleMusic = () => {
     setMusicEnabledState((current) => {
