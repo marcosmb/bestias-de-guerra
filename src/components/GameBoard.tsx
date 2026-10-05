@@ -17,13 +17,14 @@ import {
   VolumeX,
   Copy,
   Check,
+  Music,
 } from 'lucide-react';
 import type { Card, MonsterCard, TrapCard, MagicCard } from '@/game/cardData';
 import type { Action, GameState, FieldMonster, PlayerState } from '@/game/types';
 import { canAttack, magicRequiredSide, cardInstanceKey, MAX_HAND_SIZE, MAX_CARDS_PER_TURN } from '@/game/types';
 import { legalActions, sameAction } from '@/game/legalActions';
 import { CardView, CardBack } from './CardView';
-import { playSound, vibrate, getAudioPreferences, setSoundEnabled, setVolume, initAudio } from '@/game/audio';
+import { playSound, vibrate, getAudioPreferences, getMusicPreferences, setSoundEnabled, setMusicEnabled, setVolume, initAudio } from '@/game/audio';
 
 interface GameBoardProps {
   state: GameState;
@@ -507,6 +508,7 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
   };
 
   const [soundEnabled, setSoundEnabledState] = useState(true);
+  const [musicEnabled, setMusicEnabledState] = useState(true);
   const [volume, setVolumeState] = useState(0.5);
   const [showVolumeControl, setShowVolumeControl] = useState(false);
 
@@ -548,7 +550,9 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
   useEffect(() => {
     initAudio();
     const prefs = getAudioPreferences();
+    const musicPrefs = getMusicPreferences();
     setSoundEnabledState(prefs.enabled);
+    setMusicEnabledState(musicPrefs.enabled);
     setVolumeState(prefs.volume);
   }, []);
 
@@ -716,6 +720,12 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
     const newValue = !soundEnabled;
     setSoundEnabledState(newValue);
     setSoundEnabled(newValue);
+  };
+
+  const toggleMusic = () => {
+    const newValue = !musicEnabled;
+    setMusicEnabledState(newValue);
+    setMusicEnabled(newValue);
   };
 
   const changeVolume = (newVolume: number) => {
@@ -1507,6 +1517,17 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
             aria-label={soundEnabled ? 'Desactivar sonido' : 'Activar sonido'}
           >
             {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
+          </button>
+          <button
+            onClick={toggleMusic}
+            className={`rounded-lg btn-press flex items-center justify-center ${
+              musicEnabled ? 'bg-ink-600 text-ink-200 hover:bg-ink-500' : 'bg-ink-700 text-ink-400 hover:bg-ink-600'
+            }`}
+            style={{ ...uiXs, padding: '0.4em' }}
+            title={musicEnabled ? 'Desactivar música' : 'Activar música'}
+            aria-label={musicEnabled ? 'Desactivar música' : 'Activar música'}
+          >
+            {musicEnabled ? <Music size={14} /> : <VolumeX size={14} />}
           </button>
           <button
             onClick={() => {
