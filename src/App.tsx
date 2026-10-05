@@ -213,11 +213,6 @@ function App() {
     setMusicVolume(prefs.volume);
   }, []);
 
-  useEffect(() => {
-    const inGameFlow = flow === 'play' || flow === 'pass';
-    const isGameOver = state.phase === 'game-over';
-    setMusicTrack(inGameFlow && !isGameOver ? 'game' : 'menu');
-  }, [flow, state.phase]);
   const { 
     gameState: onlineGameState, 
     mode: onlineMode, 
@@ -240,6 +235,11 @@ function App() {
   const [storedHistory, setStoredHistory] = useState<MatchHistory | null>(null);
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    const inGameFlow = flow === 'play' || flow === 'pass';
+    const isGameOver = state.phase === 'game-over';
+    setMusicTrack(inGameFlow && !isGameOver ? 'game' : 'menu');
+  }, [flow, state.phase]);
   const openHistory = () => {
     setStoredHistory(readStoredHistory());
     setFlow('history');
