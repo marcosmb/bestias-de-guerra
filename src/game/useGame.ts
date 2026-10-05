@@ -362,7 +362,9 @@ function applyTrapEffect(
           pendingEffect: 'control',
           pendingTurns: 2,
           controlledBy: defenderPlayer,
-          hasAttacked: true,
+          // El ataque que activó la Trampa fue realizado por el jugador anterior.
+          // Al cambiar de control, este Monstruo no ha atacado todavía para su nuevo controlador.
+          hasAttacked: false,
         };
         players[defenderPlayer] = placeFieldMonster(players[defenderPlayer], movedAttacker);
         players[attackerPlayer] = detachFieldMonster(players[attackerPlayer], attackerUid);
