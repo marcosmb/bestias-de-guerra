@@ -99,15 +99,27 @@ function StartScreen({
       <div className="w-full max-w-md mx-auto mb-5 flex justify-center">
         <button
           type="button"
-          onClick={onToggleMusic}
-          className={`rounded-lg border px-4 py-2 text-xs font-display font-bold transition-colors flex items-center justify-center gap-2 ${
+          data-music-toggle
+          onPointerDown={(event) => {
+            event.stopPropagation();
+            console.log('[MUSICA][BUTTON_POINTERDOWN]', { enabledBeforeClick: musicEnabled });
+            onToggleMusic();
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              console.log('[MUSICA][BUTTON_KEYDOWN]', { enabledBeforeClick: musicEnabled });
+              onToggleMusic();
+            }
+          }}
+          className={`relative z-50 pointer-events-auto rounded-lg border px-4 py-2 text-xs font-display font-bold transition-colors flex items-center justify-center gap-2 ${
             musicEnabled
               ? 'border-gold-400 bg-gold-400/15 text-gold-300'
               : 'border-ink-600 bg-ink-800 text-ink-400 hover:border-ink-400'
           }`}
           title={musicEnabled ? 'Desactivar música' : 'Activar música'}
           aria-label={musicEnabled ? 'Desactivar música' : 'Activar música'}
-        >
+        >        >
           {musicEnabled ? <Music size={15} /> : <VolumeX size={15} />}
           {musicEnabled ? 'Desactivar música' : 'Activar música'}
         </button>
