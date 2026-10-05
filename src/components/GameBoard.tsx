@@ -1104,7 +1104,7 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
                 vibrate(40);
                 dispatch({ type: 'RESOLVE_TRAP', activate: true });
               }}
-              className="w-full rounded-lg bg-gradient-to-r from-crimson-600 to-crimson-500 text-white font-display font-bold hover:from-crimson-500 hover:to-crimson-400 btn-press flex items-center justify-center gap-1.5"
+              className="w-full rounded-lg bg-gradient-to-r from-gold-500 to-gold-400 text-white font-display font-bold hover:from-gold-400 hover:to-gold-300 btn-press flex items-center justify-center gap-1.5"
               style={{ ...uiSm, padding: '0.7em 0' }}
             >
               <Zap size={16} /> Aceptar
@@ -1171,7 +1171,7 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => dispatch({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'hand' })}
-                className="rounded-lg bg-gradient-to-r from-azure-600 to-azure-500 text-white font-display font-bold hover:from-azure-500 hover:to-azure-400 btn-press flex items-center justify-center gap-1.5"
+                className="rounded-lg bg-gradient-to-r from-gold-500 to-gold-400 text-white font-display font-bold hover:from-gold-400 hover:to-gold-300 btn-press flex items-center justify-center gap-1.5"
                 style={{ ...uiSm, padding: '0.7em 0' }}
               >
                 A la mano
