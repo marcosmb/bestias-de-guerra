@@ -32,11 +32,11 @@ function StartScreen({
   return (
     <div className="bg-ink-900 min-h-[100dvh] flex items-center justify-center px-3 sm:px-6 py-6">
       <div className="w-full max-w-md mx-auto">
-        <div className="mb-6 w-full flex justify-center overflow-visible">
-          <div className="flex items-center gap-2 sm:gap-3 max-w-full">
-            <div className="animate-pulse-glow w-[clamp(4rem,18vw,5rem)] h-[clamp(4rem,18vw,5rem)] shrink-0 rounded-2xl border-2 border-gold-500/40 flex items-center justify-center">
-              <Swords size={36} className="text-gold-400" />
-            </div>
+        <div className="mb-6 w-full flex items-center justify-between gap-3">
+          <div className="animate-pulse-glow w-[clamp(4rem,18vw,5rem)] h-[clamp(4rem,18vw,5rem)] shrink-0 rounded-2xl border-2 border-gold-500/40 flex items-center justify-center">
+            <Swords size={36} className="text-gold-400" />
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={onOpenCards}
