@@ -1,6 +1,6 @@
 # GUÍA COMPLETA DEL JUEGO DE CARTAS
 
-## REGLAMENTO OFICIAL DEL JUEGO — VERSIÓN 1.1
+## REGLAMENTO OFICIAL DEL JUEGO — VERSIÓN 1.2
 
 > **DOCUMENTO PROTEGIDO — REGLAS OFICIALES DEL JUEGO**
 >
@@ -596,15 +596,18 @@ La Trampa se coloca preparada.
 
 Al comenzar el siguiente turno de su propietario, se activa.
 
-Para activarse debe disponer de los **2 Monstruos propios necesarios**.
+Para activarse debe disponer de los **2 Monstruos propios necesarios** y de al menos 1 Monstruo rival.
 
 Cuando se activa:
 
-- destruye 2 Monstruos propios;
-- destruye 1 Monstruo rival;
-- después se elimina.
+1. el propietario de la Trampa **elige cuáles 2 Monstruos propios quiere destruir**;
+2. se destruyen esos 2 Monstruos propios elegidos;
+3. se destruye 1 Monstruo rival;
+4. después se elimina la Trampa.
 
-Si solo hay 1 Monstruo propio disponible, la Trampa **no puede activarse**.
+La elección de los 2 Monstruos propios es obligatoria y se realiza específicamente por efecto de esta Trampa.
+
+Si no hay al menos 2 Monstruos propios disponibles, la Trampa se activa pero **no tiene efecto**.
 
 ---
 
@@ -993,9 +996,11 @@ Cuando se cambie una regla:
 
 # 35. ESTADO DEL REGLAMENTO
 
-**Versión:** 1.1 — **reglamento oficial para la versión jugable actual.**
+**Versión:** 1.2 — **reglamento oficial para la versión jugable actual.**
 
-Cambio respecto a la versión 1.0: un Monstruo que ya haya sido revelado boca arriba permanece visible para el rival al pasar a Defensa o cambiar nuevamente de posición.
+Cambios respecto a la versión 1.1:
+- un Monstruo que ya haya sido revelado boca arriba permanece visible para el rival al pasar a Defensa o cambiar nuevamente de posición;
+- la Trampa 2 permite al propietario elegir los 2 Monstruos propios que serán destruidos.
 
 Esta versión consolida las reglas decididas por el creador y elimina las contradicciones principales entre los documentos anteriores.
 
