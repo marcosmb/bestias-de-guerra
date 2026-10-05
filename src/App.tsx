@@ -363,6 +363,8 @@ function App() {
     return (
       <StartScreen
         hasHistory={Boolean(liveHistory ?? storedHistory)}
+        musicEnabled={musicEnabled}
+        onToggleMusic={toggleMusic}
         onOpenHistory={openHistory}
         onOpenCards={() => setFlow('cards')}
         onOpenRules={() => setFlow('rules')}
