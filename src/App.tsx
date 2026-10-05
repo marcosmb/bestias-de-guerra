@@ -32,30 +32,28 @@ function StartScreen({
   return (
     <div className="bg-ink-900 min-h-[100dvh] flex items-center justify-center px-3 sm:px-6 py-6">
       <div className="w-full max-w-md mx-auto">
-        <div className="relative h-20 sm:h-24 mb-6 w-full">
-          <div className="absolute left-1/2 top-0 -translate-x-1/2">
-            <div className="animate-pulse-glow w-20 h-20 rounded-2xl border-2 border-gold-500/40 flex items-center justify-center">
+        <div className="mb-6 w-full flex justify-center">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="animate-pulse-glow w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-2xl border-2 border-gold-500/40 flex items-center justify-center">
               <Swords size={36} className="text-gold-400" />
             </div>
-          </div>
-          <div className="absolute left-[calc(50%+2.5rem)] top-1/2 -translate-y-1/2 flex items-center gap-1 sm:gap-2">
             <button
               type="button"
               onClick={onOpenCards}
               aria-label="Ver cartas"
-              className="group w-12 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border-2 border-gold-500/40 bg-ink-800/70 hover:border-gold-400 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-0.5 text-gold-400 hover:text-gold-300 shadow-lg"
+              className="group w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-2xl border-2 border-gold-500/40 bg-ink-800/70 hover:border-azure-400/70 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-1 text-gold-400 hover:text-gold-300 shadow-lg"
             >
-              <Layers3 size={22} strokeWidth={1.8} className="group-hover:scale-110 transition-transform sm:w-6 sm:h-6" />
-              <span className="font-display font-bold uppercase text-[8px] sm:text-[9px] leading-none tracking-wide">Cartas</span>
+              <Layers3 size={30} strokeWidth={1.8} className="group-hover:scale-110 transition-transform sm:w-9 sm:h-9" />
+              <span className="font-display font-bold uppercase text-[9px] sm:text-[10px] leading-none tracking-wide">Cartas</span>
             </button>
             <button
               type="button"
               onClick={onOpenRules}
               aria-label="Ver reglas"
-              className="group w-12 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border-2 border-gold-500/40 bg-ink-800/70 hover:border-gold-400 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-0.5 text-gold-400 hover:text-gold-300 shadow-lg"
+              className="group w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-2xl border-2 border-gold-500/40 bg-ink-800/70 hover:border-gold-400/70 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-1 text-gold-400 hover:text-gold-300 shadow-lg"
             >
-              <BookOpen size={22} strokeWidth={1.8} className="group-hover:scale-110 transition-transform sm:w-6 sm:h-6" />
-              <span className="font-display font-bold uppercase text-[8px] sm:text-[9px] leading-none tracking-wide">Reglas</span>
+              <BookOpen size={30} strokeWidth={1.8} className="group-hover:scale-110 transition-transform sm:w-9 sm:h-9" />
+              <span className="font-display font-bold uppercase text-[9px] sm:text-[10px] leading-none tracking-wide">Reglas</span>
             </button>
           </div>
         </div>
