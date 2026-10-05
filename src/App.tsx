@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Difficulty, GameMode } from '@/game/types';
-import { Swords, ChevronRight, History, Wifi, Cpu, User, Link2, Copy, X, ArrowLeft } from 'lucide-react';
+import { Swords, ChevronRight, History, Wifi, Cpu, User, Link2, Copy, X, ArrowLeft, BookOpen, Layers3 } from 'lucide-react';
 import { useGame } from '@/game/useGame';
 import { useOnlineGame } from '@/hooks/useOnlineGame';
 import { PassDeviceScreen } from '@/components/PassDeviceScreen';
@@ -8,23 +8,35 @@ import { GameBoard } from '@/components/GameBoard';
 import { GameOverScreen } from '@/components/GameOverScreen';
 import { HistoryScreen } from '@/components/HistoryScreen';
 import { loadHistoryFrom, getDefaultStorage, type MatchHistory } from '@/game/history';
+import { CardReferenceScreen } from '@/components/CardReferenceScreen';
+import { RulesScreen } from '@/components/RulesScreen';
 
-type FlowPhase = 'menu' | 'pass' | 'play' | 'history' | 'online-setup';
+type FlowPhase = 'menu' | 'pass' | 'play' | 'history' | 'online-setup' | 'cards' | 'rules';
 
 function StartScreen({
   onStart,
   onOpenHistory,
+  onOpenCards,
+  onOpenRules,
   hasHistory,
 }: {
   onStart: (mode: GameMode, difficulty: Difficulty) => void;
   onOpenHistory: () => void;
+  onOpenCards: () => void;
+  onOpenRules: () => void;
   hasHistory: boolean;
 }) {
   const [mode, setMode] = useState<GameMode>('local');
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
 
   return (
-    <div className="bg-ink-900 flex flex-col items-center justify-center px-6 py-8" style={{ minHeight: '100dvh' }}>
+    <div className="bg-ink-900 min-h-[100dvh] flex items-center justify-center px-3 sm:px-6 py-6">
+      <div className="w-full max-w-6xl grid grid-cols-[minmax(72px,1fr)_minmax(280px,420px)_minmax(72px,1fr)] sm:grid-cols-[minmax(120px,1fr)_minmax(360px,440px)_minmax(120px,1fr)] gap-3 sm:gap-8 items-center">
+        <button type="button" onClick={onOpenCards} className="group min-h-28 sm:min-h-36 rounded-2xl border border-ink-600 bg-ink-800/70 hover:border-azure-400/70 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-2 text-ink-200 hover:text-azure-300">
+          <Layers3 size={38} strokeWidth={1.6} className="group-hover:scale-110 transition-transform" />
+          <span className="font-display font-bold text-sm sm:text-base">Cartas</span>
+        </button>
+      <div className="w-full max-w-md mx-auto">
       <div className="animate-pulse-glow w-20 h-20 rounded-2xl border-2 border-gold-500/40 flex items-center justify-center mb-6">
         <Swords size={36} className="text-gold-400" />
       </div>
@@ -124,6 +136,12 @@ function StartScreen({
         </button>
         </>
       ) : null}
+      </div>
+        <button type="button" onClick={onOpenRules} className="group min-h-28 sm:min-h-36 rounded-2xl border border-ink-600 bg-ink-800/70 hover:border-gold-400/70 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-2 text-ink-200 hover:text-gold-300">
+          <BookOpen size={38} strokeWidth={1.6} className="group-hover:scale-110 transition-transform" />
+          <span className="font-display font-bold text-sm sm:text-base">Reglas</span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -246,11 +264,21 @@ function App() {
     );
   }
 
+  if (flow === 'cards') {
+    return <CardReferenceScreen onBack={() => setFlow('menu')} />;
+  }
+
+  if (flow === 'rules') {
+    return <RulesScreen onBack={() => setFlow('menu')} />;
+  }
+
   if (flow === 'menu') {
     return (
       <StartScreen
         hasHistory={Boolean(liveHistory ?? storedHistory)}
         onOpenHistory={openHistory}
+        onOpenCards={() => setFlow('cards')}
+        onOpenRules={() => setFlow('rules')}
         onStart={(mode, difficulty) => {
           if (mode === 'online') {
             setFlow('online-setup');
