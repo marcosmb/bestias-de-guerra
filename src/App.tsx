@@ -31,15 +31,34 @@ function StartScreen({
 
   return (
     <div className="bg-ink-900 min-h-[100dvh] flex items-center justify-center px-3 sm:px-6 py-6">
-      <div className="w-full max-w-6xl grid grid-cols-[minmax(72px,1fr)_minmax(280px,420px)_minmax(72px,1fr)] sm:grid-cols-[minmax(120px,1fr)_minmax(360px,440px)_minmax(120px,1fr)] gap-3 sm:gap-8 items-center">
-        <button type="button" onClick={onOpenCards} className="group min-h-28 sm:min-h-36 rounded-2xl border border-ink-600 bg-ink-800/70 hover:border-azure-400/70 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-2 text-ink-200 hover:text-azure-300">
-          <Layers3 size={38} strokeWidth={1.6} className="group-hover:scale-110 transition-transform" />
-          <span className="font-display font-bold text-sm sm:text-base">Cartas</span>
-        </button>
       <div className="w-full max-w-md mx-auto">
-      <div className="animate-pulse-glow w-20 h-20 rounded-2xl border-2 border-gold-500/40 flex items-center justify-center mb-6">
-        <Swords size={36} className="text-gold-400" />
-      </div>
+        <div className="relative h-20 sm:h-24 mb-6 w-full">
+          <div className="absolute left-1/2 top-0 -translate-x-1/2">
+            <div className="animate-pulse-glow w-20 h-20 rounded-2xl border-2 border-gold-500/40 flex items-center justify-center">
+              <Swords size={36} className="text-gold-400" />
+            </div>
+          </div>
+          <div className="absolute left-[calc(50%+2.5rem)] top-1/2 -translate-y-1/2 flex items-center gap-1 sm:gap-2">
+            <button
+              type="button"
+              onClick={onOpenCards}
+              aria-label="Ver cartas"
+              className="group w-12 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border-2 border-gold-500/40 bg-ink-800/70 hover:border-gold-400 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-0.5 text-gold-400 hover:text-gold-300 shadow-lg"
+            >
+              <Layers3 size={22} strokeWidth={1.8} className="group-hover:scale-110 transition-transform sm:w-6 sm:h-6" />
+              <span className="font-display font-bold uppercase text-[8px] sm:text-[9px] leading-none tracking-wide">Cartas</span>
+            </button>
+            <button
+              type="button"
+              onClick={onOpenRules}
+              aria-label="Ver reglas"
+              className="group w-12 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border-2 border-gold-500/40 bg-ink-800/70 hover:border-gold-400 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-0.5 text-gold-400 hover:text-gold-300 shadow-lg"
+            >
+              <BookOpen size={22} strokeWidth={1.8} className="group-hover:scale-110 transition-transform sm:w-6 sm:h-6" />
+              <span className="font-display font-bold uppercase text-[8px] sm:text-[9px] leading-none tracking-wide">Reglas</span>
+            </button>
+          </div>
+        </div>
       <h1 className="font-display text-3xl sm:text-4xl font-black text-gold-300 mb-2 text-center" style={{ fontSize: 'clamp(1.5rem, 5vw, 2.5rem)' }}>Bestias de Guerra</h1>
       <p className="text-sm text-ink-300 text-center mb-1">Juego de cartas con baraja española</p>
       <p className="text-xs text-ink-400 text-center mb-6 max-w-xs">
@@ -136,11 +155,6 @@ function StartScreen({
         </button>
         </>
       ) : null}
-      </div>
-        <button type="button" onClick={onOpenRules} className="group min-h-28 sm:min-h-36 rounded-2xl border border-ink-600 bg-ink-800/70 hover:border-gold-400/70 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-2 text-ink-200 hover:text-gold-300">
-          <BookOpen size={38} strokeWidth={1.6} className="group-hover:scale-110 transition-transform" />
-          <span className="font-display font-bold text-sm sm:text-base">Reglas</span>
-        </button>
       </div>
     </div>
   );
