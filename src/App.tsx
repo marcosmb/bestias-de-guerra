@@ -214,7 +214,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const inGameFlow = flow === 'play' || flow === 'pass' || flow === 'online-setup';
+    const inGameFlow = flow === 'play' || flow === 'pass';
     const isGameOver = state.phase === 'game-over';
     setMusicTrack(inGameFlow && !isGameOver ? 'game' : 'menu');
   }, [flow, state.phase]);
