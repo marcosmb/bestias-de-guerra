@@ -1512,7 +1512,7 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
             {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
           </button>
           <button
-            onClick={toggleMusic}
+            onClick={onToggleMusic}
             className={`rounded-lg btn-press flex items-center justify-center ${
               musicEnabled ? 'bg-ink-600 text-ink-200 hover:bg-ink-500' : 'bg-ink-700 text-ink-400 hover:bg-ink-600'
             }`}
