@@ -10,6 +10,7 @@ import { HistoryScreen } from '@/components/HistoryScreen';
 import { loadHistoryFrom, getDefaultStorage, type MatchHistory } from '@/game/history';
 import { CardReferenceScreen } from '@/components/CardReferenceScreen';
 import { RulesScreen } from '@/components/RulesScreen';
+import { getMusicPreferences, initAudio, setMusicEnabled, setMusicTrack, setMusicVolume } from '@/game/audio';
 
 type FlowPhase = 'menu' | 'pass' | 'play' | 'history' | 'online-setup' | 'cards' | 'rules';
 
@@ -204,6 +205,19 @@ function WaitingOpponentModal({ roomCode, roomUrl, onCopyLink, onClose }: { room
 
 function App() {
   const { state, dispatch, liveHistory, readStoredHistory } = useGame();
+
+  useEffect(() => {
+    initAudio();
+    const prefs = getMusicPreferences();
+    setMusicEnabled(prefs.enabled);
+    setMusicVolume(prefs.volume);
+  }, []);
+
+  useEffect(() => {
+    const inGameFlow = flow === 'play' || flow === 'pass' || flow === 'online-setup';
+    const isGameOver = state.phase === 'game-over';
+    setMusicTrack(inGameFlow && !isGameOver ? 'game' : 'menu');
+  }, [flow, state.phase]);
   const { 
     gameState: onlineGameState, 
     mode: onlineMode, 
