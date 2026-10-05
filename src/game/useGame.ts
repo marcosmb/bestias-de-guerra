@@ -85,7 +85,8 @@ export function initialState(): GameState {
 }
 
 function addLog(state: GameState, msg: string, actor: 0 | 1 = state.currentPlayer): string[] {
-  return [...state.log.slice(-50), `Jugador ${actor + 1}: ${msg}`];
+  const actorLabel = state.mode === 'cpu' && actor === 1 ? 'CPU' : `Jugador ${actor + 1}`;
+  return [...state.log.slice(-50), `${actorLabel}: ${msg}`];
 }
 
 function checkWinner(players: [PlayerState, PlayerState]): { winner: 0 | 1 | null; isDraw: boolean } {
