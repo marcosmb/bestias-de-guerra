@@ -309,10 +309,13 @@ export function setMusicTrack(track: MusicTrack | null): void {
   const element = getMusicElement();
   if (!element) return;
 
+  // OFF siempre tiene prioridad: ninguna pista puede reproducirse mientras
+  // la preferencia de música esté desactivada.
   if (!track || !musicPreferences.enabled) {
     element.pause();
     element.currentTime = 0;
     currentMusicTrack = null;
+    removeMusicUnlockListeners();
     return;
   }
 
@@ -325,6 +328,7 @@ export function setMusicTrack(track: MusicTrack | null): void {
     currentMusicTrack = track;
   }
 
+  element.volume = musicPreferences.volume;
   void element.play()
     .then(() => removeMusicUnlockListeners())
     .catch(() => installMusicUnlockListeners());
@@ -334,8 +338,12 @@ export function setMusicEnabled(enabled: boolean): void {
   musicPreferences.enabled = enabled;
   saveMusicPreferences();
 
+  const element = musicElement;
   if (!enabled) {
-    musicElement?.pause();
+    removeMusicUnlockListeners();
+    element?.pause();
+    if (element) element.currentTime = 0;
+    currentMusicTrack = null;
     return;
   }
 
