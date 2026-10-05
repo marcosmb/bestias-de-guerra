@@ -309,10 +309,14 @@ function completePendingSelection(state: GameState, legal: Action[]): Action | n
     }
 
     case 'choose-destroy-target': {
-      // Trampa 9: destruir el Monstruo más fuerte. Solo se consideran los
-      // objetivos que `legalActions` ofrece (que son los PROPIOS: el reducer no
-      // acepta uno del rival, DEFECTO 7 en `knownDefects.test.ts`).
+      // Trampa 9: destruir el Monstruo más fuerte.
       return completing.sort((a, b) => valorDeObjetivo(state, b) - valorDeObjetivo(state, a))[0];
+    }
+
+    case 'choose-trap-2-own': {
+      // La CPU también debe elegir los 2 Monstruos propios que quiere sacrificar.
+      // Se eligen por valor de combate, priorizando los más débiles.
+      return completing.sort((a, b) => valorDeObjetivo(state, a) - valorDeObjetivo(state, b))[0];
     }
 
     case 'revive-choice': {
