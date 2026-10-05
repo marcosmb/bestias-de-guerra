@@ -641,14 +641,15 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
 // --- CHANGE_POSITION integration ---
 
 describe('Reducer integration — CHANGE_POSITION', () => {
-  it('flips attack to defense', () => {
+  it('changes attack to defense and keeps the monster face-up', () => {
     const m = getFirstMonsterCard();
     let state = makeState();
-    const fm = monster(m, { position: 'attack' });
+    const fm = monster(m, { position: 'attack', faceDown: false });
     state = setField(state, 0, [fm]);
     state = dispatch(state, { type: 'CHANGE_POSITION', fieldUid: fm.uid });
     const updated = state.players[0].field.find((f) => f?.uid === fm.uid);
     expect(updated?.position).toBe('defense');
+    expect(updated?.faceDown).toBe(false);
     expect(updated?.hasChangedPosition).toBe(true);
   });
 
