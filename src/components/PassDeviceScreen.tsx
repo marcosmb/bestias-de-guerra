@@ -21,7 +21,7 @@ export function PassDeviceScreen({ playerName, onConfirm, message }: PassDeviceP
         </button>
       )}
 
-      {/* Icon with glow */
+      {/* Icon with glow */}
       <div className="animate-pulse-glow w-24 h-24 rounded-2xl border-2 border-gold-500/40 flex items-center justify-center mb-6 bg-gold-500/5">
         <Smartphone size={44} className="text-gold-400" />
       </div>
