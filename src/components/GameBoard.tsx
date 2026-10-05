@@ -365,14 +365,28 @@ function CombatAnimation({
       )}
 
       {phase === 'impact' && (
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 combat-impact-burst">
+        <div
+          className={
+            'absolute left-1/2 -translate-x-1/2 combat-impact-burst ' +
+            (combatState.isDirectAttack
+              ? (isAttackerTop ? 'top-[18%]' : 'bottom-[18%]')
+              : 'top-1/2 -translate-y-1/2')
+          }
+        >
           <div className="absolute inset-0 rounded-full bg-white/80 blur-sm animate-ping" />
           <div className="relative w-24 h-24 rounded-full border-4 border-crimson-300/90 bg-crimson-400/20 shadow-[0_0_60px_rgba(248,113,113,0.8)]">
             <div className="absolute inset-4 rounded-full border-2 border-white/80" />
           </div>
-          {defenderImage && (
+          {defenderImage && !combatState.isDirectAttack && (
             <div className="absolute left-1/2 top-1/2 w-20 h-24 -translate-x-1/2 -translate-y-1/2 opacity-35 mix-blend-screen animate-pulse rounded-lg overflow-hidden">
               <img src={defenderImage} alt="" aria-hidden="true" className="w-full h-full object-cover" />
+            </div>
+          )}
+          {combatState.isDirectAttack && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap">
+              <div className="font-display font-black text-3xl text-red-300 text-shadow-strong">
+                ¡IMPACTO!
+              </div>
             </div>
           )}
         </div>
@@ -638,7 +652,7 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
       setCombatAnim({
         attackerUid: state.lastCombat.attackerUid ?? 'attacker',
         defenderUid: state.lastCombat.defenderUid ?? 'defender',
-        isDirectAttack: false,
+        isDirectAttack: state.lastCombat.defenderUid?.startsWith('lp-') ?? false,
         attackerPlayer: state.lastCombat.attackerPlayer ?? state.currentPlayer,
         attackerCard: state.lastCombat.attackerCard,
         defenderCard: state.lastCombat.defenderCard,
