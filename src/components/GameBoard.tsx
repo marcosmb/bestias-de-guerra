@@ -1059,26 +1059,17 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
             <p className="text-ink-400 mb-4" style={uiXs}>
               Tu {state.pendingTrap!.attackerCard.name} ataca a {state.pendingTrap!.defenderCard.name}.
             </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  playSound('activate-trap');
-                  vibrate(40);
-                  dispatch({ type: 'RESOLVE_TRAP', activate: true });
-                }}
-                className="flex-1 rounded-lg bg-gradient-to-r from-crimson-600 to-crimson-500 text-white font-display font-bold hover:from-crimson-500 hover:to-crimson-400 btn-press flex items-center justify-center gap-1.5"
-                style={{ ...uiSm, padding: '0.7em 0' }}
-              >
-                <Zap size={16} /> Activar
-              </button>
-              <button
-                onClick={() => dispatch({ type: 'RESOLVE_TRAP', activate: false })}
-                className="flex-1 rounded-lg bg-ink-500 text-ink-200 font-display font-bold hover:bg-ink-400 btn-press flex items-center justify-center gap-1.5"
-                style={{ ...uiSm, padding: '0.7em 0' }}
-              >
-                <X size={16} /> No activar
-              </button>
-            </div>
+            <button
+              onClick={() => {
+                playSound('activate-trap');
+                vibrate(40);
+                dispatch({ type: 'RESOLVE_TRAP', activate: true });
+              }}
+              className="w-full rounded-lg bg-gradient-to-r from-crimson-600 to-crimson-500 text-white font-display font-bold hover:from-crimson-500 hover:to-crimson-400 btn-press flex items-center justify-center gap-1.5"
+              style={{ ...uiSm, padding: '0.7em 0' }}
+            >
+              <Zap size={16} /> Aceptar
+            </button>
           </div>
         </div>
       )}
