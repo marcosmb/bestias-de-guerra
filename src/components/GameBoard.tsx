@@ -1115,16 +1115,36 @@ export function GameBoard({ state, dispatch, onExit, localPlayerIndex }: GameBoa
       {/* Dice roll modal */}
       {dicePrompt && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4 animate-backdrop-fade" data-no-cancel>
-          <div className="bg-ink-700 rounded-2xl border-2 border-gold-500/50 p-6 max-w-xs w-full text-center shadow-glow animate-scale-in">
+          <div className="relative bg-ink-700 rounded-2xl border-2 border-gold-500/50 p-6 max-w-xs w-full text-center shadow-glow animate-scale-in">
+            <button
+              type="button"
+              aria-label="Cerrar resultado del dado"
+              title="Cerrar"
+              onClick={() => dispatch({ type: 'CLOSE_DICE_RESULT' })}
+              disabled={state.diceResult === null}
+              className="absolute right-3 top-3 w-9 h-9 rounded-full border border-gold-500/40 text-ink-300 hover:text-white hover:bg-ink-600 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center"
+            >
+              <X size={18} />
+            </button>
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gold-500/20 flex items-center justify-center">
               <Dices size={32} className="text-gold-400" />
             </div>
             <h3 className="font-display font-bold text-gold-300 mb-1" style={uiBase}>Tira el dado</h3>
             <p className="text-ink-300 mb-4" style={uiXs}>{state.pendingDice!.reason}</p>
             {state.diceResult !== null ? (
-              <div className="font-display font-black text-gold-300 mb-4 animate-burst" style={{ fontSize: 'clamp(3rem, 10vw, 4rem)' }}>
-                {state.diceResult}
-              </div>
+              <>
+                <div className="font-display font-black text-gold-300 mb-4 animate-burst" style={{ fontSize: 'clamp(3rem, 10vw, 4rem)' }}>
+                  {state.diceResult}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => dispatch({ type: 'CLOSE_DICE_RESULT' })}
+                  className="rounded-xl bg-gradient-to-r from-gold-500 to-gold-400 text-ink-900 font-display font-bold hover:from-gold-400 hover:to-gold-300 btn-press mx-auto"
+                  style={{ ...uiSm, padding: '0.6em 1.5em' }}
+                >
+                  Continuar
+                </button>
+              </>
             ) : (
               <button
                 onClick={() => {
