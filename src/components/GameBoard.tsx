@@ -459,6 +459,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     isHidden?: boolean;
   } | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const passiveLpRef = useRef<[number, number]>([state.players[0].lp, state.players[1].lp]);
   const handScrollRef = useRef<HTMLDivElement>(null);
   const [liftDown, setLiftDown] = useState(false);
   const handSize = state.players[state.mode === 'cpu' ? 0 : state.currentPlayer].hand.length;
@@ -681,6 +682,53 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
 
     return () => window.clearTimeout(timer);
   }, [trapCountAnimation, dispatch]);
+
+  // Avisos de efectos pasivos de las Trampas 1 (+5 PV) y 12 (-5 PV).
+  //
+  // La identidad de la Trampa NO se muestra aquí mientras permanezca oculta.
+  // El objetivo es informar siempre de que los PV han cambiado sin revelar
+  // qué carta está provocando el efecto ni sobre qué Monstruo está colocada.
+  const passiveLogLengthRef = useRef(state.log.length);
+  useEffect(() => {
+    const previousLength = passiveLogLengthRef.current;
+    const currentLength = state.log.length;
+
+    if (currentLength > previousLength) {
+      const newEntries = state.log.slice(previousLength);
+      const passiveEffectHappened = newEntries.some(
+        (entry) =>
+          entry.includes('por su efecto continuo') ||
+          entry.includes('Una Trampa activa te hace recuperar') ||
+          entry.includes('Una Trampa activa hace perder'),
+      );
+
+      if (passiveEffectHappened) {
+        const viewerLp = state.players[viewer].lp;
+        const rivalIndex = viewer === 0 ? 1 : 0;
+        const rivalLp = state.players[rivalIndex].lp;
+        const previousViewerLp = passiveLpRef.current[viewer];
+        const previousRivalLp = passiveLpRef.current[rivalIndex];
+        const viewerDelta = viewerLp - previousViewerLp;
+        const rivalDelta = rivalLp - previousRivalLp;
+
+        // Avisamos de cada cambio relevante desde la perspectiva del jugador.
+        if (viewerDelta > 0) {
+          addToast(`Has ganado ${viewerDelta} PV por un efecto continuo.`, 'info');
+        } else if (viewerDelta < 0) {
+          addToast(`Pierdes ${Math.abs(viewerDelta)} PV por un efecto continuo.`, 'combat');
+        }
+
+        if (rivalDelta > 0) {
+          addToast(`El rival gana ${rivalDelta} PV por un efecto continuo.`, 'info');
+        } else if (rivalDelta < 0) {
+          addToast(`El rival pierde ${Math.abs(rivalDelta)} PV por un efecto continuo.`, 'combat');
+        }
+      }
+    }
+
+    passiveLogLengthRef.current = currentLength;
+    passiveLpRef.current = [state.players[0].lp, state.players[1].lp];
+  }, [state.log.length, state.players[0].lp, state.players[1].lp, viewer]);
 
   // Track combat for damage float, toast messages and combat animation
   useEffect(() => {
