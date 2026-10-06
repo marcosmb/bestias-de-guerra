@@ -82,4 +82,59 @@ describe('Mágicas', () => {
       expect(magic.effect.kind).toBe('clean_opp_field');
     });
   });
+
+  describe('Mágica 8 — -2 de defensa', () => {
+    it('puede tener como objetivo un Monstruo rival en Ataque o en Defensa', async () => {
+      const { magicTargets } = await import('../legalActions');
+      const magic = createMagicCard({
+        id: 'm8',
+        number: 8,
+        name: '-2 de defensa',
+        effect: { kind: 'def_reduce', amount: 2 },
+        placement: 'field',
+      });
+
+      const makeMonster = (uid: string, position: 'attack' | 'defense') => ({
+        uid,
+        card: {
+          id: uid,
+          type: 'monster' as const,
+          suit: 'espadas' as const,
+          number: 5,
+          name: uid,
+          atk: 5,
+          def: 5,
+          image: '',
+        },
+        position,
+        faceDown: false,
+        trap: null,
+        magic: null,
+        hasAttacked: false,
+        hasChangedPosition: false,
+        summonedThisTurn: false,
+        pendingTurns: 0,
+        pendingEffect: null,
+        controlledBy: null,
+        tempAtkModifier: 0,
+        tempDefModifier: 0,
+        diceProtection: false,
+      });
+
+      const me = { index: 0, name: 'Jugador 1', lp: 100, deck: [], hand: [], field: [null, null, null, null, null, null], graveyard: [], cardsPlayedThisTurn: 0 };
+      const opp = {
+        index: 1,
+        name: 'Jugador 2',
+        lp: 100,
+        deck: [],
+        hand: [],
+        field: [makeMonster('attack-target', 'attack'), makeMonster('defense-target', 'defense'), null, null, null, null],
+        graveyard: [],
+        cardsPlayedThisTurn: 0,
+      };
+
+      const targets = magicTargets(magic, me, opp);
+      expect(targets.map((target) => target.uid)).toEqual(['attack-target', 'defense-target']);
+    });
+  });
 });
