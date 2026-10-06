@@ -412,13 +412,15 @@ Esta regla determina si el ataque debe dirigirse a un Monstruo o puede ser direc
 
 ## 22.1. El rival tiene Monstruos en Defensa
 
-Si el adversario tiene uno o más Monstruos en Defensa:
+Si el adversario tiene uno o más Monstruos en Defensa, el atacante **puede elegir como objetivo cualquier Monstruo rival**, tanto si está en **Ataque** como si está en **Defensa**.
 
-**el atacante está obligado a atacar a uno de los Monstruos que están en Defensa.**
+**No existe ninguna regla que obligue a atacar primero a los Monstruos en Defensa.**
 
-No puede elegir un Monstruo en Ataque ni realizar un ataque directo mientras exista al menos un Monstruo rival en Defensa.
+Por tanto, si el rival tiene, por ejemplo, un Monstruo en Ataque y otro en Defensa, el jugador atacante puede elegir libremente cuál de los dos atacar.
 
-**Excepción — Mágica 1:** si el Monstruo atacante tiene asociada la Mágica 1, puede ignorar esta obligación y elegir **cualquier Monstruo rival** o realizar un **ataque directo a los LP**.
+La presencia de un Monstruo en Defensa **sí bloquea el ataque directo normal** contra los LP del adversario.
+
+**Excepción — Mágica 1:** si el Monstruo atacante tiene asociada la Mágica 1, puede ignorar también esta restricción al ataque directo y elegir **cualquier Monstruo rival** o realizar un **ataque directo a los LP**.
 
 ## 22.2. El rival no tiene Monstruos en Defensa, pero sí en Ataque
 
@@ -1020,12 +1022,13 @@ Cuando se cambie una regla:
 
 # 35. ESTADO DEL REGLAMENTO
 
-**Versión:** 1.3 — **reglamento oficial para la versión jugable actual.**
+**Versión:** 1.4 — **reglamento oficial para la versión jugable actual.**
 
 Cambios respecto a la versión 1.2:
 - un Monstruo que ya haya sido revelado boca arriba permanece visible para el rival al pasar a Defensa o cambiar nuevamente de posición;
 - la Trampa 2 permite al propietario elegir los 2 Monstruos propios que serán destruidos;
 - las Trampas 1 y 12 tienen efecto inmediato al colocarse y mantienen su efecto mientras viva el Monstruo asociado;
+- se elimina la obligación de atacar primero a los Monstruos en Defensa: cualquier Monstruo rival puede ser objetivo de un ataque, esté en Ataque o en Defensa; los Monstruos en Defensa solo bloquean el ataque directo normal;
 - una Trampa oculta se revela cuando su Monstruo es atacado y su efecto continúa si el Monstruo sobrevive; si el Monstruo es destruido, se informa de la eliminación de la Trampa.
 
 Esta versión consolida las reglas decididas por el creador y elimina las contradicciones principales entre los documentos anteriores.
