@@ -74,12 +74,14 @@ function CardZoomModal({
   card, 
   onClose,
   isOpponentCard = false,
-  isHidden = false
-}: { 
+  isHidden = false,
+  fieldMonster = null
+}: {
   card: Card | null;
   onClose: () => void;
   isOpponentCard?: boolean;
   isHidden?: boolean;
+  fieldMonster?: FieldMonster | null;
 }) {
   if (!card) return null;
 
@@ -121,18 +123,51 @@ function CardZoomModal({
         </div>
         
         <div className="flex justify-center mb-4">
-          <CardView card={card} size="lg" />
+          <CardView
+            card={card}
+            size="lg"
+            fieldMonster={fieldMonster ?? undefined}
+            isField={Boolean(fieldMonster)}
+            isOpponent={isOpponentCard}
+            showTrap={Boolean(fieldMonster?.trap)}
+            showMagic={Boolean(fieldMonster?.magic)}
+          />
         </div>
 
         <div className="space-y-2 text-center">
           <p className="text-white font-display font-bold text-lg">{card.name}</p>
           <p className="text-ink-300 text-sm">
-            {isMonster && `Monstruo · ATQ ${(card as MonsterCard).atk} / DEF ${(card as MonsterCard).def}`}
+            {isMonster && (
+              fieldMonster
+                ? `Monstruo · ATQ ${getEffectiveAtk(fieldMonster)} / DEF ${getEffectiveDef(fieldMonster)}`
+                : `Monstruo · ATQ ${(card as MonsterCard).atk} / DEF ${(card as MonsterCard).def}`
+            )}
             {isTrap && `Trampa · ${(card as TrapCard).description}`}
             {isMagic && `Mágica · ${(card as MagicCard).description}`}
           </p>
+          {fieldMonster?.magic && (
+            <div className="mt-2 text-left rounded-lg border border-gold-500/20 bg-gold-900/10 px-3 py-2">
+              <p className="text-gold-300 text-xs font-bold">Mágica asociada</p>
+              <p className="text-white text-sm font-semibold mt-0.5">{fieldMonster.magic.name}</p>
+              <p className="text-ink-300 text-xs mt-0.5">{fieldMonster.magic.description}</p>
+            </div>
+          )}
+          {fieldMonster?.trap && (
+            fieldMonster.trapRevealed || !isOpponentCard ? (
+              <div className="mt-2 text-left rounded-lg border border-crimson-500/20 bg-crimson-900/10 px-3 py-2">
+                <p className="text-crimson-300 text-xs font-bold">Trampa asociada</p>
+                <p className="text-white text-sm font-semibold mt-0.5">{fieldMonster.trap.name}</p>
+                <p className="text-ink-300 text-xs mt-0.5">{fieldMonster.trap.description}</p>
+              </div>
+            ) : (
+              <div className="mt-2 text-left rounded-lg border border-ink-500/30 bg-ink-800/40 px-3 py-2">
+                <p className="text-ink-300 text-xs font-bold">Trampa asociada</p>
+                <p className="text-ink-400 text-xs mt-0.5">Trampa oculta · solo se revela al activarse o al ser descubierta por un ataque.</p>
+              </div>
+            )
+          )}
           {isOpponentCard && (
-            <p className="text-ink-400 text-xs">Carta del rival</p>
+            <p className="text-ink-400 text-xs mt-2">Carta del rival</p>
           )}
         </div>
 
@@ -211,7 +246,7 @@ function FieldSlot({
   showTrap?: boolean;
   showMagic?: boolean;
   animateSummon?: boolean;
-  onZoom?: (card: Card) => void;
+  onZoom?: (card: Card, fieldMonster: FieldMonster, isOpponentCard: boolean, isHidden: boolean) => void;
   attackTarget?: boolean;
   trapTargetSelected?: boolean;
   trapCounting?: boolean;
@@ -254,15 +289,15 @@ function FieldSlot({
                 : ''
         }
       />
-      {/* Zoom button for own field cards */}
-      {!isOpponent && onZoom && (
+      {/* Zoom button for field cards */}
+      {onZoom && (
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onZoom(fm.card);
+            onZoom(fm.card, fm, isOpponent, Boolean(isOpponent && fm.faceDown));
           }}
           className="absolute -top-1 -right-1 w-4 h-4 bg-ink-700/90 rounded-full hidden md:flex items-center justify-center text-ink-300 hover:text-white hover:bg-ink-600 z-30 border border-ink-500/50"
-          title="Ampliar carta"
+          title={isOpponent ? "Ver carta rival" : "Ampliar carta"}
         >
           <ZoomIn size={8} />
         </button>
@@ -417,7 +452,12 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   const [selectedFieldUid, setSelectedFieldUid] = useState<string | null>(null);
   const [summonedUids, setSummonedUids] = useState<Set<string>>(new Set());
   const [lastCombat, setLastCombat] = useState<{ damage: number; player: 0 | 1 } | null>(null);
-  const [zoomCard, setZoomCard] = useState<{ card: Card | null; isOpponentCard?: boolean; isHidden?: boolean } | null>(null);
+  const [zoomCard, setZoomCard] = useState<{
+    card: Card | null;
+    fieldMonster?: FieldMonster | null;
+    isOpponentCard?: boolean;
+    isHidden?: boolean;
+  } | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const handScrollRef = useRef<HTMLDivElement>(null);
   const [liftDown, setLiftDown] = useState(false);
@@ -742,9 +782,14 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     }
   };
 
-  const handleCardZoom = (card: Card | null, isOpponentCard = false, isHidden = false) => {
+  const handleCardZoom = (
+    card: Card | null,
+    isOpponentCard = false,
+    isHidden = false,
+    fieldMonster: FieldMonster | null = null,
+  ) => {
     if (card) {
-      setZoomCard({ card, isOpponentCard, isHidden });
+      setZoomCard({ card, fieldMonster, isOpponentCard, isHidden });
     } else {
       setZoomCard(null);
     }
@@ -838,6 +883,16 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         return;
       }
       dispatch(action);
+    } else {
+      const target = opp.field.find((fm) => fm?.uid === uid) ?? null;
+      if (target) {
+        handleCardZoom(
+          target.card,
+          true,
+          Boolean(target.faceDown),
+          target,
+        );
+      }
     }
   };
 
@@ -1730,6 +1785,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           onClose={() => setZoomCard(null)}
           isOpponentCard={zoomCard.isOpponentCard}
           isHidden={zoomCard.isHidden}
+          fieldMonster={zoomCard.fieldMonster}
         />
         </div>
       )}
