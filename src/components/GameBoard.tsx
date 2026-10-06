@@ -202,6 +202,7 @@ function FieldSlot({
   onZoom,
   attackTarget = false,
   trapTargetSelected = false,
+  trapCounting = false,
 }: {
   fm: FieldMonster | null;
   isOpponent: boolean;
@@ -213,6 +214,7 @@ function FieldSlot({
   onZoom?: (card: Card) => void;
   attackTarget?: boolean;
   trapTargetSelected?: boolean;
+  trapCounting?: boolean;
 }) {
   if (!fm) {
     return (
@@ -243,11 +245,13 @@ function FieldSlot({
         className={
           attackTarget
             ? 'ring-4 ring-crimson-300 animate-pulse shadow-[0_0_24px_rgba(248,113,113,0.9)] scale-110'
-            : trapTargetSelected
-              ? 'ring-4 ring-gold-300 shadow-[0_0_24px_rgba(250,204,21,0.8)] scale-105'
-              : selectable
-              ? 'ring-2 ring-gold-300 animate-pulse shadow-glow scale-105'
-              : ''
+            : trapCounting
+              ? 'ring-4 ring-gold-200 shadow-[0_0_34px_rgba(250,204,21,1)] brightness-125 scale-110'
+              : trapTargetSelected
+                ? 'ring-4 ring-gold-300 shadow-[0_0_24px_rgba(250,204,21,0.8)] scale-105'
+                : selectable
+                ? 'ring-2 ring-gold-300 animate-pulse shadow-glow scale-105'
+                : ''
         }
       />
       {/* Zoom button for own field cards */}
@@ -469,6 +473,12 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     defenderCard?: MonsterCard;
   } | null>(null);
 
+  const [trapCountAnimation, setTrapCountAnimation] = useState<{
+    roll: number;
+    sequence: { uid: string; name: string }[];
+    step: number;
+  } | null>(null);
+
   useEffect(() => {
     if (!selectedHandCard && !selectedFieldUid) return;
 
@@ -611,6 +621,26 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     lastTurnSoundRef.current = state.turnCount;
     playSound('turn-start');
   }, [state.turnCount, state.phase, cp]);
+
+  // Trampa 3: el conteo avanza lentamente por los Monstruos del campo.
+  // El resultado se decide al pulsar "Tirar", pero la destrucción se aplica solo
+  // cuando la animación termina.
+  useEffect(() => {
+    if (!trapCountAnimation) return;
+
+    const timer = window.setTimeout(() => {
+      setTrapCountAnimation((current) => {
+        if (!current) return current;
+        if (current.step >= current.sequence.length - 1) {
+          dispatch({ type: 'ROLL_DICE', roll: current.roll });
+          return null;
+        }
+        return { ...current, step: current.step + 1 };
+      });
+    }, 850);
+
+    return () => window.clearTimeout(timer);
+  }, [trapCountAnimation, dispatch]);
 
   // Track combat for damage float, toast messages and combat animation
   useEffect(() => {
@@ -862,6 +892,35 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   const opponentUidOf = (fm: FieldMonster): string | null =>
     opp.field.some((f) => f?.uid === fm.uid) ? fm.uid : null;
 
+  const startTrap3CountAnimation = () => {
+    if (!state.pendingTrap || !state.pendingDice || trapCountAnimation) return;
+
+    const pt = state.pendingTrap;
+    if (
+      pt.trap.effect.kind !== 'dice_count_field' &&
+      !state.pendingDice.reason.includes('Dado y conteo')
+    ) return;
+
+    const allMonsters: { uid: string; name: string }[] = [];
+    for (const fm of state.players[pt.defenderPlayer].field) {
+      if (fm) allMonsters.push({ uid: fm.uid, name: fm.card.name });
+    }
+    for (const fm of state.players[pt.attackerPlayer].field) {
+      if (fm) allMonsters.push({ uid: fm.uid, name: fm.card.name });
+    }
+
+    if (allMonsters.length === 0) return;
+
+    const startIdx = allMonsters.findIndex((fm) => fm.uid === pt.defenderUid);
+    const safeStart = startIdx >= 0 ? startIdx : 0;
+    const roll = Math.floor(Math.random() * 6) + 1;
+    const sequence = Array.from({ length: roll }, (_, offset) =>
+      allMonsters[(safeStart + offset) % allMonsters.length],
+    );
+
+    setTrapCountAnimation({ roll, sequence, step: 0 });
+  };
+
   const trapPrompt = state.phase === 'trap-response' && state.pendingTrap;
   const dicePrompt = state.phase === 'dice-roll' && state.pendingDice;
 
@@ -1018,6 +1077,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                 (sel.kind === 'attack' || sel.kind === 'attack-or-direct') &&
                 isOpponentSlotSelectable(fm)
               }
+              trapCounting={Boolean(trapCountAnimation && fm && trapCountAnimation.sequence[trapCountAnimation.step]?.uid === fm.uid)}
               showTrap={false}
               showMagic={false}
             />
@@ -1077,6 +1137,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               } : undefined}
               selectable={isMySlotSelectable(fm)}
               trapTargetSelected={sel.kind === 'choose-trap-2-own' && sel.selectedUids.includes(fm?.uid ?? '')}
+              trapCounting={Boolean(trapCountAnimation && fm && trapCountAnimation.sequence[trapCountAnimation.step]?.uid === fm.uid)}
               showTrap={true}
               showMagic={true}
               animateSummon={summonedUids.has(fm?.uid ?? '')}
@@ -1088,7 +1149,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
 
       {/* Trap response modal */}
       {trapPrompt && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4 animate-backdrop-fade" data-no-cancel>
+        <div className={`fixed inset-0 ${trapCountAnimation ? 'bg-black/35' : 'bg-black/70'} flex items-center justify-center z-50 px-4 animate-backdrop-fade`} data-no-cancel>
           <div className="bg-ink-700 rounded-2xl border-2 border-crimson-500/50 p-5 max-w-xs w-full shadow-glow-crimson animate-scale-in">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-10 h-10 rounded-full bg-crimson-500/20 flex items-center justify-center">
@@ -1149,11 +1210,32 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                   Continuar
                 </button>
               </>
+            ) : trapCountAnimation ? (
+              <>
+                <div className="font-display font-black text-gold-300 mb-2 animate-pulse" style={{ fontSize: 'clamp(2.2rem, 7vw, 3.4rem)' }}>
+                  {trapCountAnimation.step + 1}
+                </div>
+                <p className="text-gold-200 font-display font-bold mb-1" style={uiSm}>Contando...</p>
+                <p className="text-ink-300 mb-3 truncate" style={uiXs}>
+                  {trapCountAnimation.sequence[trapCountAnimation.step]?.name}
+                </p>
+                <div className="text-ink-400" style={uiXs}>
+                  Ruleta de la Trampa · {trapCountAnimation.step + 1} / {trapCountAnimation.roll}
+                </div>
+              </>
             ) : (
               <button
                 onClick={() => {
-                  const roll = Math.floor(Math.random() * 6) + 1;
-                  dispatch({ type: 'ROLL_DICE', roll });
+                  const isTrap3 =
+                    state.pendingTrap?.trap.effect.kind === 'dice_count_field' ||
+                    state.pendingDice?.reason.includes('Dado y conteo') === true;
+
+                  if (isTrap3) {
+                    startTrap3CountAnimation();
+                  } else {
+                    const roll = Math.floor(Math.random() * 6) + 1;
+                    dispatch({ type: 'ROLL_DICE', roll });
+                  }
                 }}
                 className="rounded-xl bg-gradient-to-r from-gold-500 to-gold-400 text-ink-900 font-display font-bold hover:from-gold-400 hover:to-gold-300 shadow-glow btn-press flex items-center gap-2 mx-auto"
                 style={{ ...uiSm, padding: '0.6em 1.5em' }}
