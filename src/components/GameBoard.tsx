@@ -684,14 +684,28 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         setTimeout(() => playSound('damage'), 600);
       }
 
-      // Show toast for combat
-      addToast(state.lastCombat.log, 'combat');
+      // Mensaje de combate contextualizado según quién controla cada Monstruo.
+      // El jugador local se determina por el índice real del atacante, no por
+      // palabras como "Pierdes" dentro del texto.
+      const combatAttackerPlayer = state.lastCombat.attackerPlayer ?? state.currentPlayer;
+      const attackerIsMe = combatAttackerPlayer === viewer;
+      const defenderIsMe = !attackerIsMe;
+      const attackerName = state.lastCombat.attackerCard?.name ?? 'Monstruo';
+      const defenderName = state.lastCombat.defenderCard?.name ?? 'Monstruo';
+      let contextualCombatLog = state.lastCombat.log;
+      contextualCombatLog = contextualCombatLog.replace(
+        attackerName,
+        attackerIsMe ? `Tu ${attackerName}` : `El ${attackerName} rival`,
+      );
+      if (state.lastCombat.defenderCard?.name) {
+        contextualCombatLog = contextualCombatLog.replace(
+          defenderName,
+          defenderIsMe ? `tu ${defenderName}` : `el ${defenderName} rival`,
+        );
+      }
+      addToast(contextualCombatLog, 'combat');
 
-      // Mensaje explícito de pérdida de PV, para que el daño no pase desapercibido.
-      // Se mantiene la lógica de "Pierdes/rebota" que ya usa la interfaz de daño
-      // para identificar si el daño lo recibió el jugador local.
-      const defenderIsMe = (state.lastCombat?.log.includes('Pierdes') || state.lastCombat?.log.includes('rebota'));
-      const attackerIsMe = defenderIsMe;
+      // Mensajes de daño usando los índices reales de atacante/defensor.
       if (defenderDamage > 0) {
         addToast(
           defenderIsMe ? `¡-${defenderDamage} PV! Has perdido vida` : `¡-${defenderDamage} PV al rival!`,
@@ -704,8 +718,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           'combat',
         );
       }
-      
-      // Show damage for the player who received it
+            // Show damage for the player who received it
       if (defenderDamage > 0) {
         // Defender received damage
         setLastCombat({ damage: defenderDamage, player: defenderIsMe ? viewer : (viewer === 0 ? 1 : 0) as 0 | 1 });
