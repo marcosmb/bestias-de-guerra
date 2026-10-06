@@ -131,18 +131,14 @@ export function CardView({
         <div className="card-face w-full h-full flex flex-col p-1 card-shine">
           <img src={card.image ?? `/cards/${card.suit}-${card.number}.webp`} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-75" />
           <div className="flex justify-between items-start relative z-10">
-            <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{mc.number}</span>
             <span style={{ fontSize: s.text }}>{SUIT_SYMBOL[mc.suit]}</span>
-            <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{mc.number}</span>
           </div>
           <div className="flex-1 flex items-center justify-center relative z-10">
             <span style={{ fontSize: s.emoji }} className="drop-shadow-lg">{SUIT_SYMBOL[mc.suit]}</span>
           </div>
           <div className="text-center font-display font-semibold text-white/90 truncate px-0.5 relative z-10" style={{ fontSize: s.text }}>{mc.name}</div>
-          <div className="flex justify-between items-start relative z-10">
-            <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{mc.number}</span>
+          <div className="flex justify-center items-center relative z-10">
             <span style={{ fontSize: s.text }}>{SUIT_SYMBOL[mc.suit]}</span>
-            <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{mc.number}</span>
           </div>
           <div className="flex justify-between items-center px-1 mt-0.5 relative z-10" style={{ height: s.bar }}>
             <div className="flex items-center gap-0.5">
