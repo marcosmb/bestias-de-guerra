@@ -321,9 +321,11 @@ function TurnBanner({ playerName, turnCount }: { playerName: string; turnCount: 
     <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
       <div className="animate-turn-banner bg-ink-800/90 border-2 border-gold-500/50 rounded-2xl px-8 py-4 shadow-glow">
         <p className="font-display font-bold text-gold-300 text-xl text-center">
-          Turno de {playerName}
+          {turnCount === 0 ? 'Empieza ' + playerName : 'Turno de ' + playerName}
         </p>
-        <p className="text-ink-400 text-sm text-center mt-1">Turno {turnCount + 1}</p>
+        <p className="text-ink-400 text-sm text-center mt-1">
+          {turnCount === 0 ? 'Primer turno' : 'Turno ' + (turnCount + 1)}
+        </p>
       </div>
     </div>
   );
@@ -1093,7 +1095,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       }}
     >
       {/* Turn banner */}
-      <TurnBanner playerName={me.name} turnCount={state.turnCount} />
+      <TurnBanner playerName={state.players[cp].name} turnCount={state.turnCount} />
 
       {/* Damage float */}
       {lastCombat && <DamageFloat damage={lastCombat.damage} playerIdx={lastCombat.player} />}

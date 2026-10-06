@@ -270,9 +270,11 @@ function selectionActions(state: GameState, player: 0 | 1, me: PlayerState, opp:
         out.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'hand' });
       }
 
-      // Al campo: solo hace falta un hueco libre.
+      // Al campo: en el primer turno el Monstruo tambien debe entrar en Defensa.
       if (hasEmptySlot(me)) {
-        out.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'field', position: 'attack' });
+        if (state.turnCount > 0) {
+          out.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'field', position: 'attack' });
+        }
         out.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'field', position: 'defense' });
       }
       return out;
@@ -300,10 +302,12 @@ function freeActions(state: GameState, me: PlayerState, opp: PlayerState): Actio
 
   if (hayCuota) {
     // Regla 18: un Monstruo de la mano, en un hueco libre del campo.
+    // Primer turno de la partida: solo puede colocarse en Defensa.
     if (hasEmptySlot(me)) {
+      const summonPositions: readonly Position[] = state.turnCount === 0 ? ['defense'] : POSITIONS;
       for (const card of me.hand) {
         if (card.type !== 'monster') continue;
-        for (const position of POSITIONS) {
+        for (const position of summonPositions) {
           out.push({ type: 'SUMMON_MONSTER', card, position });
         }
       }
@@ -355,9 +359,12 @@ function freeActions(state: GameState, me: PlayerState, opp: PlayerState): Actio
   }
 
   // Regla 14: cambiar de posición una vez por Monstruo y por turno.
-  for (const fm of monstersOf(me)) {
-    if (!fm.hasChangedPosition) {
-      out.push({ type: 'CHANGE_POSITION', fieldUid: fm.uid });
+  // Durante el primer turno los Monstruos se mantienen en Defensa.
+  if (state.turnCount > 0) {
+    for (const fm of monstersOf(me)) {
+      if (!fm.hasChangedPosition) {
+        out.push({ type: 'CHANGE_POSITION', fieldUid: fm.uid });
+      }
     }
   }
 

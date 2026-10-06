@@ -335,11 +335,15 @@ No cuentan para el límite:
 
 El jugador que comienza la partida:
 
-**no puede atacar durante su primer turno.**
+- **no puede atacar durante su primer turno;**
+- cuando juega un Monstruo desde la mano, debe colocarlo **en Defensa**;
+- durante ese primer turno no puede cambiar la posición de ese Monstruo para pasarlo a Ataque.
 
-Sí puede realizar el resto de acciones legales.
+Por tanto, durante el primer turno del jugador inicial, los Monstruos que entren al campo deben permanecer en Defensa.
 
-A partir del siguiente turno se aplican normalmente las reglas de combate.
+El resto de acciones legales que no contradigan estas restricciones siguen disponibles normalmente.
+
+A partir del siguiente turno se aplican normalmente las reglas de combate y de cambio de posición.
 
 ---
 
@@ -1047,7 +1051,7 @@ Cuando se cambie una regla:
 
 # 35. ESTADO DEL REGLAMENTO
 
-**Versión:** 1.5 — **reglamento oficial para la versión jugable actual.**
+**Versión:** 1.6 — **reglamento oficial para la versión jugable actual.**
 
 Cambios respecto a la versión 1.2:
 - un Monstruo que ya haya sido revelado boca arriba permanece visible para el rival al pasar a Defensa o cambiar nuevamente de posición;
@@ -1060,7 +1064,10 @@ Cambios respecto a la versión 1.2:
 - la Trampa 4 redirige completamente al adversario el daño de LP que habría recibido el propietario por la eliminación del Monstruo que la lleva, sin que el propietario reciba ese daño, y permanece colocada mientras el Monstruo siga vivo;
 - la Trampa 9 requiere que su Monstruo portador sobreviva 3 turnos completos y permite después elegir y destruir cualquier Monstruo rival;
 - la Trampa 11 destruye al Monstruo al final del segundo turno y debe mostrar un mensaje explicativo de que la causa es su efecto;
-- la Trampa 12 queda definida como -5 LP por turno al adversario, funciona también con el Monstruo boca abajo y exige avisar visiblemente del cambio de LP sin revelar la identidad de la Trampa.
+- la Trampa 12 queda definida como -5 LP por turno al adversario, funciona también con el Monstruo boca abajo y exige avisar visiblemente del cambio de LP sin revelar la identidad de la Trampa;
+- el jugador inicial se determina aleatoriamente;
+- durante el primer turno del jugador inicial no se puede atacar;
+- los Monstruos que el jugador inicial coloque durante ese primer turno deben entrar en Defensa y no pueden cambiarse a Ataque durante ese mismo turno.
 
 Esta versión consolida las reglas decididas por el creador y elimina las contradicciones principales entre los documentos anteriores.
 

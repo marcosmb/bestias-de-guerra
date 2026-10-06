@@ -273,8 +273,10 @@ export function placeFieldMonster(player: PlayerState, fm: FieldMonster): Player
 }
 
 export function canAttack(state: GameState): boolean {
-  if (state.turnCount === 0 && state.currentPlayer === 0) return false;
-  return true;
+  // El jugador que empieza la partida no puede atacar durante su primer turno.
+  // Como turnCount === 0 identifica ese primer turno aunque el inicio sea aleatorio,
+  // la restriccion no depende de que sea el jugador 0 o el jugador 1.
+  return state.turnCount > 0;
 }
 
 /** Límite oficial de cartas jugadas o activadas desde la mano por turno. */

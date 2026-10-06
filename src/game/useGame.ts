@@ -566,8 +566,8 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
         const fm: FieldMonster = {
           uid: genUid(),
           card: revived,
-          position: 'attack',
-          faceDown: false,
+          position: state.turnCount === 0 ? 'defense' : 'attack',
+          faceDown: state.turnCount === 0,
           trap: null,
           magic: null,
           hasAttacked: true,
@@ -803,15 +803,24 @@ export function reducer(state: GameState, action: Action): GameState {
       const deck2 = shuffleDeck(buildDeck());
       let p2 = createPlayer(1, mode === 'cpu' ? 'CPU' : 'Jugador 2', deck2);
       p2 = drawCards(p2, 7);
+
+      // En cada partida se sortea aleatoriamente quien empieza.
+      const startingPlayer = Math.random() < 0.5 ? 0 : 1;
+      const startingPlayerName = mode === 'cpu' && startingPlayer === 1
+        ? 'CPU'
+        : startingPlayer === 0
+          ? p1.name
+          : p2.name;
+
       return {
         ...initialState(),
         mode,
         difficulty,
         phase: mode === 'cpu' ? 'playing' : 'pass',
-        passTarget: 0,
+        passTarget: startingPlayer,
         players: [p1, p2],
-        currentPlayer: 0,
-        log: ['¡La partida comienza!'],
+        currentPlayer: startingPlayer,
+        log: ['¡Empieza la partida! Empieza ' + startingPlayerName + '.'],
       };
     }
     case 'CONFIRM_START': {
@@ -830,6 +839,7 @@ export function reducer(state: GameState, action: Action): GameState {
       if (state.players[cp].cardsPlayedThisTurn >= MAX_CARDS_PER_TURN) return state;
       if (!hasCardInHand(state.players[cp], action.card)) return state;
       if (!hasEmptySlot(state.players[cp])) return state;
+      if (state.turnCount === 0 && action.position !== 'defense') return state;
       const slot = getFirstEmptySlot(state.players[cp]);
       const fm: FieldMonster = {
         uid: genUid(),
@@ -985,11 +995,12 @@ export function reducer(state: GameState, action: Action): GameState {
     }
     case 'DECLARE_ATTACK': {
       if (state.phase !== 'playing') return state;
+      if (!canAttack(state)) return state;
       const cp = state.currentPlayer;
       const opp = (cp === 0 ? 1 : 0) as 0 | 1;
       const attacker = findFieldMonster(state.players[cp], action.attackerUid);
       const defender = findFieldMonster(state.players[opp], action.defenderUid);
-      if (!attacker || !defender) return state;
+      if (!attacker || !defender || attacker.position !== 'attack' || attacker.hasAttacked) return state;
       if (defender.trap) {
         return {
           ...state,
@@ -1010,6 +1021,7 @@ export function reducer(state: GameState, action: Action): GameState {
     }
     case 'DIRECT_ATTACK': {
       if (state.phase !== 'playing') return state;
+      if (!canAttack(state)) return state;
       const cp = state.currentPlayer;
       const opp = (cp === 0 ? 1 : 0) as 0 | 1;
        const attacker = findFieldMonster(state.players[cp], action.attackerUid);
@@ -1075,6 +1087,7 @@ export function reducer(state: GameState, action: Action): GameState {
     }
     case 'CHANGE_POSITION': {
       if (state.phase !== 'playing') return state;
+      if (state.turnCount === 0) return state;
       const cp = state.currentPlayer;
       const fm = findFieldMonster(state.players[cp], action.fieldUid);
       if (!fm || fm.hasChangedPosition) return state;
@@ -1323,7 +1336,8 @@ export function reducer(state: GameState, action: Action): GameState {
         const slot = getFirstEmptySlot(players[me]);
         // Si no hay hueco, la carta NO se retira del cementerio (no se pierde).
         if (slot === -1) return state;
-        const position = action.position ?? 'attack';
+        if (state.turnCount === 0 && action.position === 'attack') return state;
+        const position = state.turnCount === 0 ? 'defense' : (action.position ?? 'attack');
         const fm: FieldMonster = {
           uid: genUid(),
           card: revived,

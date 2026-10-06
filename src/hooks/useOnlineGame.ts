@@ -309,21 +309,24 @@ export function useOnlineGame(): OnlineGameHook {
     let p2 = createPlayer(1, player2Name, deck2);
     p2 = drawCards(p2, INITIAL_HAND_SIZE);
     
+    const startingPlayer = Math.random() < 0.5 ? 0 : 1;
+    const startingPlayerName = startingPlayer === 0 ? p1.name : p2.name;
+
     return {
       phase: 'playing',
       mode: 'online',
-      currentPlayer: 0,
+      currentPlayer: startingPlayer,
       turnCount: 0,
       stateVersion: 0,
       players: [p1, p2] as [any, any],
       selection: { kind: 'none' },
-      log: ['¡La partida comienza!'],
+      log: ['¡Empieza la partida! Empieza ' + startingPlayerName + '.'],
       winner: null,
       isDraw: false,
       pendingTrap: null,
       pendingDice: null,
       lastCombat: null,
-      passTarget: 0,
+      passTarget: startingPlayer,
       diceResult: null,
     };
   }, []);
@@ -341,7 +344,7 @@ export function useOnlineGame(): OnlineGameHook {
     setWaitingForOpponent(true);
     
     // Inicializar partida completa UNA SOLA VEZ cuando se crea la sala
-    const fullGameState = initializeFullGameState(playerName, 'Esperando rival...');
+    const fullGameState = initializeFullGameState(playerName, 'Jugador 2');
     
     // Guardar estado REAL (sin filtrar) como fuente de verdad
     realGameStateRef.current = fullGameState;
@@ -352,7 +355,7 @@ export function useOnlineGame(): OnlineGameHook {
       player1: { id: myPlayerId, name: playerName, connected: true },
       player2: { id: null, name: null, connected: false },
       game_state: fullGameState,
-      current_turn: 'player1',
+      current_turn: fullGameState.currentPlayer === 0 ? 'player1' : 'player2',
       status: 'waiting' as const,
       winner: null,
       created_at: new Date().toISOString(),
@@ -390,7 +393,14 @@ export function useOnlineGame(): OnlineGameHook {
             players: [
               realGameStateRef.current.players[0],
               { ...realGameStateRef.current.players[1], name: opponentName }
-            ]
+            ],
+            log: realGameStateRef.current.turnCount === 0
+              ? ['¡Empieza la partida! Empieza ' + (
+                  realGameStateRef.current.currentPlayer === 0
+                    ? realGameStateRef.current.players[0].name
+                    : opponentName
+                ) + '.']
+              : realGameStateRef.current.log,
           };
           
           // Actualizar referencia real
@@ -512,7 +522,14 @@ export function useOnlineGame(): OnlineGameHook {
       players: [
         existingGameState.players[0],
         { ...existingGameState.players[1], name: playerName }
-      ]
+      ],
+      log: existingGameState.turnCount === 0
+        ? ['¡Empieza la partida! Empieza ' + (
+            existingGameState.currentPlayer === 0
+              ? existingGameState.players[0].name
+              : playerName
+          ) + '.']
+        : existingGameState.log,
     };
     
     // Guardar estado REAL como fuente de verdad
