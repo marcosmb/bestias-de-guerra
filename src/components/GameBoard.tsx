@@ -1631,7 +1631,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                 <button
                   onClick={() => handlePlayMonster(selectedCard, 'defense')}
                   disabled={!isLegal({ type: 'SUMMON_MONSTER', card: selectedCard, position: 'defense' })}
-                  className="flex-1 rounded-lg bg-gradient-to-r from-azure-600 to-azure-500 text-white font-display font-bold hover:from-azure-500 hover:to-azure-400 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
+                  className="flex-1 rounded-lg bg-gradient-to-r from-gray-600 to-gray-500 text-white font-display font-bold hover:from-gray-500 hover:to-gray-400 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
                   style={{ ...uiSm, padding: '0.7em 0' }}
                 >
                   <Shield size={16} /> Defensa
@@ -1639,7 +1639,11 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                 <button
                   onClick={() => handlePlayMonster(selectedCard, 'attack')}
                   disabled={!isLegal({ type: 'SUMMON_MONSTER', card: selectedCard, position: 'attack' })}
-                  className="flex-1 rounded-lg bg-gradient-to-r from-crimson-600 to-crimson-500 text-white font-display font-bold hover:from-crimson-500 hover:to-crimson-400 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
+                  className={`flex-1 rounded-lg text-white font-display font-bold btn-press flex items-center justify-center gap-1.5 disabled:opacity-40 ${
+                    selectedCard.suit === 'espadas'
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400'
+                      : 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400'
+                  }`}
                   style={{ ...uiSm, padding: '0.7em 0' }}
                 >
                   <Swords size={16} /> Ataque
