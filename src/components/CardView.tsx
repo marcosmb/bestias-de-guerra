@@ -204,10 +204,8 @@ export function CardView({
       >
         <div className="card-face w-full h-full flex flex-col p-1 card-shine">
           <img src={card.image ?? `/cards/${card.suit}-${card.number}.webp`} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-75" />
-          <div className="flex justify-between items-start relative z-10">
-            <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{tc.number}</span>
+          <div className="flex justify-center items-start relative z-10">
             <span style={{ fontSize: s.text }}>🥂</span>
-            <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{tc.number}</span>
           </div>
           <div className="flex-1 flex items-center justify-center relative z-10">
             <span style={{ fontSize: s.emoji }} className="drop-shadow-lg">🥂</span>
@@ -216,7 +214,7 @@ export function CardView({
           <div className="flex justify-between items-start relative z-10">
             <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{tc.number}</span>
             <span style={{ fontSize: s.text }}>🥂</span>
-            <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{tc.number}</span>
+            <span></span>
           </div>
         </div>
         {/* Card type indicator */}
@@ -243,10 +241,8 @@ export function CardView({
     >
       <div className="card-face w-full h-full flex flex-col p-1 card-shine">
         <img src={card.image ?? `/cards/${card.suit}-${card.number}.webp`} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-75" />
-        <div className="flex justify-between items-start relative z-10">
-          <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{mg.number}</span>
+        <div className="flex justify-center items-start relative z-10">
           <span style={{ fontSize: s.text }}>🪙</span>
-          <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{mg.number}</span>
         </div>
         <div className="flex-1 flex items-center justify-center relative z-10">
           <span style={{ fontSize: s.emoji }} className="drop-shadow-lg">🪙</span>
@@ -255,7 +251,7 @@ export function CardView({
         <div className="flex justify-between items-start relative z-10">
           <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{mg.number}</span>
           <span style={{ fontSize: s.text }}>🪙</span>
-          <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{mg.number}</span>
+          <span></span>
         </div>
       </div>
       {/* Card type indicator */}
