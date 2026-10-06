@@ -1,3 +1,31 @@
+describe('Reducer integration — COMBATE', () => {
+  it('ATQ igual a ATQ destruye ambos Monstruos en la partida real', () => {
+    let state = makeState();
+    const equalCard = getMonsterWithAtk(8);
+    const attacker = monster(equalCard, { uid: 'attacker-equal' });
+    const defender = monster({ ...equalCard }, { uid: 'defender-equal' });
+
+    state = setField(state, 0, [attacker]);
+    state = setField(state, 1, [defender]);
+
+    state = dispatch(state, { type: 'START_ATTACK', attackerUid: attacker.uid });
+    expect(state.selection.kind).toBe('attack-or-direct');
+
+    state = dispatch(state, {
+      type: 'DECLARE_ATTACK',
+      attackerUid: attacker.uid,
+      defenderUid: defender.uid,
+    });
+
+    expect(state.players[0].field.find((f) => f?.uid === attacker.uid)).toBeNull();
+    expect(state.players[1].field.find((f) => f?.uid === defender.uid)).toBeNull();
+    expect(state.lastCombat?.attackerDestroyed).toBe(true);
+    expect(state.lastCombat?.defenderDestroyed).toBe(true);
+    expect(state.lastCombat?.attackerDamage).toBe(0);
+    expect(state.lastCombat?.defenderDamage).toBe(0);
+  });
+});
+
 import { describe, it, expect } from 'vitest';
 import { reducer, initialState } from '../useGame';
 import type { GameState, Action, FieldMonster } from '../types';

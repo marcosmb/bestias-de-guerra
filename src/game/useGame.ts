@@ -1431,6 +1431,10 @@ function resolveDiceProtection(): { ownerRoll: number; opponentRoll: number; own
   return { ownerRoll, opponentRoll, ownerWins: ownerRoll > opponentRoll };
 }
 
+function resultIsMutualDestruction(result: CombatResult): boolean {
+  return result.attackerDestroyed && result.defenderDestroyed && result.attackerDamage === 0 && result.defenderDamage === 0;
+}
+
 function executeCombat(state: GameState, attackerUid: string, defenderUid: string): GameState {
   const cp = state.currentPlayer;
   const opp = (cp === 0 ? 1 : 0) as 0 | 1;
@@ -1456,6 +1460,44 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
   };
   const hasReflect = defender.trap?.effect.kind === 'reflect_damage';
   const trapDiscoveryLog = defender.trap ? ` ¡Trampa descubierta: ${defender.trap.name}. ${defender.trap.description}` : '';
+
+  // Regla 24.3 — en un empate ATQ vs ATQ ambos Monstruos se destruyen.
+  // Se resuelve de forma atómica antes de cualquier tratamiento de daño o de
+  // las ramas individuales de destrucción, evitando que una sola eliminación
+  // deje al otro Monstruo en el campo.
+  //
+  // La Mágica 9 sigue siendo una excepción: si alguno de los dos está protegido,
+  // el bloque normal de protección por dado decide si sobrevive.
+  if (
+    resultIsMutualDestruction(resolveCombat(attacker, defender)) &&
+    !attacker.diceProtection &&
+    !defender.diceProtection
+  ) {
+    const result: CombatResult = {
+      ...resolveCombat(attacker, defender),
+      attackerUid,
+      defenderUid,
+      attackerPlayer: cp,
+      attackerCard: attacker.card,
+      defenderCard: defender.card,
+    };
+
+    removeFieldMonster(players, cp, attackerUid);
+    removeFieldMonster(players, opp, defenderUid);
+
+    const winResult = checkWinner(players);
+    const newState: GameState = {
+      ...state,
+      players,
+      phase: winResult.winner !== null || winResult.isDraw ? ('game-over' as const) : ('playing' as const),
+      selection: { kind: 'none' },
+      lastCombat: result,
+      log: addLog(state, result.log + trapDiscoveryLog),
+      winner: winResult.winner,
+      isDraw: winResult.isDraw,
+    };
+    return checkStalemateEnd(newState);
+  }
 
   if (result.attackerDestroyed) {
     // Check dice protection
