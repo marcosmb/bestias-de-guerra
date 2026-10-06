@@ -131,7 +131,7 @@ export const TRAPS: TrapCard[] = [
 ];
 
 export const MAGICS: MagicCard[] = [
-  { id: 'm1', type: 'magic', suit: 'oros', number: 1, name: 'Ataque directo', description: 'Ataca directamente a los PV del rival con tu Monstruo.', effect: { kind: 'direct_attack' }, placement: 'instant' },
+  { id: 'm1', type: 'magic', suit: 'oros', number: 1, name: 'Ataque directo', description: 'Se coloca sobre un Monstruo. Mientras permanezca asociada, ese Monstruo puede elegir entre atacar a cualquier Monstruo rival o atacar directamente a los PV del adversario, incluso si el rival tiene Monstruos en Defensa.', effect: { kind: 'direct_attack' }, placement: 'field' },
   { id: 'm2', type: 'magic', suit: 'oros', number: 2, name: 'Robar de la mano', description: 'Coge una carta de la mano del adversario sin mirar.', effect: { kind: 'steal_hand_card' }, placement: 'instant' },
   { id: 'm3', type: 'magic', suit: 'oros', number: 3, name: 'Cambio de mano', description: 'Todos se descartan la mano y roban 5 cartas del mazo.', effect: { kind: 'hand_swap' }, placement: 'instant' },
   { id: 'm4', type: 'magic', suit: 'oros', number: 4, name: '+2 de ataque', description: 'Mientras esté colocada, el Monstruo tiene +2 de ataque.', effect: { kind: 'atk_boost', amount: 2 }, placement: 'field' },
