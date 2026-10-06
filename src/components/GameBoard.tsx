@@ -686,21 +686,22 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   // Avisos de efectos pasivos de las Trampas 1 (+5 PV) y 12 (-5 PV).
   //
   // La identidad de la Trampa NO se muestra aquí mientras permanezca oculta.
-  // El objetivo es informar siempre de que los PV han cambiado sin revelar
+  // El objetivo es informar SIEMPRE de que los PV han cambiado sin revelar
   // qué carta está provocando el efecto ni sobre qué Monstruo está colocada.
-  const passiveLogLengthRef = useRef(state.log.length);
+  //
+  // Se sigue la referencia del array de log y no su longitud: el log conserva
+  // como máximo 50 entradas y, cuando llega a ese límite, su longitud deja de
+  // aumentar. Comparar el array garantiza que un efecto pasivo posterior no
+  // quede sin aviso.
+  const passiveLogRef = useRef(state.log);
   useEffect(() => {
-    const previousLength = passiveLogLengthRef.current;
-    const currentLength = state.log.length;
-
-    if (currentLength > previousLength) {
-      const newEntries = state.log.slice(previousLength);
-      const passiveEffectHappened = newEntries.some(
-        (entry) =>
-          entry.includes('por su efecto continuo') ||
-          entry.includes('Una Trampa activa te hace recuperar') ||
-          entry.includes('Una Trampa activa hace perder'),
-      );
+    if (state.log !== passiveLogRef.current) {
+      const latestEntry = state.log[state.log.length - 1] ?? '';
+      const passiveEffectHappened =
+        latestEntry.includes('por su efecto continuo') ||
+        latestEntry.includes('Una Trampa activa te hace recuperar') ||
+        latestEntry.includes('Una Trampa activa hace perder') ||
+        latestEntry.includes('Su efecto empieza inmediatamente: el rival pierde');
 
       if (passiveEffectHappened) {
         const viewerLp = state.players[viewer].lp;
@@ -711,7 +712,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         const viewerDelta = viewerLp - previousViewerLp;
         const rivalDelta = rivalLp - previousRivalLp;
 
-        // Avisamos de cada cambio relevante desde la perspectiva del jugador.
+        // Avisamos de cada cambio relevante desde la perspectiva del jugador,
+        // sin revelar la identidad de la Trampa mientras siga oculta.
         if (viewerDelta > 0) {
           addToast(`Has ganado ${viewerDelta} PV por un efecto continuo.`, 'info');
         } else if (viewerDelta < 0) {
@@ -726,9 +728,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       }
     }
 
-    passiveLogLengthRef.current = currentLength;
+    passiveLogRef.current = state.log;
     passiveLpRef.current = [state.players[0].lp, state.players[1].lp];
-  }, [state.log.length, state.players[0].lp, state.players[1].lp, viewer]);
+  }, [state.log, state.players[0].lp, state.players[1].lp, viewer]);
 
   // Track combat for damage float, toast messages and combat animation
   useEffect(() => {
