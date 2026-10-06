@@ -202,11 +202,20 @@ function selectionActions(state: GameState, player: 0 | 1, me: PlayerState, opp:
     }
 
     case 'attack': {
-      // Regla 22: la selección se abrió porque el rival tiene Monstruos en
-      // Defensa (o porque se ha pedido un objetivo), así que solo hay ataque
-      // contra un Monstruo. El ataque directo no se ofrece en esta variante.
       const attacker = monstersOf(me).find((f) => f.uid === sel.attackerUid);
       if (!isLegalAttacker(state, player, attacker)) return [];
+
+      if (attacker?.magic?.effect.kind === 'direct_attack') {
+        return [
+          ...monstersOf(opp).map((target) => ({
+            type: 'DECLARE_ATTACK' as const,
+            attackerUid: sel.attackerUid,
+            defenderUid: target.uid,
+          })),
+          { type: 'DIRECT_ATTACK' as const, attackerUid: sel.attackerUid },
+        ];
+      }
+
       return legalTargets(monstersOf(opp)).map((target) => ({
         type: 'DECLARE_ATTACK',
         attackerUid: sel.attackerUid,
@@ -215,27 +224,23 @@ function selectionActions(state: GameState, player: 0 | 1, me: PlayerState, opp:
     }
 
     case 'attack-or-direct': {
-      // Regla 22.2: sin Monstruos en Defensa se puede atacar a un Ataque o ir
-      // directamente a los PV del rival.
       const attacker = monstersOf(me).find((f) => f.uid === sel.attackerUid);
       if (!isLegalAttacker(state, player, attacker)) return [];
-      const out: Action[] = legalTargets(monstersOf(opp)).map((target) => ({
+
+      const targets = attacker?.magic?.effect.kind === 'direct_attack'
+        ? monstersOf(opp)
+        : legalTargets(monstersOf(opp));
+
+      const out: Action[] = targets.map((target) => ({
         type: 'DECLARE_ATTACK',
         attackerUid: sel.attackerUid,
         defenderUid: target.uid,
       }));
-      if (canDirectAttack(monstersOf(opp))) {
+
+      if (attacker?.magic?.effect.kind === 'direct_attack' || canDirectAttack(monstersOf(opp))) {
         out.push({ type: 'DIRECT_ATTACK', attackerUid: sel.attackerUid });
       }
       return out;
-    }
-
-    case 'direct-attack': {
-      // Regla 22.1: sin Monstruos en Defensa del rival.
-      const attacker = monstersOf(me).find((f) => f.uid === sel.attackerUid);
-      if (!isLegalAttacker(state, player, attacker)) return [];
-      if (!canDirectAttack(monstersOf(opp))) return [];
-      return [{ type: 'DIRECT_ATTACK', attackerUid: sel.attackerUid }];
     }
 
     case 'choose-destroy-target': {
@@ -340,12 +345,11 @@ function freeActions(state: GameState, me: PlayerState, opp: PlayerState): Actio
       if (fm.position !== 'attack' || fm.hasAttacked) continue;
       out.push({ type: 'START_ATTACK', attackerUid: fm.uid });
       // Regla 22: si hay Monstruos en Defensa hay que atacar a uno de esos.
-      for (const target of legalTargets(defenders)) {
+      const targets = fm.magic?.effect.kind === 'direct_attack' ? defenders : legalTargets(defenders);
+      for (const target of targets) {
         out.push({ type: 'DECLARE_ATTACK', attackerUid: fm.uid, defenderUid: target.uid });
       }
-      // Regla 22.1 / 23: el ataque directo solo si el rival no tiene nada en
-      // Defensa.
-      if (canDirectAttack(defenders)) {
+      if (fm.magic?.effect.kind === 'direct_attack' || canDirectAttack(defenders)) {
         out.push({ type: 'DIRECT_ATTACK', attackerUid: fm.uid });
       }
     }
