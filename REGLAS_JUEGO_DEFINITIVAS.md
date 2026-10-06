@@ -418,6 +418,8 @@ Si el adversario tiene uno o más Monstruos en Defensa:
 
 No puede elegir un Monstruo en Ataque ni realizar un ataque directo mientras exista al menos un Monstruo rival en Defensa.
 
+**Excepción — Mágica 1:** si el Monstruo atacante tiene asociada la Mágica 1, puede ignorar esta obligación y elegir **cualquier Monstruo rival** o realizar un **ataque directo a los LP**.
+
 ## 22.2. El rival no tiene Monstruos en Defensa, pero sí en Ataque
 
 Si el adversario no tiene ningún Monstruo en Defensa, pero sí tiene uno o más Monstruos en Ataque, el jugador atacante puede elegir libremente entre:
@@ -754,9 +756,22 @@ Cuando el Monstruo es destruido, la Trampa también se elimina y el registro inf
 
 ## Mágica 1 — Ataque directo
 
-Permite que uno de los Monstruos propios realice un ataque directo contra los LP del adversario.
+Se coloca asociada a **un Monstruo propio**, tanto si está en **Ataque** como si está en **Defensa**, incluso si está boca abajo.
 
-El daño se calcula conforme al ATQ del Monstruo atacante.
+La Mágica permanece asociada a ese Monstruo hasta que el Monstruo sea eliminado.
+
+Mientras permanezca asociada, cada vez que ese Monstruo pueda atacar, el jugador puede elegir libremente entre:
+
+- atacar a **cualquiera de los Monstruos rivales**, estén en Ataque o Defensa;
+- realizar un **ataque directo contra los LP del adversario**.
+
+Esta elección es válida **aunque el rival tenga Monstruos en Defensa**.
+
+La Mágica 1 no realiza un ataque al ser jugada y no se consume después de un único ataque.
+
+Cuando el Monstruo al que está asociada es eliminado, la Mágica se elimina con él y pasa al cementerio de su propietario original.
+
+El daño de un ataque directo se calcula conforme al ATQ del Monstruo atacante.
 
 ---
 
