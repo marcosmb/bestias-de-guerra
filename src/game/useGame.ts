@@ -417,15 +417,17 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
 
   switch (eff.kind) {
     case 'direct_attack': {
-      // needs a monster to attack directly — handled via selection
       if (targetUid) {
-        const attacker = findFieldMonster(players[me], targetUid);
-        if (attacker) {
-          const dmg = getEffectiveAtk(attacker);
-          players[opp] = applyDamage(players[opp], dmg);
-          players[me] = updateFieldMonster(players[me], targetUid, (fm) => ({ ...fm, hasAttacked: true }));
-          log.push(`${card.name}: ${attacker.card.name} ataca directamente. ${dmg} PV al rival.`);
+        const target = findFieldMonster(players[me], targetUid);
+        if (!target || target.magic !== null) {
+          resolves = false;
+          break;
         }
+        players[me] = playCardFromHand(
+          updateFieldMonster(players[me], targetUid, (fm) => ({ ...fm, magic: card })),
+          card,
+        );
+        log.push(`${card.name}: queda asociada a ${target.card.name}. Ese Monstruo puede elegir atacar a cualquier Monstruo rival o directamente a los LP, incluso si hay Defensas.`);
       }
       break;
     }
@@ -911,23 +913,13 @@ export function reducer(state: GameState, action: Action): GameState {
       if (eff.kind === 'dice_damage') {
         return applyMagicEffect(state, action.card);
       }
-      // Direct attack: auto-use strongest available attacker, no monster selection needed
-      if (eff.kind === 'direct_attack') {
-        const myField = state.players[cp].field.filter(Boolean) as FieldMonster[];
-        const available = myField
-          .filter((f) => f.position === 'attack' && !f.hasAttacked)
-          .sort((a, b) => getEffectiveAtk(b) - getEffectiveAtk(a));
-        if (available.length === 0) {
-          return { ...state, log: addLog(state, `${action.card.name}: No tienes Monstruos en ataque disponibles.`) };
-        }
-        return applyMagicEffect(state, action.card, available[0].uid);
-      }
-      // Field-placed magics need target.
+      // Mágica 1: se equipa a un Monstruo propio y permanece asociada.
+// Field-placed magics need target.
       // Si no existe ningún objetivo legal NO se abre la selección: una
       // selección imposible de resolver dejaría la partida en un estado
       // pendiente que el jugador no puede completar. La Mágica tampoco se
       // consume ni gasta cuota: simplemente no se activa.
-      if (eff.kind === 'atk_boost' || eff.kind === 'def_reduce' || eff.kind === 'dice_protection') {
+      if (eff.kind === 'atk_boost' || eff.kind === 'def_reduce' || eff.kind === 'dice_protection' || eff.kind === 'direct_attack') {
         const lados = magicRequiredSide(action.card) === 'self'
           ? [cp]
           : magicRequiredSide(action.card) === 'enemy'
@@ -979,7 +971,11 @@ export function reducer(state: GameState, action: Action): GameState {
       
       const hasOppDefense = oppField.some((f) => f !== null && f.position === 'defense');
       
-      if (hasOppDefense) {
+      if (attacker.magic?.effect.kind === 'direct_attack') {
+         return { ...state, selection: { kind: 'attack-or-direct', attackerUid: action.attackerUid } };
+       }
+
+       if (hasOppDefense) {
         // Regla 22.1: obligado a atacar a un Monstruo en Defensa
         return { ...state, selection: { kind: 'attack', attackerUid: action.attackerUid } };
       }
@@ -998,7 +994,7 @@ export function reducer(state: GameState, action: Action): GameState {
       const hasOppDefense = state.players[opp].field.some(
         (f) => f !== null && f.position === 'defense',
       );
-      if (hasOppDefense && defender.position !== 'defense') return state;
+      if (hasOppDefense && attacker.magic?.effect.kind !== 'direct_attack' && defender.position !== 'defense') return state;
 
       if (defender.trap) {
         return {
@@ -1022,9 +1018,11 @@ export function reducer(state: GameState, action: Action): GameState {
       if (state.phase !== 'playing') return state;
       const cp = state.currentPlayer;
       const opp = (cp === 0 ? 1 : 0) as 0 | 1;
+       const attacker = findFieldMonster(state.players[cp], action.attackerUid);
+       if (!attacker || attacker.position !== 'attack' || attacker.hasAttacked) return state;
       // Regla 22.1: no se puede atacar directamente si hay Monstruos en Defensa
       const hasOppDefense = state.players[opp].field.some((f) => f !== null && f.position === 'defense');
-      if (hasOppDefense) return state;
+      if (hasOppDefense && attacker.magic?.effect.kind !== 'direct_attack') return state;
       return executeDirectAttack(state, action.attackerUid);
     }
     case 'RESOLVE_TRAP': {
