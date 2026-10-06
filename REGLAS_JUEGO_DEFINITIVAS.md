@@ -420,10 +420,12 @@ No puede elegir un Monstruo en Ataque ni realizar un ataque directo mientras exi
 
 ## 22.2. El rival no tiene Monstruos en Defensa, pero sí en Ataque
 
-Si el adversario no tiene ningún Monstruo en Defensa, pero sí tiene Monstruos en Ataque, el atacante puede elegir entre:
+Si el adversario no tiene ningún Monstruo en Defensa, pero sí tiene uno o más Monstruos en Ataque, el jugador atacante puede elegir libremente entre:
 
-- atacar a uno de los Monstruos en Ataque;
-- realizar un ataque directo contra los LP del adversario.
+- atacar a **cualquiera de los Monstruos rivales que estén en Ataque**;
+- realizar un **ataque directo contra los LP del adversario**.
+
+Ambas opciones son legales en este caso y el jugador decide cuál utilizar. En la interfaz aparece un botón **«Ataque directo»** para ejecutar inmediatamente el ataque a los LP.
 
 ## 22.3. El rival no tiene Monstruos
 
