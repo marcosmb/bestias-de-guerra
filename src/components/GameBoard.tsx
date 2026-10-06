@@ -1575,28 +1575,32 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             </button>
           </div>
           <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-            {isLegal({ type: 'START_ATTACK', attackerUid: selectedField.uid }) && (
-              <button
-                onClick={() => {
-                  dispatch({ type: 'START_ATTACK', attackerUid: selectedField.uid });
-                  setSelectedFieldUid(null);
-                }}
-                className="flex-1 rounded-lg bg-gradient-to-r from-crimson-600 to-crimson-500 text-white font-display font-bold hover:from-crimson-500 hover:to-crimson-400 btn-press flex items-center justify-center gap-1.5"
-                style={{ ...uiSm, padding: '0.7em 0' }}
-              >
-                <Swords size={16} /> Atacar
-              </button>
-            )}
             {isLegal({ type: 'CHANGE_POSITION', fieldUid: selectedField.uid }) && (
               <button
                 onClick={() => {
                   dispatch({ type: 'CHANGE_POSITION', fieldUid: selectedField.uid });
                   setSelectedFieldUid(null);
                 }}
-                className="flex-1 rounded-lg bg-gradient-to-r from-azure-600 to-azure-500 text-white font-display font-bold hover:from-azure-500 hover:to-azure-400 btn-press flex items-center justify-center gap-1.5"
+                className="flex-1 rounded-lg bg-gray-600 text-white font-display font-bold hover:bg-gray-500 btn-press flex items-center justify-center gap-1.5"
                 style={{ ...uiSm, padding: '0.7em 0' }}
               >
                 <RotateCw size={16} /> {selectedField.position === 'attack' ? 'A Defensa' : 'A Ataque'}
+              </button>
+            )}
+            {isLegal({ type: 'START_ATTACK', attackerUid: selectedField.uid }) && (
+              <button
+                onClick={() => {
+                  dispatch({ type: 'START_ATTACK', attackerUid: selectedField.uid });
+                  setSelectedFieldUid(null);
+                }}
+                className={`flex-1 rounded-lg text-white font-display font-bold btn-press flex items-center justify-center gap-1.5 ${
+                  selectedField.card.suit === 'espadas'
+                    ? 'bg-blue-600 hover:bg-blue-500'
+                    : 'bg-green-600 hover:bg-green-500'
+                }`}
+                style={{ ...uiSm, padding: '0.7em 0' }}
+              >
+                <Swords size={16} /> Atacar
               </button>
             )}
             {!isLegal({ type: 'CHANGE_POSITION', fieldUid: selectedField.uid }) && (
