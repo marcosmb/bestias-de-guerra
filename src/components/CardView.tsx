@@ -137,7 +137,7 @@ export function CardView({
           <div className="flex justify-center items-center relative z-10">
             <span style={{ fontSize: s.text }}>{SUIT_SYMBOL[mc.suit]}</span>
           </div>
-          <div className="flex justify-between items-center px-1 mt-0.5 relative z-10" style={{ height: s.bar }}>
+          <div className="flex justify-between items-center px-1 mt-auto relative z-10" style={{ height: s.bar }}>
             <div className="flex items-center gap-0.5">
               <Sword size={16} className="text-crimson-400" />
               <span className={`font-bold text-white ${hasBuff ? 'text-emerald-400' : ''}`} style={{ fontSize: s.num }}>{atk}</span>
