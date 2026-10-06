@@ -1150,6 +1150,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               trapCounting={Boolean(trapCountAnimation && fm && trapCountAnimation.sequence[trapCountAnimation.step]?.uid === fm.uid)}
               showTrap={false}
               showMagic={false}
+              onZoom={(card, fieldMonster, isOpponentCard, isHidden) =>
+                handleCardZoom(card, isOpponentCard, isHidden, fieldMonster)
+              }
             />
           ))}
         </div>
@@ -1211,7 +1214,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               showTrap={true}
               showMagic={true}
               animateSummon={summonedUids.has(fm?.uid ?? '')}
-              onZoom={handleCardZoom}
+              onZoom={(card, fieldMonster, isOpponentCard, isHidden) =>
+                handleCardZoom(card, isOpponentCard, isHidden, fieldMonster)
+              }
             />
           ))}
         </div>
