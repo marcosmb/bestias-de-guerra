@@ -746,21 +746,16 @@ function actionsEqual(a: Action, b: Action): boolean {
 }
 
 /**
- * Devuelve los objetivos legales para un ataque, según la Regla 22.
- * 
- * - 22.1 Si hay monstruos en Defensa → solo esos (obligatorio).
- * - 22.2 Si no hay en Defensa pero sí en Ataque → cualquier monstruo + ataque directo.
- * - 22.3 Si no hay monstruos → solo ataque directo.
+ * Regla 22 — Un ataque a Monstruo puede elegir cualquier Monstruo rival,
+ * tanto en Ataque como en Defensa.
  */
 export function legalTargets(defenders: FieldMonster[]): FieldMonster[] {
-  const inDefense = defenders.filter((f) => f.position === 'defense');
-  if (inDefense.length > 0) return inDefense;
-  return defenders.filter((f) => f.position === 'attack');
+  return defenders;
 }
 
 /**
- * Regla 22.1 — ¿Es legal el ataque directo? No lo es si el rival tiene algún
- * Monstruo en Defensa: hay que atacar a uno de esos.
+ * El ataque directo mantiene su regla independiente: un Monstruo en Defensa
+ * sigue impidiendo el ataque directo, salvo la excepción de la Mágica 1.
  */
 export function canDirectAttack(defenders: FieldMonster[]): boolean {
   return defenders.every((f) => f.position !== 'defense');
