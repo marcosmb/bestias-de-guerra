@@ -927,7 +927,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   const selectionPromptText = (): string => {
     switch (sel.kind) {
       case 'attack': return 'Elige un monstruo enemigo para atacar';
-      case 'attack-or-direct': return 'Elige un monstruo enemigo para atacar, o tu monstruo para ataque directo';
+      case 'attack-or-direct': return 'Elige un Monstruo enemigo para atacar o realiza un ataque directo a sus LP';
       case 'place-trap': return 'Elige tu monstruo para colocar la trampa';
       case 'place-magic':
         // Regla 5: la Mágica 8 es la única que va sobre un Monstruo rival.
@@ -1290,17 +1290,32 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       {/* Selection prompt bar */}
       {sel.kind !== 'none' && !trapPrompt && !dicePrompt && sel.kind !== 'revive-choice' && sel.kind !== 'choose-destroy-target' && (
         <div className="px-3 py-2 bg-gold-500/15 border-t-2 border-gold-500/40 flex items-center justify-between flex-none animate-fade-in shadow-lg" data-no-cancel>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-gold-400 animate-pulse"></div>
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-2 h-2 rounded-full bg-gold-400 animate-pulse flex-none"></div>
             <span className="text-gold-200 font-medium" style={uiSm}>{selectionPromptText()}</span>
           </div>
-          <button
-            onClick={() => dispatch({ type: 'CANCEL_SELECTION' })}
-            className="flex items-center gap-1 px-3 py-1 rounded-lg bg-ink-700/80 text-ink-300 hover:text-white hover:bg-ink-600 btn-press border border-ink-500/50"
-            style={uiXs}
-          >
-            <X size={12} /> Cancelar
-          </button>
+          <div className="flex items-center gap-1.5 flex-none">
+            {sel.kind === 'attack-or-direct' &&
+              isLegal({ type: 'DIRECT_ATTACK', attackerUid: sel.attackerUid }) && (
+                <button
+                  type="button"
+                  onClick={() => dispatch({ type: 'DIRECT_ATTACK', attackerUid: sel.attackerUid })}
+                  className="flex items-center gap-1 px-3 py-1 rounded-lg bg-gradient-to-r from-crimson-600 to-crimson-500 text-white hover:from-crimson-500 hover:to-crimson-400 btn-press border border-crimson-400/60 font-display font-bold"
+                  style={uiXs}
+                  title="Atacar directamente los puntos de vida del rival"
+                  aria-label="Atacar directamente los puntos de vida del rival"
+                >
+                  <Swords size={12} /> Ataque directo
+                </button>
+              )}
+            <button
+              onClick={() => dispatch({ type: 'CANCEL_SELECTION' })}
+              className="flex items-center gap-1 px-3 py-1 rounded-lg bg-ink-700/80 text-ink-300 hover:text-white hover:bg-ink-600 btn-press border border-ink-500/50"
+              style={uiXs}
+            >
+              <X size={12} /> Cancelar
+            </button>
+          </div>
         </div>
       )}
 
