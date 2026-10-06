@@ -842,14 +842,6 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     if (sel.kind === 'attack' || sel.kind === 'attack-or-direct') {
       const target = opp.field.find((fm) => fm?.uid === uid) ?? null;
       const attacker = me.field.find((fm) => fm?.uid === sel.attackerUid) ?? null;
-      const defenseTargets = opp.field.filter((fm): fm is FieldMonster => fm !== null && fm.position === 'defense');
-      const hasDirectAttackMagic = attacker?.magic?.effect.kind === 'direct_attack';
-
-      if (target && defenseTargets.length > 0 && target.position === 'attack' && !hasDirectAttackMagic) {
-        addToast('¡Jugada errónea! Debes atacar primero a un Monstruo que esté en Defensa.', 'warning');
-        return;
-      }
-
       const attackAction = {
         type: 'DECLARE_ATTACK' as const,
         attackerUid: sel.attackerUid,
