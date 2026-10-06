@@ -134,9 +134,6 @@ export function CardView({
             <span style={{ fontSize: s.text }}>{SUIT_SYMBOL[mc.suit]}</span>
           </div>
           <div className="text-center font-display font-semibold text-white/90 truncate px-0.5 relative z-10" style={{ fontSize: s.text }}>{mc.name}</div>
-          <div className="flex justify-center items-center relative z-10">
-            <span style={{ fontSize: s.text }}>{SUIT_SYMBOL[mc.suit]}</span>
-          </div>
           <div className="flex justify-between items-center px-1 mt-auto relative z-10" style={{ height: s.bar }}>
             <div className="flex items-center gap-0.5">
               <Sword size={16} className="text-crimson-400" />
@@ -205,7 +202,7 @@ export function CardView({
             <span style={{ fontSize: s.text }}>🥂</span>
           </div>
           <div className="text-center font-display font-semibold text-white/90 leading-tight relative z-10" style={{ fontSize: s.text }}>{tc.name}</div>
-          <div className="flex justify-between items-start relative z-10">
+          <div className="flex justify-between items-start mt-auto relative z-10">
             <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{tc.number}</span>
             <span style={{ fontSize: s.text }}>🥂</span>
             <span></span>
@@ -239,7 +236,7 @@ export function CardView({
           <span style={{ fontSize: s.text }}>🪙</span>
         </div>
         <div className="text-center font-display font-semibold text-white/90 leading-tight relative z-10" style={{ fontSize: s.text }}>{mg.name}</div>
-        <div className="flex justify-between items-start relative z-10">
+        <div className="flex justify-between items-start mt-auto relative z-10">
           <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{mg.number}</span>
           <span style={{ fontSize: s.text }}>🪙</span>
           <span></span>
