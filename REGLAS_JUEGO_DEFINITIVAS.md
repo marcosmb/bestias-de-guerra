@@ -218,9 +218,7 @@ Cada jugador comienza con **100 LP**.
 
 Los LP pueden aumentar o disminuir por combates y efectos de cartas.
 
-No existe un límite máximo de LP.
-
-Un jugador puede superar los 100 LP mediante efectos que aumenten sus puntos de vida.
+Los LP pueden aumentar o disminuir mediante combates y efectos de cartas.
 
 ---
 
@@ -592,7 +590,11 @@ Mientras permanezca asociada a ese Monstruo y el Monstruo siga en el campo:
 
 **al comienzo de cada turno de su propietario, el propietario obtiene +5 LP.**
 
-Si el Monstruo estaba boca abajo, la identidad de la Trampa permanece oculta hasta que ese Monstruo sea atacado. Al ser atacado, la Trampa se revela y su efecto continúa mientras el Monstruo siga vivo.
+El efecto funciona aunque el Monstruo permanezca **boca abajo**.
+
+La identidad de la Trampa permanece oculta mientras el Monstruo no haya sido revelado. Cuando el Monstruo es atacado, la Trampa se revela y su efecto continúa mientras el Monstruo siga vivo.
+
+Cada vez que este efecto provoque un cambio de LP, el jugador debe recibir un aviso visible de que sus LP han cambiado, **sin revelar la identidad de la Trampa mientras permanezca oculta**.
 
 ---
 
@@ -636,11 +638,19 @@ También se elimina la Trampa o Mágica asociada a ese Monstruo, si tiene una.
 
 ## Trampa 4 — Devolver daño
 
-Cuando el Monstruo asociado muere y su propietario recibe daño de LP como consecuencia de la situación que provoca su muerte:
+La Trampa 4 permanece asociada al Monstruo mientras ese Monstruo siga en el campo.
 
-**el mismo daño se aplica a los LP del jugador rival.**
+Cuando el Monstruo que lleva esta Trampa es eliminado y la situación que provoca su eliminación haría que **su propietario recibiera daño de LP**, ese daño **no lo recibe el propietario**.
 
-El daño reflejado se aplica a los **LP del rival**, no a un Monstruo.
+En su lugar:
+
+**todo el daño de LP se devuelve al jugador adversario.**
+
+El propietario del Monstruo recibe **0 LP de daño** por esa situación y el adversario recibe exactamente la cantidad de daño que le habría correspondido al propietario.
+
+El daño reflejado se aplica a los **LP del adversario**, no a un Monstruo.
+
+La Trampa 4 permanece colocada hasta que el Monstruo asociado sea eliminado.
 
 ---
 
@@ -699,13 +709,19 @@ Cuando un Monstruo rival te ataca:
 
 La Trampa se coloca asociada a un Monstruo propio.
 
-Mientras el Monstruo siga vivo y la Trampa permanezca colocada:
+El Monstruo que lleva la Trampa debe **sobrevivir durante 3 turnos completos de su propietario**.
 
-- se cuentan 3 turnos completos de su propietario;
-- al completarse los 3 turnos, el propietario puede elegir cualquier Monstruo del campo;
-- el Monstruo elegido es destruido.
+Mientras ese Monstruo siga vivo y la Trampa permanezca colocada:
 
-La Trampa permanece colocada hasta que su propio efecto se resuelvo o alguna otra regla provoque que abandone el campo.
+- se cuentan los 3 turnos completos de su propietario;
+- al completarse los 3 turnos, el jugador que colocó la Trampa puede **elegir cualquier Monstruo del adversario**;
+- el Monstruo rival elegido es destruido.
+
+El objetivo de la Trampa es mantener vivo al Monstruo que la lleva durante los 3 turnos necesarios para poder ejecutar el efecto.
+
+Si el Monstruo portador es eliminado antes de completar los 3 turnos, la Trampa 9 no puede completar su efecto.
+
+La Trampa permanece colocada hasta que su efecto se resuelva o alguna otra regla provoque que abandone el campo.
 
 ---
 
@@ -733,8 +749,10 @@ La propiedad del Monstruo y de sus cartas asociadas no cambia.
 Cuando un Monstruo rival te ataca:
 
 - queda marcado por esta Trampa;
-- se cuentan 2 turnos del jugador que actualmente controla el Monstruo;
+- se cuentan **2 turnos completos** del jugador que actualmente controla el Monstruo;
 - al **finalizar el segundo turno**, el Monstruo es destruido.
+
+Cuando se produzca la destrucción, el juego debe mostrar un **mensaje visible y explicativo** indicando que el Monstruo ha muerto por el efecto de la **Trampa 11**, para que el jugador entienda claramente la causa de la eliminación.
 
 La propiedad original del Monstruo no cambia.
 
@@ -742,13 +760,20 @@ La propiedad original del Monstruo no cambia.
 
 ## Trampa 12 — -5 LP
 
-Al colocarse sobre un Monstruo, su efecto comienza **inmediatamente** y el adversario pierde 5 LP.
-
-Mientras permanezca asociada a ese Monstruo y el Monstruo siga en el campo:
+Mientras permanezca asociada a un Monstruo y ese Monstruo siga en el campo:
 
 **al comienzo de cada turno, el adversario pierde 5 LP.**
 
-Si el Monstruo estaba boca abajo, la identidad de la Trampa permanece oculta hasta que ese Monstruo sea atacado. Al ser atacado, la Trampa se revela y su efecto continúa mientras el Monstruo siga vivo.
+La Trampa 12 funciona igual que la Trampa 1, pero en sentido inverso:
+
+- Trampa 1 → **+5 LP al propietario**.
+- Trampa 12 → **-5 LP al adversario**.
+
+El efecto funciona aunque el Monstruo permanezca **boca abajo**.
+
+La identidad de la Trampa permanece oculta mientras el Monstruo no haya sido revelado. Cuando el Monstruo es atacado, la Trampa se revela y su efecto continúa mientras el Monstruo siga vivo.
+
+Cada vez que este efecto provoque una pérdida de LP, el jugador afectado debe recibir un **aviso visible** de que ha perdido vida, **sin revelar la identidad de la Trampa mientras permanezca oculta**.
 
 Cuando el Monstruo es destruido, la Trampa también se elimina y el registro informa del nombre de la Trampa y de que su efecto ha terminado.
 
@@ -1022,14 +1047,20 @@ Cuando se cambie una regla:
 
 # 35. ESTADO DEL REGLAMENTO
 
-**Versión:** 1.4 — **reglamento oficial para la versión jugable actual.**
+**Versión:** 1.5 — **reglamento oficial para la versión jugable actual.**
 
 Cambios respecto a la versión 1.2:
 - un Monstruo que ya haya sido revelado boca arriba permanece visible para el rival al pasar a Defensa o cambiar nuevamente de posición;
 - la Trampa 2 permite al propietario elegir los 2 Monstruos propios que serán destruidos;
 - las Trampas 1 y 12 tienen efecto inmediato al colocarse y mantienen su efecto mientras viva el Monstruo asociado;
 - se elimina la obligación de atacar primero a los Monstruos en Defensa: cualquier Monstruo rival puede ser objetivo de un ataque, esté en Ataque o en Defensa; los Monstruos en Defensa solo bloquean el ataque directo normal;
-- una Trampa oculta se revela cuando su Monstruo es atacado y su efecto continúa si el Monstruo sobrevive; si el Monstruo es destruido, se informa de la eliminación de la Trampa.
+- una Trampa oculta se revela cuando su Monstruo es atacado y su efecto continúa si el Monstruo sobrevive; si el Monstruo es destruido, se informa de la eliminación de la Trampa;
+- se elimina la referencia a un límite máximo de LP;
+- la Trampa 1 queda definida como +5 LP por turno para su propietario y mantiene su efecto incluso con el Monstruo boca abajo, además de exigir un aviso visible del cambio de LP sin revelar la Trampa;
+- la Trampa 4 redirige completamente al adversario el daño de LP que habría recibido el propietario por la eliminación del Monstruo que la lleva, sin que el propietario reciba ese daño, y permanece colocada mientras el Monstruo siga vivo;
+- la Trampa 9 requiere que su Monstruo portador sobreviva 3 turnos completos y permite después elegir y destruir cualquier Monstruo rival;
+- la Trampa 11 destruye al Monstruo al final del segundo turno y debe mostrar un mensaje explicativo de que la causa es su efecto;
+- la Trampa 12 queda definida como -5 LP por turno al adversario, funciona también con el Monstruo boca abajo y exige avisar visiblemente del cambio de LP sin revelar la identidad de la Trampa.
 
 Esta versión consolida las reglas decididas por el creador y elimina las contradicciones principales entre los documentos anteriores.
 
