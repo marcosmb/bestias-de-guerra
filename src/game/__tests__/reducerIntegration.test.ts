@@ -121,6 +121,63 @@ function setHand(state: GameState, playerIdx: 0 | 1, cards: typeof state.players
 
 // --- Tests ---
 
+describe('Reducer integration — TRAMPA 2', () => {
+  it('se activa al comienzo del turno de su propietario y destruye 2 Monstruos propios + 1 rival', () => {
+    let state = makeState({ turnCount: 1, currentPlayer: 0 });
+    const trap2 = getTrapByEffect('destroy_2_self_1_opp');
+    const carrier = monster(getMonsterWithAtk(8), { uid: 'trap2-carrier', trap: trap2 });
+    const ownA = monster(getMonsterWithAtk(3), { uid: 'trap2-own-a' });
+    const ownB = monster(getMonsterWithAtk(4), { uid: 'trap2-own-b' });
+    const rival = monster(getMonsterWithAtk(9), { uid: 'trap2-rival' });
+
+    state = setField(state, 0, [carrier, ownA, ownB]);
+    state = setField(state, 1, [rival]);
+
+    // P1 termina -> P2. Todavía no debe dispararse la Trampa 2 de P1.
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.currentPlayer).toBe(1);
+    expect(state.selection.kind).toBe('none');
+
+    // P2 termina -> P1. Ahora la Trampa 2 de P1 se activa.
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.currentPlayer).toBe(0);
+    expect(state.selection.kind).toBe('choose-trap-2-own');
+
+    // La CPU/usuario elige los dos sacrificios.
+    state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownA.uid });
+    state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownB.uid });
+
+    expect(state.players[0].field.find((f) => f?.uid === ownA.uid)).toBeNull();
+    expect(state.players[0].field.find((f) => f?.uid === ownB.uid)).toBeNull();
+    expect(state.players[1].field.find((f) => f?.uid === rival.uid)).toBeNull();
+    expect(state.players[0].field.find((f) => f?.uid === carrier.uid)?.trap).toBeNull();
+    expect(state.players[0].graveyard.some((c) => c.id === trap2.id)).toBe(true);
+  });
+
+  it('no se activa como respuesta a un ataque contra el Monstruo que la porta', () => {
+    let state = makeState({ turnCount: 1, currentPlayer: 0 });
+    const trap2 = getTrapByEffect('destroy_2_self_1_opp');
+    const attacker = monster(getMonsterWithAtk(8), { uid: 'trap2-attacker' });
+    const defender = monster(getMonsterWithAtk(5), { uid: 'trap2-defender', trap: trap2 });
+
+    state = setField(state, 0, [attacker]);
+    state = setField(state, 1, [defender]);
+
+    state = dispatch(state, { type: 'START_ATTACK', attackerUid: attacker.uid });
+    expect(state.selection.kind).toBe('attack-or-direct');
+
+    state = dispatch(state, {
+      type: 'DECLARE_ATTACK',
+      attackerUid: attacker.uid,
+      defenderUid: defender.uid,
+    });
+
+    expect(state.phase).toBe('playing');
+    expect(state.lastCombat?.defenderDestroyed).toBe(true);
+    expect(state.players[1].field.find((f) => f?.uid === defender.uid)).toBeNull();
+  });
+});
+
 describe('Reducer integration — SUMMON_MONSTER', () => {
   it('places a monster in the first empty slot and consumes the card', () => {
     const state = makeState();

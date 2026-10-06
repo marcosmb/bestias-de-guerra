@@ -260,6 +260,23 @@ function applyHeal(player: PlayerState, heal: number): PlayerState {
   return { ...player, lp: Math.min(999, player.lp + heal) };
 }
 
+// Trampas que sí responden a la declaración de un ataque.
+function trapTriggersOnAttack(trap: TrapCard): boolean {
+  switch (trap.effect.kind) {
+    case 'dice_count_field':
+    case 'negate_destroy_card':
+    case 'dice_4plus_destroy':
+    case 'swap_attacker':
+    case 'destroy_attacker':
+    case 'control_two_turns':
+    case 'death_after_two_turns':
+      return true;
+    default:
+      // Trampas 1, 2, 4, 9 y 12 se resuelven por sus propias condiciones.
+      return false;
+  }
+}
+
 // --- Trap resolution ---
 function applyTrapEffect(
   state: GameState,
@@ -1002,7 +1019,9 @@ export function reducer(state: GameState, action: Action): GameState {
       const attacker = findFieldMonster(state.players[cp], action.attackerUid);
       const defender = findFieldMonster(state.players[opp], action.defenderUid);
       if (!attacker || !defender || attacker.position !== 'attack' || attacker.hasAttacked) return state;
-      if (defender.trap) {
+      // Solo las Trampas con respuesta al ataque abren esta fase.
+      // En particular, la Trampa 2 se activa al comienzo del turno de su propietario.
+      if (defender.trap && trapTriggersOnAttack(defender.trap)) {
         return {
           ...state,
           phase: 'trap-response',
@@ -1260,10 +1279,16 @@ export function reducer(state: GameState, action: Action): GameState {
 
       // Si el Monstruo que llevaba la Trampa no fue uno de los elegidos,
       // la Trampa se consume al resolver el efecto.
-      if (trapFm && !selectedUids.includes(sel.trapUid)) {
+      if (trapFm && !selectedUids.includes(sel.trapUid) && trapFm.trap) {
+        const consumedTrap = trapFm.trap;
+        const trapOwner = ownerOf(consumedTrap) ?? owner;
         const remainingTrapFm = players[owner].field.find((f) => f?.uid === sel.trapUid);
         if (remainingTrapFm) {
           players[owner] = updateFieldMonster(players[owner], sel.trapUid, (f) => ({ ...f, trap: null }));
+          players[trapOwner] = {
+            ...players[trapOwner],
+            graveyard: [...players[trapOwner].graveyard, consumedTrap],
+          };
         }
       }
 
