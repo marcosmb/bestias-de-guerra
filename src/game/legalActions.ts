@@ -342,7 +342,8 @@ function freeActions(state: GameState, me: PlayerState, opp: PlayerState): Actio
     for (const fm of monstersOf(me)) {
       if (fm.position !== 'attack' || fm.hasAttacked) continue;
       out.push({ type: 'START_ATTACK', attackerUid: fm.uid });
-      // Regla 22: si hay Monstruos en Defensa hay que atacar a uno de esos.
+      // Regla 22: cualquier Monstruo rival puede ser objetivo,
+      // tanto si está en Ataque como si está en Defensa.
       const targets = fm.magic?.effect.kind === 'direct_attack' ? defenders : legalTargets(defenders);
       for (const target of targets) {
         out.push({ type: 'DECLARE_ATTACK', attackerUid: fm.uid, defenderUid: target.uid });
