@@ -134,7 +134,7 @@ export function CardView({
             <span style={{ fontSize: s.text }}>{SUIT_SYMBOL[mc.suit]}</span>
           </div>
           <div className="text-center font-display font-semibold text-white/90 truncate px-0.5 mt-auto relative z-10" style={{ fontSize: s.text }}>{mc.name}</div>
-          <div className="flex justify-between items-center px-1 mt-auto relative z-10" style={{ height: s.bar }}>
+          <div className="flex justify-between items-center px-1 relative z-10" style={{ height: s.bar }}>
             <div className="flex items-center gap-0.5">
               <Sword size={16} className="text-crimson-400" />
               <span className={`font-bold text-white ${hasBuff ? 'text-emerald-400' : ''}`} style={{ fontSize: s.num }}>{atk}</span>
@@ -199,7 +199,7 @@ export function CardView({
         <div className="card-face w-full h-full flex flex-col p-1 card-shine">
           <img src={card.image ?? `/cards/${card.suit}-${card.number}.webp`} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-75" />
           <div className="text-center font-display font-semibold text-white/90 leading-tight mt-auto relative z-10" style={{ fontSize: s.text }}>{tc.name}</div>
-          <div className="flex justify-between items-start mt-auto relative z-10">
+          <div className="flex justify-between items-start relative z-10">
             <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{tc.number}</span>
             <span style={{ fontSize: s.text }}>🥂</span>
             <span></span>
@@ -230,7 +230,7 @@ export function CardView({
       <div className="card-face w-full h-full flex flex-col p-1 card-shine">
         <img src={card.image ?? `/cards/${card.suit}-${card.number}.webp`} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-75" />
         <div className="text-center font-display font-semibold text-white/90 leading-tight mt-auto relative z-10" style={{ fontSize: s.text }}>{mg.name}</div>
-        <div className="flex justify-between items-start mt-auto relative z-10">
+        <div className="flex justify-between items-start relative z-10">
           <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{mg.number}</span>
           <span style={{ fontSize: s.text }}>🪙</span>
           <span></span>
