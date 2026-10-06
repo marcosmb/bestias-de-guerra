@@ -387,7 +387,7 @@ export function canActivateMagic(player: PlayerState, state: GameState, magic: M
       return canGoToHand || canGoToField;
     }
     case 'direct_attack':
-      return player.field.some((f) => f !== null && f.position === 'attack' && !f.hasAttacked);
+      return player.field.some((f) => f !== null && f.magic === null);
     case 'atk_boost':
     case 'dice_protection':
       // Regla 5: solo sobre un Monstruo PROPIO.
@@ -407,7 +407,7 @@ export function canActivateMagic(player: PlayerState, state: GameState, magic: M
  * `self` = solo monstruos propios (Mágicas 4 y 9). `enemy` = solo rivales (Mágica 8).
  */
 export function magicRequiredSide(magic: MagicCard): 'self' | 'enemy' | null {
-  if (magic.effect.kind === 'atk_boost' || magic.effect.kind === 'dice_protection') return 'self';
+  if (magic.effect.kind === 'atk_boost' || magic.effect.kind === 'dice_protection' || magic.effect.kind === 'direct_attack') return 'self';
   if (magic.effect.kind === 'def_reduce') return 'enemy';
   return null;
 }
