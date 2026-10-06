@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import type { Card, MonsterCard, TrapCard, MagicCard } from '@/game/cardData';
 import type { Action, GameState, FieldMonster, PlayerState } from '@/game/types';
-import { canAttack, magicRequiredSide, cardInstanceKey, MAX_HAND_SIZE, MAX_CARDS_PER_TURN } from '@/game/types';
+import { canAttack, magicRequiredSide, cardInstanceKey, MAX_HAND_SIZE, MAX_CARDS_PER_TURN, getEffectiveAtk, getEffectiveDef } from '@/game/types';
 import { legalActions, sameAction } from '@/game/legalActions';
 import { CardView, CardBack } from './CardView';
 import { playSound, vibrate, getAudioPreferences, setSoundEnabled, setVolume, initAudio } from '@/game/audio';
@@ -1190,8 +1190,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                 isOpponentSlotSelectable(fm)
               }
               trapCounting={Boolean(trapCountAnimation && fm && trapCountAnimation.sequence[trapCountAnimation.step]?.uid === fm.uid)}
-              showTrap={false}
-              showMagic={false}
+              showTrap={true}
+              showMagic={true}
               onZoom={(card, fieldMonster, isOpponentCard, isHidden) =>
                 handleCardZoom(card, isOpponentCard, isHidden, fieldMonster)
               }
