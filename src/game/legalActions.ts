@@ -101,22 +101,20 @@ const DICE_FACES: readonly number[] = [1, 2, 3, 4, 5, 6];
 // ============================================================================
 
 /**
- * Regla 22 — Devuelve los Monstruos que pueden ser objetivo de un ataque.
+ * Regla 22 — Un ataque a Monstruo puede elegir CUALQUIER Monstruo rival,
+ * independientemente de que esté en Ataque o en Defensa.
  *
- *   22.1 Si hay Monstruos en Defensa → solo esos (es obligatorio).
- *   22.2 Si no hay en Defensa pero sí en Ataque → cualquiera de los que están
- *        en Ataque (y además el ataque directo).
- *   22.3 Si no hay Monstruos → solo el ataque directo (esta función devuelve []).
+ * El único requisito de posición adicional afecta al ataque directo:
+ * mientras exista un Monstruo rival en Defensa, no hay ataque directo salvo
+ * que el Monstruo atacante tenga una Mágica 1 asociada.
  */
 export function legalTargets(defenders: FieldMonster[]): FieldMonster[] {
-  const inDefense = defenders.filter((f) => f.position === 'defense');
-  if (inDefense.length > 0) return inDefense;
-  return defenders.filter((f) => f.position === 'attack');
+  return defenders;
 }
 
 /**
- * Regla 22.1 — ¿Es legal el ataque directo? No lo es si el rival tiene algún
- * Monstruo en Defensa: hay que atacar a uno de esos.
+ * Regla 22 — El ataque directo sigue estando bloqueado por Monstruos rivales
+ * en Defensa, salvo la excepción de la Mágica 1.
  */
 export function canDirectAttack(defenders: FieldMonster[]): boolean {
   return defenders.every((f) => f.position !== 'defense');
