@@ -1589,20 +1589,20 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             {selectedCard.type === 'monster' && (
               <>
                 <button
-                  onClick={() => handlePlayMonster(selectedCard, 'attack')}
-                  disabled={!isLegal({ type: 'SUMMON_MONSTER', card: selectedCard, position: 'attack' })}
-                  className="flex-1 rounded-lg bg-gradient-to-r from-crimson-600 to-crimson-500 text-white font-display font-bold hover:from-crimson-500 hover:to-crimson-400 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
-                  style={{ ...uiSm, padding: '0.7em 0' }}
-                >
-                  <Swords size={16} /> Ataque
-                </button>
-                <button
                   onClick={() => handlePlayMonster(selectedCard, 'defense')}
                   disabled={!isLegal({ type: 'SUMMON_MONSTER', card: selectedCard, position: 'defense' })}
                   className="flex-1 rounded-lg bg-gradient-to-r from-azure-600 to-azure-500 text-white font-display font-bold hover:from-azure-500 hover:to-azure-400 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
                   style={{ ...uiSm, padding: '0.7em 0' }}
                 >
                   <Shield size={16} /> Defensa
+                </button>
+                <button
+                  onClick={() => handlePlayMonster(selectedCard, 'attack')}
+                  disabled={!isLegal({ type: 'SUMMON_MONSTER', card: selectedCard, position: 'attack' })}
+                  className="flex-1 rounded-lg bg-gradient-to-r from-crimson-600 to-crimson-500 text-white font-display font-bold hover:from-crimson-500 hover:to-crimson-400 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
+                  style={{ ...uiSm, padding: '0.7em 0' }}
+                >
+                  <Swords size={16} /> Ataque
                 </button>
               </>
             )}
