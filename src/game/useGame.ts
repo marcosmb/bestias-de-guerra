@@ -588,7 +588,9 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
           faceDown: state.turnCount === 0,
           trap: null,
           magic: null,
-          hasAttacked: true,
+          // Regla Mágica 5: el Monstruo revivido al campo puede atacar
+          // inmediatamente ese mismo turno.
+          hasAttacked: false,
           hasChangedPosition: false,
           summonedThisTurn: true,
           pendingTurns: 0,
@@ -1368,7 +1370,9 @@ export function reducer(state: GameState, action: Action): GameState {
           faceDown: position === 'defense',
           trap: null,
           magic: null,
-          hasAttacked: true,
+          // Regla Mágica 5: el Monstruo revivido al campo puede atacar
+          // inmediatamente ese mismo turno.
+          hasAttacked: false,
           hasChangedPosition: false,
           summonedThisTurn: true,
           pendingTurns: 0,

@@ -178,6 +178,34 @@ describe('Reducer integration — TRAMPA 2', () => {
   });
 });
 
+describe('Mágica 5 — Monstruo revivido puede atacar inmediatamente', () => {
+  it('permite atacar al Monstruo revivido al campo por Mágica 5 en el mismo turno', () => {
+    let state = makeState({ turnCount: 1, currentPlayer: 0 });
+    const m5 = getMagicByEffect('revive_monster');
+    const revivedCard = getMonsterWithAtk(8);
+    const rival = monster(getMonsterWithAtk(3), { uid: 'm5-rival' });
+
+    state = {
+      ...state,
+      players: [
+        { ...state.players[0], hand: [m5], graveyard: [revivedCard] },
+        { ...state.players[1], field: [rival, null, null, null, null, null] },
+      ],
+    };
+
+    state = dispatch(state, { type: 'SELECT_MAGIC', card: m5 });
+    state = dispatch(state, { type: 'REVIVE_CHOICE', card: m5, choice: 'field', position: 'attack' });
+
+    const revived = state.players[0].field.find((f) => f?.card.id === revivedCard.id);
+    expect(revived).toBeDefined();
+    expect(revived?.position).toBe('attack');
+    expect(revived?.hasAttacked).toBe(false);
+
+    state = dispatch(state, { type: 'START_ATTACK', attackerUid: revived!.uid });
+    expect(state.selection.kind).toBe('attack-or-direct');
+  });
+});
+
 describe('Reducer integration — SUMMON_MONSTER', () => {
   it('places a monster in the first empty slot and consumes the card', () => {
     const state = makeState();
