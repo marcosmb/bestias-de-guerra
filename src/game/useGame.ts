@@ -990,12 +990,6 @@ export function reducer(state: GameState, action: Action): GameState {
       const attacker = findFieldMonster(state.players[cp], action.attackerUid);
       const defender = findFieldMonster(state.players[opp], action.defenderUid);
       if (!attacker || !defender) return state;
-      // Regla 22.1: si el rival tiene Monstruos en Defensa, el ataque debe ir a uno de ellos.
-      const hasOppDefense = state.players[opp].field.some(
-        (f) => f !== null && f.position === 'defense',
-      );
-      if (hasOppDefense && attacker.magic?.effect.kind !== 'direct_attack' && defender.position !== 'defense') return state;
-
       if (defender.trap) {
         return {
           ...state,
