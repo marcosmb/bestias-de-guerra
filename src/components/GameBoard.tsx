@@ -25,6 +25,7 @@ import { canAttack, magicRequiredSide, cardInstanceKey, MAX_HAND_SIZE, MAX_CARDS
 import { legalActions, sameAction } from '@/game/legalActions';
 import { CardView, CardBack } from './CardView';
 import { playSound, vibrate, getAudioPreferences, setSoundEnabled, setVolume, initAudio } from '@/game/audio';
+import { getTrap3CountingOrder } from '@/game/trapCounting';
 
 interface GameBoardProps {
   state: GameState;
@@ -1015,21 +1016,17 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       !state.pendingDice.reason.includes('Dado y conteo')
     ) return;
 
-    const allMonsters: { uid: string; name: string }[] = [];
-    for (const fm of state.players[pt.defenderPlayer].field) {
-      if (fm) allMonsters.push({ uid: fm.uid, name: fm.card.name });
-    }
-    for (const fm of state.players[pt.attackerPlayer].field) {
-      if (fm) allMonsters.push({ uid: fm.uid, name: fm.card.name });
-    }
+    const allMonsters = getTrap3CountingOrder(
+      state.players,
+      pt.defenderPlayer,
+      pt.defenderUid,
+    ).map(({ fm }) => ({ uid: fm.uid, name: fm.card.name }));
 
     if (allMonsters.length === 0) return;
 
-    const startIdx = allMonsters.findIndex((fm) => fm.uid === pt.defenderUid);
-    const safeStart = startIdx >= 0 ? startIdx : 0;
     const roll = Math.floor(Math.random() * 6) + 1;
     const sequence = Array.from({ length: roll }, (_, offset) =>
-      allMonsters[(safeStart + offset) % allMonsters.length],
+      allMonsters[offset % allMonsters.length],
     );
 
     setTrapCountAnimation({ roll, sequence, step: 0 });

@@ -113,8 +113,9 @@ export function legalTargets(defenders: FieldMonster[]): FieldMonster[] {
 }
 
 /**
- * Regla 22 — El ataque directo sigue estando bloqueado por Monstruos rivales
- * en Defensa, salvo la excepción de la Mágica 1.
+ * Regla 22 — El ataque directo solo se bloquea por Monstruos rivales en Defensa,
+ * salvo la excepción de la Mágica 1. Tener Monstruos rivales en Ataque NO bloquea
+ * el ataque directo.
  */
 export function canDirectAttack(defenders: FieldMonster[]): boolean {
   return defenders.every((f) => f.position !== 'defense');
@@ -352,6 +353,9 @@ function freeActions(state: GameState, me: PlayerState, opp: PlayerState): Actio
       for (const target of targets) {
         out.push({ type: 'DECLARE_ATTACK', attackerUid: fm.uid, defenderUid: target.uid });
       }
+      // Ataque directo: permitido si NO hay ningún rival en Defensa. Los
+      // Monstruos rivales en Ataque no lo bloquean. Mágica 1 ignora incluso
+      // la presencia de Defensas.
       if (fm.magic?.effect.kind === 'direct_attack' || canDirectAttack(defenders)) {
         out.push({ type: 'DIRECT_ATTACK', attackerUid: fm.uid });
       }

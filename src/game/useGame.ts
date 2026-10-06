@@ -48,6 +48,7 @@ import {
   newInstanceId,
   indexOfCardInstance,
 } from './types';
+import { getTrap3CountingOrder } from './trapCounting';
 
 /**
  * Identidad de instancia de un Monstruo en el campo.
@@ -1171,15 +1172,12 @@ export function reducer(state: GameState, action: Action): GameState {
         // Trap 3: count from the trap's monster
         const pt = state.pendingTrap;
         if (pt) {
-          // Build a list of all field monsters in order: defender's field then attacker's field
-          const allMonsters: { fm: FieldMonster; player: 0 | 1 }[] = [];
-          for (const f of players[pt.defenderPlayer].field) if (f) allMonsters.push({ fm: f, player: pt.defenderPlayer });
-          for (const f of players[pt.attackerPlayer].field) if (f) allMonsters.push({ fm: f, player: pt.attackerPlayer });
+          // Regla 29.3: empieza en la Trampa, sigue a la derecha por su fila,
+          // después recorre la fila rival de izquierda a derecha. Las casillas
+          // vacías no cuentan y el recorrido es circular.
+          const allMonsters = getTrap3CountingOrder(players, pt.defenderPlayer, pt.defenderUid);
           if (allMonsters.length > 0) {
-            // Find the trap monster as starting point
-            const startIdx = allMonsters.findIndex((m) => m.fm.uid === pt.defenderUid);
-            const targetIdx = ((startIdx >= 0 ? startIdx : 0) + roll - 1) % allMonsters.length;
-            const target = allMonsters[targetIdx];
+            const target = allMonsters[(roll - 1) % allMonsters.length];
             removeFieldMonster(players, target.player, target.fm.uid);
             log.push(`${target.fm.card.name} destruido por conteo.`);
           }

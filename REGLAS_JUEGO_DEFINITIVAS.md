@@ -631,8 +631,12 @@ Al activarse:
 2. el conteo comienza desde el Monstruo que tiene la Trampa;
 3. solo se cuentan los Monstruos que están actualmente en el campo de batalla;
 4. los espacios vacíos no se cuentan;
-5. el conteo continúa siguiendo el orden de los Monstruos en el campo;
-6. si el resultado supera el número de Monstruos disponibles, el conteo continúa desde el primero hasta completar el resultado.
+5. el conteo sigue este recorrido:
+   - empieza en el Monstruo que lleva la Trampa y avanza **de izquierda a derecha por su propia fila**;
+   - al terminar esa fila, continúa por la **fila rival de izquierda a derecha**;
+   - las casillas vacías no cuentan;
+6. los Monstruos que estaban a la izquierda del Monstruo inicial quedan para el final del recorrido de esa vuelta;
+7. si el resultado supera el número de Monstruos disponibles, el conteo vuelve al primer Monstruo del recorrido y continúa de forma circular.
 
 El Monstruo correspondiente al resultado es destruido.
 
@@ -1051,7 +1055,7 @@ Cuando se cambie una regla:
 
 # 35. ESTADO DEL REGLAMENTO
 
-**Versión:** 1.6 — **reglamento oficial para la versión jugable actual.**
+**Versión:** 1.7 — **reglamento oficial para la versión jugable actual.**
 
 Cambios respecto a la versión 1.2:
 - un Monstruo que ya haya sido revelado boca arriba permanece visible para el rival al pasar a Defensa o cambiar nuevamente de posición;
