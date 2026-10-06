@@ -92,7 +92,7 @@ export function CardView({
   if (faceDown) {
     return (
       <div
-        className="rounded-lg card-back border border-gold-700/40 shadow-card flex items-center justify-center transition-all duration-300 hover:scale-105"
+        className="rounded-lg card-back border border-gold-700/40 shadow-card relative flex items-center justify-center transition-all duration-300 hover:scale-105"
         style={{ width: s.w, height: s.h }}
         onClick={onClick}
       >
@@ -100,6 +100,12 @@ export function CardView({
           style={{ width: '30%', height: '30%' }}>
           <span className="text-gold-500/40 font-display" style={{ fontSize: '40%' }}>B</span>
         </div>
+        {isOpponent && showTrap && fieldMonster?.trap && (
+          <AssociatedCardMiniature card={fieldMonster.trap} type="trap" hidden />
+        )}
+        {isOpponent && showMagic && fieldMonster?.magic && (
+          <AssociatedCardMiniature card={fieldMonster.magic} type="magic" hidden />
+        )}
       </div>
     );
   }
@@ -156,7 +162,11 @@ export function CardView({
           />
         )}
         {showMagic && fieldMonster?.magic && (
-          <AssociatedCardMiniature card={fieldMonster.magic} type="magic" />
+          <AssociatedCardMiniature
+            card={fieldMonster.magic}
+            type="magic"
+            hidden={isOpponent}
+          />
         )}
         {isField && fieldMonster?.hasAttacked && (
           <div className="absolute top-1 left-1 z-20 flex items-center justify-center">
