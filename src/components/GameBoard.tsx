@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import type { Card, MonsterCard, TrapCard, MagicCard } from '@/game/cardData';
 import type { Action, GameState, FieldMonster, PlayerState } from '@/game/types';
-import { canActivateMagic, canAttack, hasOwnCopy, hasTrapTarget, magicRequiredSide, cardInstanceKey, MAX_HAND_SIZE, MAX_CARDS_PER_TURN, getEffectiveAtk, getEffectiveDef } from '@/game/types';
+import { canActivateMagic, canAttack, hasOwnCopy, magicRequiredSide, cardInstanceKey, MAX_HAND_SIZE, MAX_CARDS_PER_TURN, getEffectiveAtk, getEffectiveDef } from '@/game/types';
 import { legalActions, sameAction } from '@/game/legalActions';
 import { CardView, CardBack } from './CardView';
 import { playSound, vibrate, getAudioPreferences, setSoundEnabled, setVolume, initAudio } from '@/game/audio';
@@ -745,7 +745,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
 
     if (card.type === 'trap') {
       if (!me.field.some((fm) => fm !== null)) return 'No tienes Monstruos en tu campo.';
-      return hasTrapTarget(me) ? null : 'Todos tus Monstruos ya tienen una Trampa asociada.';
+      return me.field.some((fm) => fm !== null && fm.trap === null)
+        ? null
+        : 'Todos tus Monstruos ya tienen una Trampa asociada.';
     }
 
     if (card.type !== 'magic') return null;
