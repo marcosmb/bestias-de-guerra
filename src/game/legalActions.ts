@@ -317,7 +317,9 @@ function freeActions(state: GameState, me: PlayerState, opp: PlayerState): Actio
     for (const card of me.hand) {
       // Regla 19: una Trampa va bajo un Monstruo propio sin Trampa.
       if (card.type === 'trap') {
-        out.push({ type: 'SELECT_TRAP_PLACE', card });
+        if (hasTrapTarget(me)) {
+          out.push({ type: 'SELECT_TRAP_PLACE', card });
+        }
         continue;
       }
       // Regla 5: una Mágica solo si tiene un objetivo o una condición válidos

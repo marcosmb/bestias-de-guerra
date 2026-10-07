@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import type { Card, MonsterCard, TrapCard, MagicCard } from '@/game/cardData';
 import type { Action, GameState, FieldMonster, PlayerState } from '@/game/types';
-import { canAttack, magicRequiredSide, cardInstanceKey, MAX_HAND_SIZE, MAX_CARDS_PER_TURN, getEffectiveAtk, getEffectiveDef } from '@/game/types';
+import { canActivateMagic, canAttack, hasOwnCopy, hasTrapTarget, magicRequiredSide, cardInstanceKey, MAX_HAND_SIZE, MAX_CARDS_PER_TURN, getEffectiveAtk, getEffectiveDef } from '@/game/types';
 import { legalActions, sameAction } from '@/game/legalActions';
 import { CardView, CardBack } from './CardView';
 import { playSound, vibrate, getAudioPreferences, setSoundEnabled, setVolume, initAudio } from '@/game/audio';
@@ -199,7 +199,10 @@ function LPBar({ player, isCurrent, animateDamage }: { player: PlayerState; isCu
   }, [player.lp]);
 
   return (
-    <div className={`flex items-center gap-2 ${isCurrent ? 'opacity-100' : 'opacity-60'} transition-opacity duration-300`}>
+    <div
+      className={`flex items-center gap-2 ${isCurrent ? 'opacity-100' : 'opacity-60'} transition-opacity duration-300`}
+      data-lp-player={player.index}
+    >
       {isCurrent && (
         <div className="flex-shrink-0 w-3 h-3 rounded-full bg-gold-400 animate-pulse shadow-glow border-2 border-gold-300/50" />
       )}
@@ -239,6 +242,8 @@ function FieldSlot({
   attackTarget = false,
   trapTargetSelected = false,
   trapCounting = false,
+  fieldPlayer,
+  slotIndex,
 }: {
   fm: FieldMonster | null;
   isOpponent: boolean;
@@ -251,12 +256,15 @@ function FieldSlot({
   attackTarget?: boolean;
   trapTargetSelected?: boolean;
   trapCounting?: boolean;
+  fieldPlayer: 0 | 1;
+  slotIndex: number;
 }) {
   if (!fm) {
     return (
       <div
         className="rounded-lg border-2 border-dashed flex items-center justify-center transition-all duration-300"
         style={{ width: 'var(--card-field-w)', height: 'var(--card-field-h)' }}
+        data-field-slot={`p${fieldPlayer}-${slotIndex}`}
         onClick={onClick}
       >
         <span className={`text-gold-400/40 transition-all duration-300 ${selectable ? 'border-gold-400/60 bg-gold-400/5 animate-pulse scale-110' : 'border-ink-500/40'}`} style={{ fontSize: 'var(--ui-text-sm)' }}>
@@ -266,7 +274,11 @@ function FieldSlot({
     );
   }
   return (
-    <div className={`relative z-20 hover:z-50 ${fm.position === 'defense' ? 'rotate-90 scale-[0.8]' : ''} transition-transform duration-300`}>
+    <div
+      className={`relative z-20 hover:z-50 ${fm.position === 'defense' ? 'rotate-90 scale-[0.8]' : ''} transition-transform duration-300`}
+      data-field-slot={`p${fieldPlayer}-${slotIndex}`}
+      data-field-uid={fm.uid}
+    >
       <CardView
         card={fm.card}
         size="sm"
@@ -354,21 +366,67 @@ function CombatAnimation({
     isDirectAttack: boolean;
     result: 'attacker-destroyed' | 'defender-destroyed' | 'both-destroyed' | 'none-destroyed';
     attackerPlayer?: 0 | 1;
+    attackerSlot?: number;
+    defenderPlayer?: 0 | 1;
+    defenderSlot?: number;
   } | null;
   onComplete: () => void;
 }) {
   const [phase, setPhase] = useState<'attack' | 'impact' | 'result'>('attack');
   const [visible, setVisible] = useState(true);
+  const [anchors, setAnchors] = useState<{
+    from: { x: number; y: number };
+    to: { x: number; y: number };
+  } | null>(null);
 
   useEffect(() => {
     if (!combatState) return;
 
-    const attackTimer = setTimeout(() => setPhase('impact'), 1050);
-    const impactTimer = setTimeout(() => setPhase('result'), 1450);
+    const attackTimer = setTimeout(() => setPhase('impact'), 900);
+    const impactTimer = setTimeout(() => setPhase('result'), 1350);
     const completeTimer = setTimeout(() => {
       setVisible(false);
       onComplete();
-    }, 2350);
+    }, 3200);
+
+    const getCenter = (selector: string, fallback: { x: number; y: number }) => {
+      const element = document.querySelector(selector) as HTMLElement | null;
+      if (!element) return fallback;
+      const rect = element.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      };
+    };
+
+    const attackerPlayer = combatState.attackerPlayer ?? 0;
+    const defenderPlayer = combatState.defenderPlayer ?? (attackerPlayer === 0 ? 1 : 0);
+
+    const attackerFallback = {
+      x: window.innerWidth / 2,
+      y: attackerPlayer === 1 ? window.innerHeight * 0.72 : window.innerHeight * 0.28,
+    };
+    const defenderFallback = {
+      x: window.innerWidth / 2,
+      y: combatState.isDirectAttack
+        ? (defenderPlayer === 1 ? window.innerHeight * 0.16 : window.innerHeight * 0.84)
+        : (defenderPlayer === 1 ? window.innerHeight * 0.28 : window.innerHeight * 0.72),
+    };
+
+    const fromSelector = combatState.attackerSlot !== undefined
+      ? `[data-field-slot="p${attackerPlayer}-${combatState.attackerSlot}"]`
+      : `[data-field-uid="${combatState.attackerUid}"]`;
+
+    const toSelector = combatState.isDirectAttack
+      ? `[data-lp-player="${defenderPlayer}"]`
+      : combatState.defenderSlot !== undefined
+        ? `[data-field-slot="p${defenderPlayer}-${combatState.defenderSlot}"]`
+        : `[data-field-uid="${combatState.defenderUid}"]`;
+
+    setAnchors({
+      from: getCenter(fromSelector, attackerFallback),
+      to: getCenter(toSelector, defenderFallback),
+    });
 
     return () => {
       clearTimeout(attackTimer);
@@ -379,31 +437,52 @@ function CombatAnimation({
 
   if (!combatState || !visible) return null;
 
-  const isAttackerTop = combatState.attackerPlayer === 1;
-  const attackDirection = isAttackerTop ? 'down' : 'up';
+  const attackerPlayer = combatState.attackerPlayer ?? 0;
+  const defenderPlayer = combatState.defenderPlayer ?? (attackerPlayer === 0 ? 1 : 0);
+  const from = anchors?.from ?? {
+    x: window.innerWidth / 2,
+    y: attackerPlayer === 1 ? window.innerHeight * 0.72 : window.innerHeight * 0.28,
+  };
+  const to = anchors?.to ?? {
+    x: window.innerWidth / 2,
+    y: combatState.isDirectAttack
+      ? (defenderPlayer === 1 ? window.innerHeight * 0.16 : window.innerHeight * 0.84)
+      : (defenderPlayer === 1 ? window.innerHeight * 0.28 : window.innerHeight * 0.72),
+  };
+
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const length = Math.max(24, Math.hypot(dx, dy));
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI - 90;
+
   return (
     <div className="fixed inset-0 z-30 pointer-events-none overflow-hidden">
       {phase === 'attack' && (
         <div
-          className={
-            'absolute left-1/2 -translate-x-1/2 w-1.5 rounded-full bg-gradient-to-b from-crimson-300 via-crimson-500 to-transparent combat-attack-trail ' +
-            (attackDirection === 'down' ? 'top-[18%] h-[38%]' : 'bottom-[18%] h-[38%]')
-          }
-        />
+          className="absolute"
+          style={{
+            left: from.x,
+            top: from.y,
+            width: 12,
+            height: length,
+            transform: `translateX(-50%) rotate(${angle}deg)`,
+            transformOrigin: '50% 0%',
+          }}
+        >
+          <div className="combat-attack-trail" />
+          <div className="combat-attack-core" />
+        </div>
       )}
 
       {phase === 'impact' && (
         <div
-          className={
-            'absolute left-1/2 -translate-x-1/2 combat-impact-burst ' +
-            (combatState.isDirectAttack
-              ? (isAttackerTop ? 'top-[18%]' : 'bottom-[18%]')
-              : 'top-1/2 -translate-y-1/2')
-          }
+          className="absolute combat-impact-burst"
+          style={{ left: to.x, top: to.y }}
         >
-          <div className="absolute inset-0 rounded-full bg-white/80 blur-sm animate-ping" />
-          <div className="relative w-24 h-24 rounded-full border-4 border-crimson-300/90 bg-crimson-400/20 shadow-[0_0_60px_rgba(248,113,113,0.8)]">
-            <div className="absolute inset-4 rounded-full border-2 border-white/80" />
+          <div className="absolute -inset-8 rounded-full bg-crimson-400/30 blur-xl animate-ping" />
+          <div className="relative w-28 h-28 rounded-full border-4 border-crimson-200/95 bg-crimson-400/30 shadow-[0_0_80px_rgba(248,113,113,0.95)]">
+            <div className="absolute inset-3 rounded-full border-2 border-white/90" />
+            <div className="absolute inset-7 rounded-full bg-white/80 blur-md animate-pulse" />
           </div>
           {combatState.isDirectAttack && (
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap">
@@ -416,15 +495,15 @@ function CombatAnimation({
       )}
 
       {phase === 'result' && (
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40">
           <div className={
-            'px-4 py-2 rounded-lg font-display font-bold text-lg animate-combat-result ' +
+            'px-6 py-3 rounded-xl font-display font-black text-xl sm:text-2xl whitespace-nowrap animate-combat-result border-2 ' +
             (
               combatState.result === 'both-destroyed' ||
               combatState.result === 'attacker-destroyed' ||
               combatState.result === 'defender-destroyed'
-                ? 'bg-crimson-900/90 text-crimson-200'
-                : 'bg-ink-800/90 text-ink-200'
+                ? 'bg-crimson-950/95 text-crimson-100 border-crimson-400/70 shadow-[0_0_35px_rgba(248,113,113,0.55)]'
+                : 'bg-ink-800/95 text-ink-100 border-ink-400/60 shadow-xl'
             )
           }>
             {combatState.result === 'both-destroyed' && '¡Ambos destruidos!'}
@@ -522,6 +601,16 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     sequence: { uid: string; name: string }[];
     step: number;
   } | null>(null);
+
+  // Conserva la última casilla conocida de cada Monstruo para las animaciones.
+  const combatSlotByUidRef = useRef(new Map<string, { player: 0 | 1; slot: number }>());
+  useEffect(() => {
+    state.players.forEach((player) => {
+      player.field.forEach((fm, slot) => {
+        if (fm) combatSlotByUidRef.current.set(fm.uid, { player: player.index, slot });
+      });
+    });
+  }, [state.players]);
 
   useEffect(() => {
     if (!selectedHandCard && !selectedFieldUid) return;
@@ -647,6 +736,46 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     (a) => a.type === 'SUMMON_MONSTER' || a.type === 'SELECT_TRAP_PLACE' || a.type === 'SELECT_MAGIC',
   );
 
+  /** Motivo corto y entendible cuando una Trampa o Mágica está deshabilitada. */
+  const getUnavailableCardReason = (card: Card): string | null => {
+    if (state.currentPlayer !== viewer) return 'No es tu turno.';
+    if (me.cardsPlayedThisTurn >= MAX_CARDS_PER_TURN) {
+      return `Ya has jugado las ${MAX_CARDS_PER_TURN} cartas de este turno.`;
+    }
+
+    if (card.type === 'trap') {
+      if (!me.field.some((fm) => fm !== null)) return 'No tienes Monstruos en tu campo.';
+      return hasTrapTarget(me) ? null : 'Todos tus Monstruos ya tienen una Trampa asociada.';
+    }
+
+    if (card.type !== 'magic') return null;
+    if (canActivateMagic(me, state, card)) return null;
+
+    switch (card.effect.kind) {
+      case 'steal_hand_card':
+        if (me.hand.length >= MAX_HAND_SIZE) return 'Tu mano está llena.';
+        return 'El rival no tiene cartas en la mano.';
+      case 'revive_monster': {
+        const ownGraveMonsters = me.graveyard.filter((c) => c.type === 'monster');
+        if (ownGraveMonsters.length === 0) return 'No tienes Monstruos en el cementerio.';
+        const canGoToHand =
+          me.hand.length < MAX_HAND_SIZE &&
+          ownGraveMonsters.some((c) => !hasOwnCopy(me.hand, c));
+        const canGoToField = me.field.some((fm) => fm === null);
+        if (!canGoToHand && !canGoToField) return 'No tienes espacio en la mano ni en el campo.';
+        return 'Ya tienes esas cartas en tu mano.';
+      }
+      case 'direct_attack':
+      case 'atk_boost':
+      case 'dice_protection':
+        return 'Todos tus Monstruos tienen una Mágica asociada.';
+      case 'def_reduce':
+        return 'Los Monstruos rivales tienen una Mágica asociada.';
+      default:
+        return 'Ahora mismo no se puede utilizar esta Mágica.';
+    }
+  };
+
   // Track newly summoned monsters for animation
   useEffect(() => {
     const currentUids = new Set(me.field.filter(Boolean).map((f) => f!.uid));
@@ -753,11 +882,20 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       }
       
       // Show combat animation
+      const attackerUid = state.lastCombat.attackerUid ?? 'attacker';
+      const defenderUid = state.lastCombat.defenderUid ?? 'defender';
+      const attackerPlayer = state.lastCombat.attackerPlayer ?? state.currentPlayer;
+      const attackerSlot = combatSlotByUidRef.current.get(attackerUid);
+      const defenderSlot = combatSlotByUidRef.current.get(defenderUid);
+
       setCombatAnim({
-        attackerUid: state.lastCombat.attackerUid ?? 'attacker',
-        defenderUid: state.lastCombat.defenderUid ?? 'defender',
-        isDirectAttack: state.lastCombat.defenderUid?.startsWith('lp-') ?? false,
-        attackerPlayer: state.lastCombat.attackerPlayer ?? state.currentPlayer,
+        attackerUid,
+        defenderUid,
+        isDirectAttack: defenderUid.startsWith('lp-'),
+        attackerPlayer,
+        attackerSlot: attackerSlot?.slot,
+        defenderPlayer: defenderSlot?.player,
+        defenderSlot: defenderSlot?.slot,
         result,
       });
 
@@ -1180,6 +1318,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             <FieldSlot
               key={i}
               fm={fm}
+              fieldPlayer={opp.index}
+              slotIndex={i}
               isOpponent
               onClick={fm ? () => handleOpponentFieldClick(fm.uid) : undefined}
               selectable={isOpponentSlotSelectable(fm)}
@@ -1232,6 +1372,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             <FieldSlot
               key={i}
               fm={fm}
+              fieldPlayer={me.index}
+              slotIndex={i}
               isOpponent={false}
               onClick={fm ? () => {
                 if (
@@ -1656,24 +1798,38 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               </>
             )}
             {selectedCard.type === 'trap' && (
-              <button
-                onClick={() => handlePlayTrap(selectedCard)}
-                disabled={!isLegal({ type: 'SELECT_TRAP_PLACE', card: selectedCard })}
-                className="flex-1 rounded-lg bg-gradient-to-r from-crimson-500 to-crimson-400 text-white font-display font-bold hover:from-crimson-400 hover:to-crimson-300 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
-                style={{ ...uiSm, padding: '0.7em 0' }}
-              >
-                <Zap size={16} /> Colocar trampa
-              </button>
+              <div className="w-full">
+                <button
+                  onClick={() => handlePlayTrap(selectedCard)}
+                  disabled={!isLegal({ type: 'SELECT_TRAP_PLACE', card: selectedCard })}
+                  className="w-full rounded-lg bg-gradient-to-r from-crimson-500 to-crimson-400 text-white font-display font-bold hover:from-crimson-400 hover:to-crimson-300 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
+                  style={{ ...uiSm, padding: '0.7em 0' }}
+                >
+                  <Zap size={16} /> Colocar trampa
+                </button>
+                {!isLegal({ type: 'SELECT_TRAP_PLACE', card: selectedCard }) && getUnavailableCardReason(selectedCard) && (
+                  <p className="text-crimson-300 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>
+                    {getUnavailableCardReason(selectedCard)}
+                  </p>
+                )}
+              </div>
             )}
             {selectedCard.type === 'magic' && (
-              <button
-                onClick={() => handlePlayMagic(selectedCard)}
-                disabled={!isLegal({ type: 'SELECT_MAGIC', card: selectedCard })}
-                className="flex-1 rounded-lg bg-gradient-to-r from-gold-500 to-gold-400 text-ink-900 font-display font-bold hover:from-gold-400 hover:to-gold-300 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
-                style={{ ...uiSm, padding: '0.7em 0' }}
-              >
-                <Play size={16} /> Usar magica
-              </button>
+              <div className="w-full">
+                <button
+                  onClick={() => handlePlayMagic(selectedCard)}
+                  disabled={!isLegal({ type: 'SELECT_MAGIC', card: selectedCard })}
+                  className="w-full rounded-lg bg-gradient-to-r from-gold-500 to-gold-400 text-ink-900 font-display font-bold hover:from-gold-400 hover:to-gold-300 btn-press flex items-center justify-center gap-1.5 disabled:opacity-40"
+                  style={{ ...uiSm, padding: '0.7em 0' }}
+                >
+                  <Play size={16} /> Usar magica
+                </button>
+                {!isLegal({ type: 'SELECT_MAGIC', card: selectedCard }) && getUnavailableCardReason(selectedCard) && (
+                  <p className="text-gold-300 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>
+                    {getUnavailableCardReason(selectedCard)}
+                  </p>
+                )}
+              </div>
             )}
           </div>
           {cp !== viewer && (
