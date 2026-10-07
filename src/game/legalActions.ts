@@ -13,6 +13,7 @@ import {
   canPlaceTrapOn,
   hasEmptySlot,
   hasOwnCopy,
+  hasTrapTarget,
   magicRequiredSide,
 } from './types';
 import type { MagicCard } from './cardData';
