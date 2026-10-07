@@ -1,4 +1,5 @@
 import { ArrowLeft, BookOpen } from 'lucide-react';
+import rulesHtml from '../../docs/reglas-meta/Bestias-De-Guerra-Guia.html?raw';
 
 interface RulesScreenProps {
   onBack: () => void;
@@ -12,9 +13,6 @@ interface RulesScreenProps {
  * convertirlo a texto/Markdown. Así se conservan estilos, tablas, bloques,
  * iconos y maquetación responsive del reglamento.
  */
-const RULES_URL =
-  'https://raw.githubusercontent.com/marcosmb/bestias-de-guerra/fix/online-stability/docs/reglas-meta/Bestias-De-Guerra-Guia.html';
-
 export function RulesScreen({ onBack }: RulesScreenProps) {
   return (
     <div className="bg-ink-950 h-[100dvh] min-h-0 text-ink-100 flex flex-col">
@@ -51,7 +49,7 @@ export function RulesScreen({ onBack }: RulesScreenProps) {
           <div className="h-full w-full overflow-hidden rounded-xl border border-ink-700 bg-ink-900 shadow-2xl">
             <iframe
               title="Reglamento oficial de Bestias de Guerra"
-              src={RULES_URL}
+              srcDoc={rulesHtml}
               className="block h-full w-full border-0 bg-white"
               loading="eager"
             />
