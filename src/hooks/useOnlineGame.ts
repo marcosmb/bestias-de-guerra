@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, type OnlineGameState } from '../lib/supabase';
-import { legalActions, isLegalAction, createPlayer, drawCards, shuffleDeck } from '../game/types';
+import { createPlayer, drawCards, shuffleDeck } from '../game/types';
+import { legalActions, isLegalAction } from '../game/legalActions';
 import { buildDeck } from '../game/cardData';
 import { reducer } from '../game/useGame';
 
