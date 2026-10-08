@@ -1208,6 +1208,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           : 'Elige uno de tus monstruos para colocar la mágica';
       case 'direct-attack': return 'Elige tu monstruo para atacar directamente';
       case 'choose-destroy-target': return 'Elige un monstruo del campo para destruir';
+      case 'choose-destroy-associated-card': return 'Trampa 5: elige qué Trampa o Mágica asociada destruir';
       case 'choose-trap-2-own':
         return sel.selectedUids.length === 0
           ? 'Trampa: elige los 2 Monstruos propios que quieres destruir'
