@@ -495,6 +495,10 @@ export function sameAction(a: Action, b: Action): boolean {
       return b.type === 'CHANGE_POSITION' && a.fieldUid === b.fieldUid;
     case 'DESTROY_MONSTER':
       return b.type === 'DESTROY_MONSTER' && a.fieldUid === b.fieldUid;
+    case 'DESTROY_ASSOCIATED_CARD':
+      return b.type === 'DESTROY_ASSOCIATED_CARD' && a.fieldUid === b.fieldUid && a.cardType === b.cardType;
+    case 'SELECT_ASSOCIATED_CARD_TARGET':
+      return b.type === 'SELECT_ASSOCIATED_CARD_TARGET' && a.fieldUid === b.fieldUid;
     case 'TRAP_2_SELECT_OWN':
       return b.type === 'TRAP_2_SELECT_OWN' && a.fieldUid === b.fieldUid;
     case 'CLOSE_DICE_RESULT':
