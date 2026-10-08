@@ -438,6 +438,17 @@ export function legalActions(state: GameState, player: 0 | 1): Action[] {
     return DICE_FACES.map((roll) => ({ type: 'ROLL_DICE', roll }));
   }
 
+  // Algunas selecciones pertenecen a un jugador que no es el jugador en turno.
+  // Trampa 5 se activa durante el ataque rival, pero la elección de qué carta
+  // destruir corresponde al propietario de la Trampa.
+  if (state.phase === 'playing' && state.selection.kind === 'choose-destroy-associated-card') {
+    if (player !== state.selection.player) return [];
+    return [
+      ...selectionActions(state, player, me, opp) ?? [],
+      { type: 'CANCEL_SELECTION' },
+    ];
+  }
+
   // A partir de aquí solo juega quien tiene el turno: el reducer siempre aplica
   // las acciones al jugador en turno, sin mirar quién las envía.
   if (state.phase !== 'playing' || player !== state.currentPlayer) return [];
