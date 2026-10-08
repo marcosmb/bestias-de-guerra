@@ -1310,15 +1310,21 @@ export function reducer(state: GameState, action: Action): GameState {
     case 'DESTROY_MONSTER': {
       if (state.selection.kind !== 'choose-destroy-target') return state;
       const players = [...state.players] as [PlayerState, PlayerState];
-      const target = findFieldMonster(players[state.currentPlayer], action.fieldUid);
+      const owner = state.currentPlayer;
+      const opponent = (owner === 0 ? 1 : 0) as 0 | 1;
+      const target = findFieldMonster(players[opponent], action.fieldUid);
       if (!target) return state;
-      removeFieldMonster(players, state.currentPlayer, action.fieldUid);
-      // Eliminar la trampa del monstruo que la activó (si sigue existiendo)
+      removeFieldMonster(players, opponent, action.fieldUid);
+      // Eliminar y enviar al cementerio la Trampa 9 que activó el efecto.
       const trapUid = state.selection.kind === 'choose-destroy-target' ? state.selection.trapUid : null;
       if (trapUid) {
-        const trapFm = players[state.currentPlayer].field.find((f) => f?.uid === trapUid);
-        if (trapFm) {
-          players[state.currentPlayer] = updateFieldMonster(players[state.currentPlayer], trapUid, (f) => ({ ...f, trap: null }));
+        const trapFm = players[owner].field.find((f) => f?.uid === trapUid);
+        if (trapFm?.trap) {
+          players[owner] = {
+            ...players[owner],
+            graveyard: [...players[owner].graveyard, trapFm.trap],
+          };
+          players[owner] = updateFieldMonster(players[owner], trapUid, (f) => ({ ...f, trap: null, trapRevealed: false }));
         }
       }
       const winResult = checkWinner(players);
