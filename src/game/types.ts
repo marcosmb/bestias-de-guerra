@@ -81,7 +81,6 @@ export type Action =
   | { type: 'ROLL_DICE'; roll: number }
   | { type: 'CLOSE_DICE_RESULT' }
   | { type: 'DESTROY_MONSTER'; fieldUid: string }
-  | { type: 'SELECT_ASSOCIATED_CARD_TARGET'; fieldUid: string }
   | { type: 'DESTROY_ASSOCIATED_CARD'; fieldUid: string; cardType: 'trap' | 'magic' }
   | { type: 'TRAP_2_SELECT_OWN'; fieldUid: string }
   | { type: 'REVIVE_CHOICE'; card: MagicCard; choice: 'hand' | 'field'; position?: Position }
