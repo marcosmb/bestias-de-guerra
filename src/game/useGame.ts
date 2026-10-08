@@ -1333,6 +1333,39 @@ export function reducer(state: GameState, action: Action): GameState {
       };
       return checkStalemateEnd(newState);
     }
+    case 'DESTROY_ASSOCIATED_CARD': {
+      if (state.selection.kind !== 'choose-destroy-associated-card') return state;
+      const owner = state.selection.player;
+      const carrier = findFieldMonster(state.players[owner], action.fieldUid);
+      if (!carrier) return state;
+      const card = action.cardType === 'trap' ? carrier.trap : carrier.magic;
+      if (!card) return state;
+
+      const players = [...state.players] as [PlayerState, PlayerState];
+      const cardOwner = ownerOf(card) ?? owner;
+      players[cardOwner] = {
+        ...players[cardOwner],
+        graveyard: [...players[cardOwner].graveyard, card],
+      };
+      players[owner] = updateFieldMonster(players[owner], action.fieldUid, (fm) => ({
+        ...fm,
+        ...(action.cardType === 'trap'
+          ? { trap: null, trapRevealed: false }
+          : { magic: null }),
+      }));
+
+      return {
+        ...state,
+        players,
+        phase: 'playing',
+        selection: { kind: 'none' },
+        log: addLog(
+          state,
+          `Trampa 5: ${card.name} destruida y enviada al Cementerio.`,
+          state.currentPlayer,
+        ),
+      };
+    }
     case 'REVIVE_CHOICE': {
       if (state.selection.kind !== 'revive-choice') return state;
       const players = [...state.players] as [PlayerState, PlayerState];
