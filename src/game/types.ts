@@ -50,6 +50,7 @@ export type SelectionMode =
   | { kind: 'direct-attack'; attackerUid: string }
   | { kind: 'attack-or-direct'; attackerUid: string }
   | { kind: 'choose-destroy-target'; trapUid: string }
+  | { kind: 'choose-destroy-associated-card'; trapUid: string; player: 0 | 1; targetUid?: string }
   | { kind: 'choose-trap-2-own'; trapUid: string; selectedUids: string[] }
   | { kind: 'revive-choice'; card: MagicCard };
 
@@ -80,6 +81,8 @@ export type Action =
   | { type: 'ROLL_DICE'; roll: number }
   | { type: 'CLOSE_DICE_RESULT' }
   | { type: 'DESTROY_MONSTER'; fieldUid: string }
+  | { type: 'SELECT_ASSOCIATED_CARD_TARGET'; fieldUid: string }
+  | { type: 'DESTROY_ASSOCIATED_CARD'; fieldUid: string; cardType: 'trap' | 'magic' }
   | { type: 'TRAP_2_SELECT_OWN'; fieldUid: string }
   | { type: 'REVIVE_CHOICE'; card: MagicCard; choice: 'hand' | 'field'; position?: Position }
   | { type: 'RESTART' };
