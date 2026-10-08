@@ -313,6 +313,12 @@ function completePendingSelection(state: GameState, legal: Action[]): Action | n
       return completing.sort((a, b) => valorDeObjetivo(state, b) - valorDeObjetivo(state, a))[0];
     }
 
+    case 'choose-destroy-associated-card': {
+      // Trampa 5: prioriza la Mágica asociada y, si no existe, la primera opción legal.
+      return completing.find((a) => a.type === 'DESTROY_ASSOCIATED_CARD' && a.cardType === 'magic')
+        ?? completing[0];
+    }
+
     case 'choose-trap-2-own': {
       // La CPU también debe elegir los 2 Monstruos propios que quiere sacrificar.
       // Se eligen por valor de combate, priorizando los más débiles.
