@@ -584,7 +584,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
         players[me] = {
           ...players[me],
           hand: [...players[me].hand, revived],
-          graveyard: players[me].graveyard.filter((c) => c.id !== revived.id),
+          graveyard: players[me].graveyard.filter((c) => c.instanceId !== revived.instanceId),
         };
         log.push(`${card.name}: ${revived.name} recuperado del cementerio a la mano.`);
       } else if (!canReviveToHand && canReviveToField) {
@@ -1379,6 +1379,11 @@ export function reducer(state: GameState, action: Action): GameState {
     }
     case 'REVIVE_CHOICE': {
       if (state.selection.kind !== 'revive-choice') return state;
+      if (
+        action.card.type !== 'magic' ||
+        action.card.effect.kind !== 'revive_monster' ||
+        action.card.instanceId !== state.selection.card.instanceId
+      ) return state;
       const players = [...state.players] as [PlayerState, PlayerState];
       const me = state.currentPlayer;
       const monsters = players[me].graveyard.filter((c) => c.type === 'monster') as MonsterCard[];
