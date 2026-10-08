@@ -247,6 +247,17 @@ function selectionActions(state: GameState, player: 0 | 1, me: PlayerState, opp:
       // Trampa 9: el propietario elige cualquier Monstruo del adversario.
       return monstersOf(opp).map((fm) => ({ type: 'DESTROY_MONSTER', fieldUid: fm.uid }));
     }
+    
+    case 'choose-destroy-associated-card': {
+      const owner = sel.player;
+      const field = monstersOf(state.players[owner]);
+      return field
+        .filter((fm) => fm.trap || fm.magic)
+        .flatMap((fm) => [
+          ...(fm.trap ? [{ type: 'DESTROY_ASSOCIATED_CARD' as const, fieldUid: fm.uid, cardType: 'trap' as const }] : []),
+          ...(fm.magic ? [{ type: 'DESTROY_ASSOCIATED_CARD' as const, fieldUid: fm.uid, cardType: 'magic' as const }] : []),
+        ]);
+    }
 
     case 'choose-trap-2-own': {
       // Trampa 2: el propietario de la Trampa debe elegir exactamente 2
