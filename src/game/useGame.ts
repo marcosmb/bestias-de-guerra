@@ -319,15 +319,26 @@ function applyTrapEffect(
     case 'negate_destroy_card': {
       negateAttack = true;
       skipCombat = true;
-      // destroy a trap or magic from opponent's field
-      const oppField = players[attackerPlayer].field.filter(Boolean) as FieldMonster[];
-      const target = oppField.find((f) => f.trap || f.magic);
-      if (target) {
-        players[attackerPlayer] = updateFieldMonster(players[attackerPlayer], target.uid, (fm) => ({ ...fm, trap: null, magic: null }));
-        log.push(`¡${trap.name}! Ataque negado y carta especial del rival destruida.`);
-      } else {
-        log.push(`¡${trap.name}! Ataque negado.`);
+      const hasTarget = players[attackerPlayer].field.some((f) => f !== null && (f.trap || f.magic));
+      if (hasTarget) {
+        // El propietario de Trampa 5 debe elegir qué carta asociada destruir.
+        // La selección queda pendiente para que no se destruya arbitrariamente la primera.
+        return {
+          state: {
+            ...state,
+            players,
+            selection: {
+              kind: 'choose-destroy-associated-card',
+              trapUid: defenderUid,
+              player: attackerPlayer,
+            },
+          },
+          negateAttack,
+          destroyAttacker,
+          skipCombat,
+        };
       }
+      log.push(`¡${trap.name}! Ataque negado.`);
       break;
     }
     case 'dice_4plus_destroy':
