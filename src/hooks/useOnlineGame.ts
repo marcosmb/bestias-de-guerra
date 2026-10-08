@@ -33,7 +33,7 @@ export type OnlineGameHook = {
   error: string | null;
 };
 
-const INITIAL_HAND_SIZE = 6;
+const INITIAL_HAND_SIZE = 7;
 
 export function useOnlineGame(): OnlineGameHook {
   const [gameState, setGameState] = useState<any>(null);
