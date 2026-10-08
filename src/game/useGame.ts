@@ -1184,6 +1184,7 @@ export function reducer(state: GameState, action: Action): GameState {
     case 'ROLL_DICE': {
       if (state.phase !== 'dice-roll' || !state.pendingDice) return state;
       const roll = action.roll;
+      if (!Number.isInteger(roll) || roll < 1 || roll > 6) return state;
       const reason = state.pendingDice.reason;
       const players = [...state.players] as [PlayerState, PlayerState];
       const log: string[] = [`🎲 Dado: ${roll} (${reason})`];
