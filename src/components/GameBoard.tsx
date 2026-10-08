@@ -380,7 +380,17 @@ function CombatAnimation({
   } | null>(null);
 
   useEffect(() => {
-    if (!combatState) return;
+    if (!combatState) {
+      setVisible(false);
+      return;
+    }
+
+    // Cada combate es una nueva animación, incluso si el mismo Monstruo vuelve
+    // a atacar en otro turno. El componente permanece montado entre combates,
+    // por lo que hay que reiniciar explícitamente su estado visual.
+    setPhase('attack');
+    setVisible(true);
+    setAnchors(null);
 
     const attackTimer = setTimeout(() => setPhase('impact'), 900);
     const impactTimer = setTimeout(() => setPhase('result'), 1350);
