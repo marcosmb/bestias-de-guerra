@@ -1071,6 +1071,17 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         return;
       }
       dispatch(action);
+    } else if (sel.kind === 'choose-destroy-associated-card') {
+      const target = opp.field.find((fm) => fm?.uid === uid) ?? me.field.find((fm) => fm?.uid === uid);
+      if (!target) return;
+      const cardType = target.trap ? 'trap' : target.magic ? 'magic' : null;
+      if (!cardType) return;
+      const action = { type: 'DESTROY_ASSOCIATED_CARD' as const, fieldUid: uid, cardType };
+      if (!isLegal(action)) {
+        addToast('Elige una Trampa o Mágica asociada válida.', 'warning');
+        return;
+      }
+      dispatch(action);
     } else if (sel.kind === 'choose-trap-2-own') {
       const action = { type: 'TRAP_2_SELECT_OWN' as const, fieldUid: uid };
       if (!isLegal(action)) {
