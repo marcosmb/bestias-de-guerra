@@ -713,7 +713,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     let state = makeState({ turnCount: 0, currentPlayer: 0 });
     state = setHand(state, 0, [m, trap]);
     // Summon monster on first turn
-    state = dispatch(state, { type: 'SUMMON_MONSTER', card: m, position: 'attack' });
+    state = dispatch(state, { type: 'SUMMON_MONSTER', card: m, position: 'defense' });
     const fm = state.players[0].field.find((f) => f !== null)!;
     expect(fm.summonedThisTurn).toBe(true);
     // Select trap

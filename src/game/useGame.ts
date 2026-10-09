@@ -1029,7 +1029,7 @@ export function reducer(state: GameState, action: Action): GameState {
       if (state.phase !== 'playing') return state;
       const cp = state.currentPlayer;
       if (state.players[cp].cardsPlayedThisTurn >= MAX_CARDS_PER_TURN) return state;
-      if (!hasCardInHand(state.players[cp], action.card)) return state;
+      if (!hasCardInHand(state.players[cp], action.card) || !hasTrapTarget(state.players[cp])) return state;
       return { ...state, selection: { kind: 'place-trap', card: action.card } };
     }
     case 'PLACE_TRAP_ON_MONSTER': {

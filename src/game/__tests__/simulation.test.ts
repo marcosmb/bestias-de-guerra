@@ -156,6 +156,9 @@ describe('F0 · red de seguridad — invariantes del motor', () => {
 
   it('el arnés descubre los hallazgos de referencia del motor', () => {
     console.log('\n' + formatReport('MOTOR (arnés)', harness));
+    console.log('Ejemplos de nuevos hallazgos del motor:', JSON.stringify(
+      harness.findings.filter((f) => f.code === 'QUOTA_EXCEEDED' || f.code === 'INVARIANT').slice(0, 8),
+    ));
     const observed = Object.keys(harness.findingCounts).sort() as FindingCode[];
     expect(observed).toEqual([...KNOWN_DEFECTS.harness].sort());
   });
@@ -209,6 +212,9 @@ describe('F0 · red de seguridad — CPU de producto', () => {
 
   it('los hallazgos de la CPU son los de referencia (nada nuevo, nada desaparecido)', () => {
     console.log('\n' + formatReport('CPU DE PRODUCTO', cpu));
+    console.log('Ejemplos de nuevos hallazgos de la CPU:', JSON.stringify(
+      cpu.findings.filter((f) => f.code === 'QUOTA_EXCEEDED' || f.code === 'INVARIANT').slice(0, 8),
+    ));
     const observed = Object.keys(cpu.findingCounts).sort() as FindingCode[];
     expect(observed).toEqual([...KNOWN_DEFECTS.cpu].sort());
   });

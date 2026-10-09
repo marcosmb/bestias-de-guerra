@@ -358,12 +358,10 @@ export function checkInvariants(state: GameState, context: string): string[] {
       if (!monstersOf(me).some((f) => f.uid === sel.trapUid)) push('INVARIANT', 'selección choose-trap-2-own sin su Monstruo portador');
       if (sel.selectedUids.some((uid) => !monstersOf(me).some((f) => f.uid === uid))) push('INVARIANT', 'Trampa 2 mantiene seleccionado un Monstruo que ya no está en el campo');
       break;
-    case 'choose-destroy-associated-card': {
-      const chosenPlayer = state.players[sel.player];
-      const carrier = chosenPlayer.field.find((fm) => fm?.uid === sel.trapUid);
-      if (!carrier) push('INVARIANT', 'selección choose-destroy-associated-card sin Monstruo portador');
+    case 'choose-destroy-associated-card':
+      // trapUid identifies the Monster carrying Trampa 5 on the OTHER field;
+      // the chooser selects an associated card from their own field instead.
       break;
-    }
   }
 
   if (state.turnCount < 0) push('INVARIANT', `turnCount negativo (${state.turnCount})`);
