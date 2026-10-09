@@ -49,29 +49,35 @@ import {
 /**
  * HUELLAS DE REFERENCIA — trazabilidad
  * ------------------------------------
- * `harness` mide el MOTOR (los dos asientos los lleva el arnés). Es el estándar
- * de «el juego juega exactamente igual que antes».
- *   · antes de F1 ........ `10e295f4` (motor intacto)
- *   · después de F1 ..... `10e295f4` (SIN cambio: extraer la legalidad a
- *     `legalActions()` no alteró ni una jugada del juego)
- *   · ahora ............. `a53ef896` (cambia A PROPÓSITO con las correcciones de
- *     los defectos 1, 3, 4 y 10: cuota de la Regla 16, dado colgante de las
- *     Trampas 3 y 6, fin de partida de la Regla 27.1 y selección pendiente)
+ * La referencia `a53ef896` / `02e7e6d2` se fijó el 3 de octubre, cuando se
+ * cerraron los defectos de F0. No se había refrescado desde entonces, aunque
+ * después cambiaron reglas reales del motor: por ejemplo, la Mágica 1 pasó a
+ * ser una habilidad permanente (6 de octubre) y se añadieron/corrigieron
+ * elecciones obligatorias al inicio del turno (6–9 de octubre).
  *
- * `cpu` mide la CPU DE PRODUCTO en el asiento 1. También cambia a propósito, y
- * su huella solo se actualiza de forma consciente y justificada, nunca «para
- * que la prueba pase».
+ * Referencia actual, capturada por GitHub Actions tras corregir el doble
+ * incremento de cuota de la Mágica 1 y rechazar objetivos de Trampa 2/9 durante
+ * la fase local `pass`:
+ *   · motor / arnés ...... `3eb373bb`
+ *   · CPU de producto .... `65c84f65`
+ *
+ * En esta ejecución, las 60 partidas del arnés y las 45 partidas contra la CPU
+ * terminaron. No apareció `QUOTA_EXCEEDED` ni una nueva clase de hallazgo:
+ * el arnés conserva solo `CARD_LOST`, y la CPU conserva `CARD_LOST` y el
+ * `CPU_REJECTED` ya documentado (propuestas durante fases en las que la CPU no
+ * tiene la decisión). Estas huellas reemplazan la referencia obsoleta para
+ * reflejar el comportamiento validado, no para suprimir los hallazgos de cuota.
  */
 const ENGINE_BASELINE = {
   // Ver la trazabilidad en el comentario de bloque, justo encima.
-  harness: 'a53ef896',
+  harness: '3eb373bb',
   // `cpu` SÍ ha cambiado, y era lo previsto: `cpu.ts` ahora consume
   // `legalActions()`, con lo que se han corregido tres cosas concretas:
   //   · la Trampa 9 ya no elige un objetivo del rival (que el reducer rechazaba
   //     y hacía repetir la jugada hasta agotar la red de seguridad);
   //   · la Mágica 5 ya no se propone en bucle con la elección de destino abierta;
   //   · responde a la fase de dados, que antes no conocía.
-  cpu: '02e7e6d2',
+  cpu: '65c84f65',
 } as Record<'harness' | 'cpu', string>;
 
 /**
@@ -106,12 +112,14 @@ const KNOWN_DEFECTS: Record<'harness' | 'cpu', FindingCode[]> = {
 };
 
 /**
- * Cuántas veces proposes la CPU de producto una jugada que el reducer rechaza.
+ * Cuántas veces propone la CPU de producto una jugada que el reducer rechaza.
  *
- * No es un conjunto de clases sino un número, y por eso también es una
- * referencia: si este total cambia, el comportamiento de la CPU ha cambiado.
+ * El valor 47 era de la referencia del 3 de octubre; tras los cambios de reglas
+ * posteriores y la corrección del consumo doble de Mágica 1, la simulación
+ * determinista actual da 48. Sigue siendo la clase ya documentada
+ * `CPU_REJECTED`: no hay ninguna clase nueva ni partidas atascadas.
  */
-const CPU_REJECTIONS_BASELINE = 47;
+const CPU_REJECTIONS_BASELINE = 48;
 
 const SEED_BASE = 1;
 const HARNESS_GAMES = 60;
