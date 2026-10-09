@@ -820,3 +820,52 @@ describe('Reducer integration — Trap 2 target selection', () => {
     expect(state.players[1].field.filter(Boolean)).toHaveLength(0);
   });
 });
+
+
+describe('Reducer integration — cola de efectos de inicio de turno', () => {
+  it('resuelve la Trampa 2 y después la Trampa 9 sin perder ninguna elección', () => {
+    let state = makeState({ currentPlayer: 0, turnCount: 1, mode: 'cpu' });
+    const trap2 = getTrapByEffect('destroy_2_self_1_opp');
+    const trap9 = getTrapByEffect('three_turns_kill');
+    const cards = getDistinctMonsterCards(5);
+    const rivalA = monster(cards[0], { uid: 'queue-rival-a' });
+    const rivalB = monster(cards[1], { uid: 'queue-rival-b' });
+    const trap2Carrier = monster(cards[2], { uid: 'queue-trap2-carrier', trap: trap2 });
+    const trap9Carrier = monster(cards[3], { uid: 'queue-trap9-carrier', trap: trap9, pendingTurns: 1 });
+    const ownSacrifice = monster(cards[4], { uid: 'queue-own-sacrifice' });
+
+    state = setField(state, 0, [rivalA, rivalB]);
+    state = setField(state, 1, [trap2Carrier, trap9Carrier, ownSacrifice]);
+
+    // Al empezar el turno de P2 se disparan las dos Trampas.
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.currentPlayer).toBe(1);
+    expect(state.selection.kind).toBe('choose-trap-2-own');
+    expect(state.turnStartSelectionActive).toBe(true);
+    expect(state.pendingTurnStartSelections).toEqual([
+      { kind: 'choose-destroy-target', trapUid: trap9Carrier.uid },
+    ]);
+
+    // Una elección obligatoria no se puede cancelar accidentalmente.
+    const beforeCancel = state;
+    state = dispatch(state, { type: 'CANCEL_SELECTION' });
+    expect(state).toBe(beforeCancel);
+
+    // La Trampa 2 resuelve sus dos sacrificios y pasa a la elección de Trampa 9.
+    state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: trap2Carrier.uid });
+    state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownSacrifice.uid });
+    expect(state.selection.kind).toBe('choose-destroy-target');
+    expect(state.turnStartSelectionActive).toBe(true);
+    expect(state.players[0].field.some((fm) => fm?.uid === rivalA.uid)).toBe(false);
+    expect(state.players[0].field.some((fm) => fm?.uid === rivalB.uid)).toBe(true);
+
+    // La Trampa 9 puede destruir el Monstruo rival restante y cerrar la cola.
+    state = dispatch(state, { type: 'DESTROY_MONSTER', fieldUid: rivalB.uid });
+    expect(state.selection.kind).toBe('none');
+    expect(state.turnStartSelectionActive).toBe(false);
+    expect(state.pendingTurnStartSelections).toEqual([]);
+    expect(state.players[0].field.every((fm) => fm === null)).toBe(true);
+    expect(state.players[1].field.find((fm) => fm?.uid === trap9Carrier.uid)?.trap).toBeNull();
+    expect(state.players[1].graveyard.some((card) => card.id === trap9.id)).toBe(true);
+  });
+});

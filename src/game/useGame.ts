@@ -691,9 +691,94 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
 }
 
 // --- Turn start/end effects ---
+function isValidTurnStartSelection(state: GameState, selection: SelectionMode): boolean {
+  const owner = state.currentPlayer;
+  const own = state.players[owner];
+  const opponent = state.players[owner === 0 ? 1 : 0];
+
+  switch (selection.kind) {
+    case 'choose-trap-2-own': {
+      const carrier = findFieldMonster(own, selection.trapUid);
+      return Boolean(
+        carrier?.trap?.effect.kind === 'destroy_2_self_1_opp' &&
+        own.field.filter((fm) => fm !== null).length >= 2 &&
+        opponent.field.some((fm) => fm !== null),
+      );
+    }
+    case 'choose-destroy-target': {
+      const carrier = findFieldMonster(own, selection.trapUid);
+      return Boolean(
+        carrier?.trap?.effect.kind === 'three_turns_kill' &&
+        carrier.pendingTurns === 0 &&
+        opponent.field.some((fm) => fm !== null),
+      );
+    }
+    default:
+      return false;
+  }
+}
+
+/** Activa la siguiente elección pendiente, descartando efectos sin objetivos válidos. */
+function startNextTurnStartSelection(
+  state: GameState,
+  pending: SelectionMode[] = state.pendingTurnStartSelections ?? [],
+): GameState {
+  if (state.phase === 'game-over' || state.winner !== null || state.isDraw) {
+    return {
+      ...state,
+      selection: { kind: 'none' },
+      pendingTurnStartSelections: [],
+      turnStartSelectionActive: false,
+    };
+  }
+
+  const queue = [...pending];
+  let nextState: GameState = {
+    ...state,
+    selection: { kind: 'none' },
+    pendingTurnStartSelections: queue,
+    turnStartSelectionActive: false,
+  };
+
+  while (queue.length > 0) {
+    const nextSelection = queue.shift()!;
+    if (!isValidTurnStartSelection(nextState, nextSelection)) {
+      const effectName = nextSelection.kind === 'choose-trap-2-own' ? 'Trampa 2' : 'Trampa 9';
+      nextState = {
+        ...nextState,
+        log: addLog(nextState, effectName + ': ya no quedan objetivos válidos; el efecto no se resuelve.', nextState.currentPlayer),
+      };
+      continue;
+    }
+
+    return {
+      ...nextState,
+      selection: nextSelection,
+      pendingTurnStartSelections: queue,
+      turnStartSelectionActive: true,
+    };
+  }
+
+  return {
+    ...nextState,
+    pendingTurnStartSelections: [],
+    turnStartSelectionActive: false,
+  };
+}
+
+/** Continúa la cola cuando una elección obligatoria de inicio de turno termina. */
+function continueTurnStartSelection(state: GameState): GameState {
+  if (!state.turnStartSelectionActive) return state;
+  return startNextTurnStartSelection(
+    { ...state, selection: { kind: 'none' } },
+    state.pendingTurnStartSelections ?? [],
+  );
+}
+
 function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
   const players = [...state.players] as [PlayerState, PlayerState];
   const log: string[] = [];
+  const queuedSelections: SelectionMode[] = [];
 
   // Trampa 12 es continua: se aplica al comienzo de cada turno mientras el
   // Monstruo portador siga vivo. Si sigue oculta, no revelamos su identidad.
@@ -705,78 +790,107 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
       players[opponentIdx] = applyDamage(players[opponentIdx], amount);
       log.push(
         fm.trapRevealed
-          ? `${fm.trap.name}: el rival pierde ${amount} PV por su efecto continuo.`
-          : `Una Trampa activa hace perder ${amount} PV al rival.`,
+          ? fm.trap.name + ': el rival pierde ' + amount + ' PV por su efecto continuo.'
+          : 'Una Trampa activa hace perder ' + amount + ' PV al rival.',
       );
     }
   }
 
-  const p = players[playerIdx];
+  // El daño continuo se resuelve antes de las curaciones. Si deja a alguien en
+  // 0 PV, la derrota es inmediata y una curación posterior no puede revertirla.
+  const continuousDamageResult = checkWinner(players);
+  if (continuousDamageResult.winner !== null || continuousDamageResult.isDraw) {
+    return {
+      ...state,
+      players,
+      phase: 'game-over',
+      selection: { kind: 'none' },
+      pendingTurnStartSelections: [],
+      turnStartSelectionActive: false,
+      log: log.length > 0 ? addLog(state, log.join(' '), playerIdx) : state.log,
+      winner: continuousDamageResult.winner,
+      isDraw: continuousDamageResult.isDraw,
+    };
+  }
 
-  for (const fm of p.field) {
+  // Guardamos UIDs y volvemos a localizar cada Monstruo antes de procesarlo.
+  // Así un efecto previo que lo destruya impide ejecutar efectos de un portador
+  // que ya no sigue en el campo.
+  const turnStartUids = players[playerIdx].field
+    .filter((fm): fm is FieldMonster => fm !== null)
+    .map((fm) => fm.uid);
+
+  for (const uid of turnStartUids) {
+    let fm = findFieldMonster(players[playerIdx], uid);
     if (!fm) continue;
+
     // Trampa 1: +5 PV al comienzo de cada turno de su propietario.
     if (fm.trap?.effect.kind === 'heal_per_turn') {
       const amount = fm.trap.effect.amount;
       players[playerIdx] = applyHeal(players[playerIdx], amount);
-      log.push(fm.trapRevealed ? `${fm.trap.name}: +${amount} PV por su efecto continuo.` : `Una Trampa activa te hace recuperar ${amount} PV.`);
+      log.push(
+        fm.trapRevealed
+          ? fm.trap.name + ': +' + amount + ' PV por su efecto continuo.'
+          : 'Una Trampa activa te hace recuperar ' + amount + ' PV.',
+      );
     }
-    // Trap 2: Destrucción 2+1 — se activa al comienzo del turno
+
+    fm = findFieldMonster(players[playerIdx], uid);
+    if (!fm) continue;
+
+    // Trampa 2: la elección se pone en cola en vez de interrumpir el resto de
+    // los efectos del inicio de turno.
     if (fm.trap?.effect.kind === 'destroy_2_self_1_opp') {
-      const selfFms = players[playerIdx].field.filter(Boolean) as FieldMonster[];
-      const oppFms = players[playerIdx === 0 ? 1 : 0].field.filter(Boolean) as FieldMonster[];
-      if (selfFms.length >= 2 && oppFms.length >= 1) {
-        // La Trampa 2 siempre se activa, pero los 2 Monstruos propios no se
-        // eligen automáticamente: los elige su propietario.
-        log.push(`${fm.trap.name}: Elige los 2 Monstruos propios que quieres destruir por efecto de la Trampa.`);
-        return {
-          ...state,
-          players,
-          selection: { kind: 'choose-trap-2-own', trapUid: fm.uid, selectedUids: [] },
-          log: log.length > 0 ? addLog(state, log.join(' '), playerIdx) : state.log,
-        };
+      const ownCount = players[playerIdx].field.filter((f) => f !== null).length;
+      const opponentIdx = (playerIdx === 0 ? 1 : 0) as 0 | 1;
+      const opponentHasMonsters = players[opponentIdx].field.some((f) => f !== null);
+      if (ownCount >= 2 && opponentHasMonsters) {
+        queuedSelections.push({ kind: 'choose-trap-2-own', trapUid: fm.uid, selectedUids: [] });
+        log.push(fm.trap.name + ': elige los 2 Monstruos propios que quieres destruir por efecto de la Trampa.');
       } else {
-        const propiosNecesarios = 2;
-        const propiosDisponibles = selfFms.length;
-        const rivalesNecesarios = 1;
-        const rivalesDisponibles = oppFms.length;
-        const motivo =
-          propiosDisponibles < propiosNecesarios && rivalesDisponibles < rivalesNecesarios
-            ? `no tienes los 2 Monstruos propios necesarios y el rival tampoco tiene un Monstruo disponible`
-            : propiosDisponibles < propiosNecesarios
-              ? `solo tienes ${propiosDisponibles} Monstruo${propiosDisponibles === 1 ? '' : 's'} propio${propiosDisponibles === 1 ? '' : 's'} y necesitas al menos 2`
-              : `el rival no tiene ningún Monstruo disponible para destruir`;
-        log.push(`${fm.trap.name}: La Trampa se activa, pero no tiene efecto porque ${motivo}.`);
+        const reason = ownCount < 2
+          ? 'no tienes los 2 Monstruos propios necesarios'
+          : 'el rival no tiene ningún Monstruo disponible para destruir';
+        log.push(fm.trap.name + ': se activa, pero no tiene efecto porque ' + reason + '.');
       }
     }
-    // Trap 9: Tres turnos — cuenta 3 turnos y luego permite elegir un monstruo para destruir
+
+    fm = findFieldMonster(players[playerIdx], uid);
+    if (!fm) continue;
+
+    // Trampa 9: cuenta sus turnos y encola la elección cuando llega a cero.
     if (fm.trap?.effect.kind === 'three_turns_kill') {
       const currentTurns = fm.pendingTurns > 0 ? fm.pendingTurns : 3;
       const newTurns = currentTurns - 1;
       if (newTurns === 0) {
         players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({ ...f, pendingTurns: 0 }));
-        log.push(`${fm.trap.name}: ¡Elige un Monstruo del campo para destruir!`);
-        return {
-          ...state,
-          players,
-          selection: { kind: 'choose-destroy-target', trapUid: fm.uid },
-          log: log.length > 0 ? addLog(state, log.join(' ')) : state.log,
-        };
+        queuedSelections.push({ kind: 'choose-destroy-target', trapUid: fm.uid });
+        log.push(fm.trap.name + ': ¡elige un Monstruo rival para destruir!');
       } else {
         players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({ ...f, pendingTurns: newTurns }));
-        log.push(`${fm.trap.name}: ${newTurns} turnos restantes.`);
+        log.push(fm.trap.name + ': ' + newTurns + ' turnos restantes.');
       }
     }
-    // Pending effects countdown
-    if (fm.pendingEffect && fm.pendingTurns > 0) {
+
+    fm = findFieldMonster(players[playerIdx], uid);
+    if (!fm) continue;
+
+    // pendingTurns es también el contador de la Trampa 9. No lo decrementamos
+    // dos veces si un Monstruo lleva ese efecto y una condición pendiente.
+    if (fm.pendingEffect && fm.pendingTurns > 0 && fm.trap?.effect.kind !== 'three_turns_kill') {
       const newTurns = fm.pendingTurns - 1;
       if (newTurns === 0) {
         if (fm.pendingEffect === 'death' || fm.pendingEffect === 'three_turns') {
           removeFieldMonster(players, playerIdx, fm.uid);
-          log.push(`${fm.card.name} muere por efecto pendiente.`);
+          log.push(fm.card.name + ' muere por efecto pendiente.');
         } else if (fm.pendingEffect === 'control') {
-          players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({ ...f, pendingEffect: null, pendingTurns: 0, controlledBy: null }));
-          log.push(`${fm.card.name} recupera el control.`);
+          players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({
+            ...f,
+            pendingEffect: null,
+            pendingTurns: 0,
+            controlledBy: null,
+          }));
+          log.push(fm.card.name + ' recupera el control.');
         }
       } else {
         players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({ ...f, pendingTurns: newTurns }));
@@ -784,7 +898,16 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
     }
   }
 
-  return { ...state, players, log: log.length > 0 ? addLog(state, log.join(' ')) : state.log };
+  let nextState: GameState = {
+    ...state,
+    players,
+    selection: { kind: 'none' },
+    pendingTurnStartSelections: [],
+    turnStartSelectionActive: false,
+    log: log.length > 0 ? addLog(state, log.join(' '), playerIdx) : state.log,
+  };
+  nextState = startNextTurnStartSelection(nextState, queuedSelections);
+  return nextState;
 }
 
 /**
@@ -819,6 +942,7 @@ export function reducer(state: GameState, action: Action): GameState {
   // La guarda se limita a `phase === 'playing'` porque en las fases de paso, de
   // Trampa y de dados quien debe actuar es otro: su acción corresponde a ESA
   // fase (`CONFIRM_PASS`, `RESOLVE_TRAP`, `ROLL_DICE`) y no a la elección.
+  if (state.phase === 'playing' && state.turnStartSelectionActive && action.type === 'CANCEL_SELECTION') return state;
   if (state.phase === 'playing' && state.selection.kind !== 'none') {
     const completa = ACCIONES_QUE_COMPLETAN[state.selection.kind];
     if (!completa.has(action.type) && action.type !== 'CANCEL_SELECTION') return state;
@@ -1101,7 +1225,7 @@ export function reducer(state: GameState, action: Action): GameState {
           }
           newState = { ...newState, phase: 'playing', pendingTrap: null, selection: { kind: 'none' } };
           const winResult = checkWinner(newState.players);
-          if (winResult.winner !== null || winResult.isDraw) return { ...newState, phase: 'game-over', winner: winResult.winner, isDraw: winResult.isDraw };
+          if (winResult.winner !== null || winResult.isDraw) return { ...newState, phase: 'game-over', selection: { kind: 'none' }, pendingTurnStartSelections: [], turnStartSelectionActive: false, winner: winResult.winner, isDraw: winResult.isDraw };
           return newState;
         }
         return executeCombat({ ...newState, phase: 'playing', pendingTrap: null, selection: { kind: 'none' } }, pt.attackerUid, pt.defenderUid);
@@ -1310,7 +1434,8 @@ export function reducer(state: GameState, action: Action): GameState {
         winner: winResult.winner,
         isDraw: winResult.isDraw,
       };
-      return checkStalemateEnd(newState);
+      const resolvedState = checkStalemateEnd(newState);
+      return continueTurnStartSelection(resolvedState);
     }
     case 'DESTROY_MONSTER': {
       if (state.selection.kind !== 'choose-destroy-target') return state;
@@ -1342,7 +1467,8 @@ export function reducer(state: GameState, action: Action): GameState {
         winner: winResult.winner,
         isDraw: winResult.isDraw,
       };
-      return checkStalemateEnd(newState);
+      const resolvedState = checkStalemateEnd(newState);
+      return continueTurnStartSelection(resolvedState);
     }
     case 'DESTROY_ASSOCIATED_CARD': {
       if (state.selection.kind !== 'choose-destroy-associated-card') return state;
@@ -1454,6 +1580,7 @@ export function reducer(state: GameState, action: Action): GameState {
       return checkStalemateEnd(newState);
     }
     case 'CANCEL_SELECTION': {
+      if (state.turnStartSelectionActive) return state;
       return { ...state, selection: { kind: 'none' } };
     }
     case 'RESTART': {
