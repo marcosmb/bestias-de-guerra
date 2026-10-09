@@ -373,6 +373,11 @@ function CombatAnimation({
   onComplete: () => void;
 }) {
   const [phase, setPhase] = useState<'attack' | 'impact' | 'result'>('attack');
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
   const [visible, setVisible] = useState(true);
   const [anchors, setAnchors] = useState<{
     from: { x: number; y: number };
@@ -396,7 +401,7 @@ function CombatAnimation({
     const impactTimer = setTimeout(() => setPhase('result'), 1350);
     const completeTimer = setTimeout(() => {
       setVisible(false);
-      onComplete();
+      onCompleteRef.current();
     }, 3200);
 
     const getCenter = (selector: string, fallback: { x: number; y: number }) => {
@@ -443,7 +448,7 @@ function CombatAnimation({
       clearTimeout(impactTimer);
       clearTimeout(completeTimer);
     };
-  }, [combatState, onComplete]);
+  }, [combatState]);
 
   if (!combatState || !visible) return null;
 
@@ -876,9 +881,20 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     passiveLpRef.current = [state.players[0].lp, state.players[1].lp];
   }, [state.log, state.players[0].lp, state.players[1].lp, viewer]);
 
+  // Deduplicar efectos visuales, sonidos y mensajes para cada ataque real.
+  const processedCombatIdsRef = useRef<Set<string>>(new Set());
+
   // Track combat for damage float, toast messages and combat animation
   useEffect(() => {
     if (state.lastCombat) {
+      const combatId = state.lastCombat.combatId ?? String(state.turnCount) + ':' + (state.lastCombat.attackerUid ?? 'attacker') + ':' + (state.lastCombat.defenderUid ?? 'defender') + ':' + state.lastCombat.log;
+      if (processedCombatIdsRef.current.has(combatId)) return;
+      processedCombatIdsRef.current.add(combatId);
+      if (processedCombatIdsRef.current.size > 200) {
+        const oldest = processedCombatIdsRef.current.values().next().value;
+        if (oldest) processedCombatIdsRef.current.delete(oldest);
+      }
+
       const { attackerDamage, defenderDamage, attackerDestroyed, defenderDestroyed } = state.lastCombat;
       
       // Determine combat result for animation
@@ -972,7 +988,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         setTimeout(() => setLastCombat(null), 1000);
       }
     }
-  }, [state.lastCombat]);
+  }, [state.lastCombat, state.turnCount, viewer]);
 
   const handleHandCardClick = (card: Card) => {
     setSelectedFieldUid(null);
