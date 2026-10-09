@@ -1614,6 +1614,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             >
               <X size={12} /> Cancelar
             </button>
+            )}
           </div>
         </div>
       )}
