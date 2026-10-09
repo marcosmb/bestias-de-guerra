@@ -1475,6 +1475,7 @@ function executeDirectAttack(state: GameState, attackerUid: string): GameState {
   players[cp] = updateFieldMonster(players[cp], attackerUid, (fm) => ({ ...fm, hasAttacked: true }));
   const winResult = checkWinner(players);
   const combat: CombatResult = {
+    combatId: `${state.turnCount}:${attackerUid}:${"lp-" + opp}:${state.log.length}`,
     attackerDestroyed: false,
     defenderDestroyed: false,
     attackerDamage: 0,
@@ -1529,7 +1530,9 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
     players[opp] = updateFieldMonster(players[opp], defenderUid, (fm) => ({ ...fm, faceDown: false }));
   }
 
+  const combatId = `${state.turnCount}:${attackerUid}:${defenderUid}:${state.log.length}`;
   const result: CombatResult = {
+    combatId,
     ...resolveCombat(attacker, defender),
     attackerUid,
     defenderUid,
@@ -1553,6 +1556,7 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
     !defender.diceProtection
   ) {
     const result: CombatResult = {
+      combatId,
       ...resolveCombat(attacker, defender),
       attackerUid,
       defenderUid,
