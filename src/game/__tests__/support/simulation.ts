@@ -230,9 +230,16 @@ export function actionUniverse(state: GameState, seat: 0 | 1): Action[] {
     out.push({ type: 'DIRECT_ATTACK', attackerUid: fm.uid });
     out.push({ type: 'CHANGE_POSITION', fieldUid: fm.uid });
     out.push({ type: 'DESTROY_MONSTER', fieldUid: fm.uid });
+    out.push({ type: 'TRAP_2_SELECT_OWN', fieldUid: fm.uid });
+    if (fm.trap) out.push({ type: 'DESTROY_ASSOCIATED_CARD', fieldUid: fm.uid, cardType: 'trap' });
+    if (fm.magic) out.push({ type: 'DESTROY_ASSOCIATED_CARD', fieldUid: fm.uid, cardType: 'magic' });
     for (const target of oppField) {
       out.push({ type: 'DECLARE_ATTACK', attackerUid: fm.uid, defenderUid: target.uid });
     }
+  }
+  for (const fm of oppField) {
+    if (fm.trap) out.push({ type: 'DESTROY_ASSOCIATED_CARD', fieldUid: fm.uid, cardType: 'trap' });
+    if (fm.magic) out.push({ type: 'DESTROY_ASSOCIATED_CARD', fieldUid: fm.uid, cardType: 'magic' });
   }
   // Objetivo de la Trampa 9 sobre un monstruo RIVAL: el reducer lo rechaza (mira
   // solo el campo propio). Se incluye para MEDIR ese rechazo.
@@ -347,6 +354,16 @@ export function checkInvariants(state: GameState, context: string): string[] {
     case 'choose-destroy-target':
       if (!monstersOf(me).some((f) => f.uid === sel.trapUid)) push('INVARIANT', 'selección choose-destroy-target sin el Monstruo de la Trampa 9 en el campo propio');
       break;
+    case 'choose-trap-2-own':
+      if (!monstersOf(me).some((f) => f.uid === sel.trapUid)) push('INVARIANT', 'selección choose-trap-2-own sin su Monstruo portador');
+      if (sel.selectedUids.some((uid) => !monstersOf(me).some((f) => f.uid === uid))) push('INVARIANT', 'Trampa 2 mantiene seleccionado un Monstruo que ya no está en el campo');
+      break;
+    case 'choose-destroy-associated-card': {
+      const chosenPlayer = state.players[sel.player];
+      const carrier = chosenPlayer.field.find((fm) => fm?.uid === sel.trapUid);
+      if (!carrier) push('INVARIANT', 'selección choose-destroy-associated-card sin Monstruo portador');
+      break;
+    }
   }
 
   if (state.turnCount < 0) push('INVARIANT', `turnCount negativo (${state.turnCount})`);

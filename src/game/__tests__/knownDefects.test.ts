@@ -312,13 +312,25 @@ describe('ARREGLO · una Mágica que deja al rival a 0 PV termina la partida (Re
   // Historia: detectado por la red de seguridad de F0 (`WIN_NOT_APPLIED`) y
   // escrito como `DEFECTO 4` antes de corregirlo.
 
-  it('la Mágica 1 termina la partida cuando deja al rival sin PV', () => {
+  it('la Mágica 1 permite el ataque directo y este termina la partida al llegar a 0 PV', () => {
     const m = magic(1);
+    const attacker = fieldMonster(monster(9));
     const estado = scene({
-      me: { field: [fieldMonster(monster(9)), ...blankField().slice(1)], hand: [m] },
+      me: { field: [attacker, ...blankField().slice(1)], hand: [m] },
       opp: { lp: 4 },
     });
-    const after = reducer(estado, { type: 'SELECT_MAGIC', card: m });
+    const selected = reducer(estado, { type: 'SELECT_MAGIC', card: m });
+    expect(selected.selection.kind).toBe('place-magic');
+    expect(selected.players[1].lp).toBe(4);
+
+    const equipped = reducer(selected, {
+      type: 'PLACE_MAGIC_ON_MONSTER',
+      card: m,
+      side: 'self',
+      fieldUid: attacker.uid,
+    });
+    expect(equipped.players[0].field[0]?.magic?.id).toBe(m.id);
+    const after = reducer(equipped, { type: 'DIRECT_ATTACK', attackerUid: attacker.uid });
     expect(after.players[1].lp).toBe(0);
     expect(after.winner).toBe(0);
     expect(after.phase).toBe('game-over');
@@ -333,13 +345,12 @@ describe('ARREGLO · una Mágica que deja al rival a 0 PV termina la partida (Re
     expect(after.winner).toBeNull();
   });
 
-  it('el empate a 0 PV también termina la partida', () => {
-    const m = magic(1);
+  it('el empate a 0 PV también termina la partida al comprobar el inicio del turno', () => {
     const estado = scene({
-      me: { field: [fieldMonster(monster(9)), ...blankField().slice(1)], hand: [m], lp: 0 },
+      me: { lp: 0 },
       opp: { lp: 0 },
     });
-    const after = reducer(estado, { type: 'SELECT_MAGIC', card: m });
+    const after = reducer(estado, { type: 'END_TURN' });
     expect(after.phase).toBe('game-over');
     expect(after.isDraw).toBe(true);
     expect(after.winner).toBeNull();

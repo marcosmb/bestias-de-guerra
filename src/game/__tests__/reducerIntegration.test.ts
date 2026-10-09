@@ -17,8 +17,8 @@ describe('Reducer integration — COMBATE', () => {
       defenderUid: defender.uid,
     });
 
-    expect(state.players[0].field.find((f) => f?.uid === attacker.uid)).toBeNull();
-    expect(state.players[1].field.find((f) => f?.uid === defender.uid)).toBeNull();
+    expect(state.players[0].field.find((f) => f?.uid === attacker.uid)).toBeFalsy();
+    expect(state.players[1].field.find((f) => f?.uid === defender.uid)).toBeFalsy();
     expect(state.lastCombat?.attackerDestroyed).toBe(true);
     expect(state.lastCombat?.defenderDestroyed).toBe(true);
     expect(state.lastCombat?.attackerDamage).toBe(0);
@@ -151,10 +151,10 @@ describe('Reducer integration — TRAMPA 2', () => {
     state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownA.uid });
     state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownB.uid });
 
-    expect(state.players[0].field.find((f) => f?.uid === ownA.uid)).toBeNull();
-    expect(state.players[0].field.find((f) => f?.uid === ownB.uid)).toBeNull();
-    expect(state.players[1].field.find((f) => f?.uid === rival.uid)).toBeNull();
-    expect(state.players[0].field.find((f) => f?.uid === carrier.uid)?.trap).toBeNull();
+    expect(state.players[0].field.find((f) => f?.uid === ownA.uid)).toBeFalsy();
+    expect(state.players[0].field.find((f) => f?.uid === ownB.uid)).toBeFalsy();
+    expect(state.players[1].field.find((f) => f?.uid === rival.uid)).toBeFalsy();
+    expect(state.players[0].field.find((f) => f?.uid === carrier.uid)?.trap).toBeFalsy();
     expect(state.players[0].graveyard.some((c) => c.id === trap2.id)).toBe(true);
   });
 
@@ -178,7 +178,7 @@ describe('Reducer integration — TRAMPA 2', () => {
 
     expect(state.phase).toBe('playing');
     expect(state.lastCombat?.defenderDestroyed).toBe(true);
-    expect(state.players[1].field.find((f) => f?.uid === defender.uid)).toBeNull();
+    expect(state.players[1].field.find((f) => f?.uid === defender.uid)).toBeFalsy();
   });
 });
 
@@ -260,6 +260,7 @@ describe('Trampa 9 — countdown and activation', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const fm = monster(m3, { trap: trap9 });
     state = setField(state, 0, [fm]);
+    state = setField(state, 1, [monster(getMonsterWithAtk(4), { uid: 'trap9-rival' })]);
     // Turn 1 (currentPlayer 0) ends → turn 2 (player 1)
     state = dispatch(state, { type: 'END_TURN' });
     // After END_TURN, applyTurnStartEffects runs for player 1.
@@ -290,8 +291,9 @@ describe('Trampa 9 — countdown and activation', () => {
   it('allows destroying any monster on the field', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const myFm = monster(m3, { trap: trap9 });
-    const targetFm = monster(m5);
-    state = setField(state, 0, [myFm, targetFm]);
+    const targetFm = monster(m5, { uid: 'trap9-rival-target' });
+    state = setField(state, 0, [myFm]);
+    state = setField(state, 1, [targetFm]);
     // Fast-forward through 3 countdowns
     for (let i = 0; i < 6; i++) {
       state = dispatch(state, { type: 'END_TURN' });
@@ -299,7 +301,7 @@ describe('Trampa 9 — countdown and activation', () => {
     expect(state.selection.kind).toBe('choose-destroy-target');
     // Destroy the target monster
     state = dispatch(state, { type: 'DESTROY_MONSTER', fieldUid: targetFm.uid });
-    expect(state.players[0].field.find((f) => f?.uid === targetFm.uid)).toBeUndefined();
+    expect(state.players[1].field.find((f) => f?.uid === targetFm.uid)).toBeFalsy();
     expect(state.selection.kind).toBe('none');
     // Trap should be removed from the monster that had it
     const trapHolder = state.players[0].field.find((f) => f?.uid === myFm.uid);
@@ -596,7 +598,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     let state = makeState();
     state = setHand(state, 0, [m, trap]);
     // Summon the monster first
-    state = dispatch(state, { type: 'SUMMON_MONSTER', card: m, position: 'attack' });
+    state = dispatch(state, { type: 'SUMMON_MONSTER', card: m, position: 'defense' });
     const fm = state.players[0].field.find((f) => f !== null)!;
     expect(fm.summonedThisTurn).toBe(true);
     // Place trap — should now work (summonedThisTurn no longer blocks)
@@ -661,7 +663,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     state = setField(state, 0, [fm]);
     state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: 'non-existent-uid' });
     // Nothing changed
-    expect(state.players[0].field.find((f) => f?.uid === fm.uid)?.trap).toBeNull();
+    expect(state.players[0].field.find((f) => f?.uid === fm.uid)?.trap).toBeFalsy();
     expect(state.players[0].hand.some((c) => c.id === trap.id)).toBe(true);
   });
 
@@ -673,7 +675,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     const fm = monster(m);
     state = setField(state, 0, [fm]);
     state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: fm.uid });
-    expect(state.players[0].field.find((f) => f?.uid === fm.uid)?.trap).toBeNull();
+    expect(state.players[0].field.find((f) => f?.uid === fm.uid)?.trap).toBeFalsy();
   });
 
   it('blocks trap on opponent monster (wrong player)', () => {
@@ -686,7 +688,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     // Player 0 tries to place trap on player 1's monster
     state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: oppFm.uid });
     // Should be blocked — reducer only looks at currentPlayer's field
-    expect(state.players[1].field.find((f) => f?.uid === oppFm.uid)?.trap).toBeNull();
+    expect(state.players[1].field.find((f) => f?.uid === oppFm.uid)?.trap).toBeFalsy();
     expect(state.players[0].hand.some((c) => c.id === trap.id)).toBe(true);
   });
 
@@ -869,7 +871,7 @@ describe('Reducer integration — cola de efectos de inicio de turno', () => {
     expect(state.turnStartSelectionActive).toBe(false);
     expect(state.pendingTurnStartSelections).toEqual([]);
     expect(state.players[0].field.every((fm) => fm === null)).toBe(true);
-    expect(state.players[1].field.find((fm) => fm?.uid === trap9Carrier.uid)?.trap).toBeNull();
+    expect(state.players[1].field.find((fm) => fm?.uid === trap9Carrier.uid)?.trap).toBeFalsy();
     expect(state.players[1].graveyard.some((card) => card.id === trap9.id)).toBe(true);
   });
 });

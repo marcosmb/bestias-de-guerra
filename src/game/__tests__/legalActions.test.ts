@@ -318,7 +318,7 @@ describe('legalActions · desarrollo del turno', () => {
 // ============================================================================
 
 describe('legalActions · Reglas 22 y 23 (objetivo del ataque)', () => {
-  it('Regla 22.1: con Monstruos en Defensa, el único objetivo es uno de esos', () => {
+  it('Regla 22: con Monstruos en Defensa también se puede atacar a un Monstruo en Ataque', () => {
     const state = scene({
       selection: { kind: 'attack', attackerUid: 'atacante' },
       me: { field: [fieldMonster(monster(8), { uid: 'atacante' }), ...blank().slice(1)] },
@@ -332,7 +332,7 @@ describe('legalActions · Reglas 22 y 23 (objetivo del ataque)', () => {
       },
     });
     const targets = find(state, 0, 'DECLARE_ATTACK').map((a) => (a as { defenderUid: string }).defenderUid);
-    expect(targets.sort()).toEqual(['enDefensa1', 'enDefensa2']);
+    expect(targets.sort()).toEqual(['enAtaque', 'enDefensa1', 'enDefensa2']);
     // Y no se ofrece el ataque directo.
     expect(find(state, 0, 'DIRECT_ATTACK')).toHaveLength(0);
   });
@@ -361,7 +361,7 @@ describe('legalActions · Reglas 22 y 23 (objetivo del ataque)', () => {
   it('legalTargets y canDirectAttack aplican la Regla 22', () => {
     const enAtaque = fieldMonster(monster(3));
     const enDefensa = fieldMonster(monster(4), { position: 'defense' });
-    expect(legalTargets([enAtaque, enDefensa])).toEqual([enDefensa]);
+    expect(legalTargets([enAtaque, enDefensa])).toEqual([enAtaque, enDefensa]);
     expect(legalTargets([enAtaque])).toEqual([enAtaque]);
     expect(legalTargets([])).toEqual([]);
     expect(canDirectAttack([enDefensa])).toBe(false);
@@ -433,7 +433,7 @@ describe('legalActions · DECLARE_ATTACK nunca es ilegal (aunque el reducer lo a
     expect(find(yaAtaco, 0, 'DIRECT_ATTACK')).toHaveLength(0);
   });
 
-  it('el camino de un paso respeta la Regla 22: solo objetivos legales', () => {
+  it('el camino de un paso permite atacar a cualquier Monstruo rival', () => {
     const state = scene({
       me: { field: [fieldMonster(monster(8), { uid: 'a' }), ...blank().slice(1)] },
       opp: {
@@ -444,7 +444,7 @@ describe('legalActions · DECLARE_ATTACK nunca es ilegal (aunque el reducer lo a
         ],
       },
     });
-    expect(find(state, 0, 'DECLARE_ATTACK').map((a) => (a as { defenderUid: string }).defenderUid)).toEqual(['enDefensa']);
+    expect(find(state, 0, 'DECLARE_ATTACK').map((a) => (a as { defenderUid: string }).defenderUid).sort()).toEqual(['enAtaque', 'enDefensa']);
     expect(find(state, 0, 'DIRECT_ATTACK')).toHaveLength(0);
   });
 
@@ -463,7 +463,12 @@ describe('legalActions · DECLARE_ATTACK nunca es ilegal (aunque el reducer lo a
 
 describe('legalActions · Regla 19 (Trampas)', () => {
   it('se puede elegir cualquier Trampa de la mano', () => {
-    const state = scene({ me: { hand: [trap(1), trap(8)] } });
+    const state = scene({
+      me: {
+        hand: [trap(1), trap(8)],
+        field: [fieldMonster(monster(3), { uid: 'portador' }), ...blank().slice(1)],
+      },
+    });
     expect(find(state, 0, 'SELECT_TRAP_PLACE').map((a) => (a as { card: TrapCard }).card.id)).toEqual(['t1', 't8']);
   });
 
@@ -637,13 +642,13 @@ describe('legalActions · fases especiales', () => {
     expect(new Set(types)).toEqual(new Set(['PLACE_TRAP_ON_MONSTER', 'CANCEL_SELECTION']));
   });
 
-  it('Trampa 9: el objetivo es un Monstruo PROPIO, no un rival', () => {
+  it('Trampa 9: se elige un Monstruo rival para destruir', () => {
     const state = scene({
       selection: { kind: 'choose-destroy-target', trapUid: 'mio' },
       me: { field: [fieldMonster(monster(2), { uid: 'mio' }), fieldMonster(monster(3), { uid: 'mio2' }), ...blank().slice(2)] },
       opp: { field: [fieldMonster(monster(12), { uid: 'rival' }), ...blank().slice(1)] },
     });
-    expect(find(state, 0, 'DESTROY_MONSTER').map((a) => (a as { fieldUid: string }).fieldUid)).toEqual(['mio', 'mio2']);
+    expect(find(state, 0, 'DESTROY_MONSTER').map((a) => (a as { fieldUid: string }).fieldUid)).toEqual(['rival']);
   });
 
   it('fase de paso de dispositivo: solo confirmar', () => {
