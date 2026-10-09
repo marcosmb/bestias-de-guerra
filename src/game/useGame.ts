@@ -34,6 +34,7 @@ import {
   getEffectiveAtk,
   getFirstEmptySlot,
   hasEmptySlot,
+  hasTrapTarget,
   canPlaceTrapOn,
   checkStalemate,
   isBlockedByStalemate,
