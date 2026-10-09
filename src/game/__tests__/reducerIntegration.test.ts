@@ -223,6 +223,43 @@ describe('Reducer integration — TRAMPA 2', () => {
   });
 });
 
+describe('Reducer integration — TRAMPA 9', () => {
+  it('espera a confirmar el paso local antes de destruir el objetivo', () => {
+    let state = makeState({ mode: 'local', turnCount: 1, currentPlayer: 0 });
+    const trap9 = getTrapByEffect('three_turns_kill');
+    const carrier = monster(getMonsterWithAtk(8), {
+      uid: 'trap9-pass-carrier',
+      trap: trap9,
+      pendingTurns: 1,
+    });
+    const rival = monster(getMonsterWithAtk(5), { uid: 'trap9-pass-rival' });
+
+    state = setField(state, 0, [carrier]);
+    state = setField(state, 1, [rival]);
+
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.phase).toBe('pass');
+    state = dispatch(state, { type: 'CONFIRM_PASS' });
+    expect(state.currentPlayer).toBe(1);
+
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.currentPlayer).toBe(0);
+    expect(state.phase).toBe('pass');
+    expect(state.selection.kind).toBe('choose-destroy-target');
+
+    const premature = dispatch(state, { type: 'DESTROY_MONSTER', fieldUid: rival.uid });
+    expect(premature).toBe(state);
+
+    state = dispatch(state, { type: 'CONFIRM_PASS' });
+    expect(state.phase).toBe('playing');
+    expect(state.selection.kind).toBe('choose-destroy-target');
+
+    state = dispatch(state, { type: 'DESTROY_MONSTER', fieldUid: rival.uid });
+    expect(state.selection.kind).toBe('none');
+    expect(state.players[1].field.find((fm) => fm?.uid === rival.uid)).toBeFalsy();
+  });
+});
+
 describe('Mágica 5 — Monstruo revivido puede atacar inmediatamente', () => {
   it('permite atacar al Monstruo revivido al campo por Mágica 5 en el mismo turno', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });

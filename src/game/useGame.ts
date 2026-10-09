@@ -1451,7 +1451,7 @@ export function reducer(state: GameState, action: Action): GameState {
       return continueTurnStartSelection(resolvedState);
     }
     case 'DESTROY_MONSTER': {
-      if (state.selection.kind !== 'choose-destroy-target') return state;
+      if (state.phase !== 'playing' || state.selection.kind !== 'choose-destroy-target') return state;
       const players = [...state.players] as [PlayerState, PlayerState];
       const owner = state.currentPlayer;
       const opponent = (owner === 0 ? 1 : 0) as 0 | 1;
