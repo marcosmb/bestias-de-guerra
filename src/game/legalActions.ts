@@ -202,6 +202,15 @@ function selectionActions(state: GameState, player: 0 | 1, me: PlayerState, opp:
       );
     }
 
+    case 'direct-attack': {
+      const attacker = monstersOf(me).find((f) => f.uid === sel.attackerUid);
+      return isLegalAttacker(state, player, attacker) && (
+        attacker?.magic?.effect.kind === 'direct_attack' || canDirectAttack(monstersOf(opp))
+      )
+        ? [{ type: 'DIRECT_ATTACK', attackerUid: sel.attackerUid }]
+        : [];
+    }
+
     case 'attack': {
       const attacker = monstersOf(me).find((f) => f.uid === sel.attackerUid);
       if (!isLegalAttacker(state, player, attacker)) return [];
@@ -511,8 +520,6 @@ export function sameAction(a: Action, b: Action): boolean {
       return b.type === 'DESTROY_MONSTER' && a.fieldUid === b.fieldUid;
     case 'DESTROY_ASSOCIATED_CARD':
       return b.type === 'DESTROY_ASSOCIATED_CARD' && a.fieldUid === b.fieldUid && a.cardType === b.cardType;
-    case 'SELECT_ASSOCIATED_CARD_TARGET':
-      return b.type === 'SELECT_ASSOCIATED_CARD_TARGET' && a.fieldUid === b.fieldUid;
     case 'TRAP_2_SELECT_OWN':
       return b.type === 'TRAP_2_SELECT_OWN' && a.fieldUid === b.fieldUid;
     case 'CLOSE_DICE_RESULT':

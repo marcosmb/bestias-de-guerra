@@ -932,6 +932,7 @@ const ACCIONES_QUE_COMPLETAN: Record<SelectionMode['kind'], ReadonlySet<Action['
   'attack-or-direct': new Set<Action['type']>(['DECLARE_ATTACK', 'DIRECT_ATTACK']),
   'direct-attack': new Set<Action['type']>(['DIRECT_ATTACK']),
   'choose-destroy-target': new Set<Action['type']>(['DESTROY_MONSTER']),
+  'choose-destroy-associated-card': new Set<Action['type']>(['DESTROY_ASSOCIATED_CARD']),
   'choose-trap-2-own': new Set<Action['type']>(['TRAP_2_SELECT_OWN']),
   'revive-choice': new Set<Action['type']>(['REVIVE_CHOICE']),
 };

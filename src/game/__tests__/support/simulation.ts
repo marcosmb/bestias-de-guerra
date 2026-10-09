@@ -140,6 +140,8 @@ function selectionValue(state: GameState): string {
     case 'direct-attack': return `direct-attack:${s.attackerUid}`;
     case 'attack-or-direct': return `attack-or-direct:${s.attackerUid}`;
     case 'choose-destroy-target': return `choose-destroy-target:${s.trapUid}`;
+    case 'choose-destroy-associated-card': return `choose-destroy-associated-card:${s.trapUid}:${s.player}:${s.targetUid ?? '-'}`;
+    case 'choose-trap-2-own': return `choose-trap-2-own:${s.trapUid}:${s.selectedUids.join('/')}`;
     case 'revive-choice': return `revive-choice:${s.card.id}`;
   }
 }
@@ -545,6 +547,8 @@ function selectionSignature(state: GameState): string {
     case 'direct-attack': return `direct-attack:${who(s.attackerUid)}`;
     case 'attack-or-direct': return `attack-or-direct:${who(s.attackerUid)}`;
     case 'choose-destroy-target': return `choose-destroy-target:${who(s.trapUid)}`;
+    case 'choose-destroy-associated-card': return `choose-destroy-associated-card:${who(s.trapUid)}:${s.player}:${s.targetUid ? who(s.targetUid) : '-'}`;
+    case 'choose-trap-2-own': return `choose-trap-2-own:${who(s.trapUid)}:${s.selectedUids.map(who).join('/')}`;
     case 'revive-choice': return `revive-choice:${s.card.id}`;
   }
 }

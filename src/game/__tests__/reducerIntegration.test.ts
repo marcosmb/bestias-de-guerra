@@ -30,7 +30,7 @@ import { describe, it, expect } from 'vitest';
 import { reducer, initialState } from '../useGame';
 import type { GameState, Action, FieldMonster } from '../types';
 import { createPlayer, drawCards } from '../types';
-import { buildDeck, TRAPS, type MonsterCard, type TrapCard } from '../cardData';
+import { buildDeck, MAGICS, TRAPS, type MagicCard, type MonsterCard, type TrapCard } from '../cardData';
 
 // --- Helpers ---
 
@@ -91,6 +91,10 @@ function getDistinctMonsterCards(count: number): MonsterCard[] {
 
 function getTrapByEffect(kind: string): TrapCard {
   return TRAPS.find((t) => t.effect.kind === kind)!;
+}
+
+function getMagicByEffect(kind: string): MagicCard {
+  return MAGICS.find((m) => m.effect.kind === kind)!;
 }
 
 function dispatch(state: GameState, action: Action): GameState {

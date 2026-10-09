@@ -31,22 +31,24 @@ function monster(uid: string): FieldMonster {
   };
 }
 
-function player(field: (FieldMonster | null)[]): PlayerState {
+function player(index: 0 | 1, field: (FieldMonster | null)[]): PlayerState {
   return {
+    index,
+    name: `Jugador ${index + 1}`,
     lp: 100,
     hand: [],
     deck: [],
     graveyard: [],
     field,
     cardsPlayedThisTurn: 0,
-  } as PlayerState;
+  };
 }
 
 describe('Trampa 3 — orden de conteo', () => {
   it('empieza en la Trampa, sigue a la derecha, luego rival de izquierda a derecha y salta huecos', () => {
     const players: [PlayerState, PlayerState] = [
-      player([null, monster('A'), null, monster('B'), monster('C'), null]),
-      player([monster('D'), null, monster('E'), null, monster('F'), null]),
+      player(0, [null, monster('A'), null, monster('B'), monster('C'), null]),
+      player(1, [monster('D'), null, monster('E'), null, monster('F'), null]),
     ];
 
     const order = getTrap3CountingOrder(players, 0, 'A');

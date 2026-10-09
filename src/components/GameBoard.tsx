@@ -607,6 +607,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     isDirectAttack: boolean;
     result: 'attacker-destroyed' | 'defender-destroyed' | 'both-destroyed' | 'none-destroyed';
     attackerPlayer?: 0 | 1;
+    attackerSlot?: number;
+    defenderPlayer?: 0 | 1;
+    defenderSlot?: number;
     attackerCard?: MonsterCard;
     defenderCard?: MonsterCard;
   } | null>(null);
@@ -1090,7 +1093,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     } else if (sel.kind === 'choose-destroy-associated-card') {
       const target = opp.field.find((fm) => fm?.uid === uid) ?? me.field.find((fm) => fm?.uid === uid);
       if (!target) return;
-      const cardType = target.trap ? 'trap' : target.magic ? 'magic' : null;
+      const cardType: 'trap' | 'magic' | null = target.trap ? 'trap' : target.magic ? 'magic' : null;
       if (!cardType) return;
       const action = { type: 'DESTROY_ASSOCIATED_CARD' as const, fieldUid: uid, cardType };
       if (!isLegal(action)) {

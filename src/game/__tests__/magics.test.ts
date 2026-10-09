@@ -121,9 +121,9 @@ describe('Mágicas', () => {
         diceProtection: false,
       });
 
-      const me = { index: 0, name: 'Jugador 1', lp: 100, deck: [], hand: [], field: [null, null, null, null, null, null], graveyard: [], cardsPlayedThisTurn: 0 };
+      const me = { index: 0 as const, name: 'Jugador 1', lp: 100, deck: [], hand: [], field: [null, null, null, null, null, null], graveyard: [], cardsPlayedThisTurn: 0 };
       const opp = {
-        index: 1,
+        index: 1 as const,
         name: 'Jugador 2',
         lp: 100,
         deck: [],
