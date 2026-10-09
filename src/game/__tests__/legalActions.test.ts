@@ -185,7 +185,10 @@ describe('legalActions · contrato', () => {
     let fueraDeContrato = 0;
     const porTipo = new Map<string, string>();
 
-    for (const semilla of [901, 902, 903]) {
+    // La protección del reducer rechaza ahora una acción adicional durante la
+    // fase de paso. Se amplía la muestra determinista para mantener una
+    // comprobación robusta del contrato entre generador y motor.
+    for (const semilla of [901, 902, 903, 904, 905, 906, 907]) {
       simulateGame({
         seed: semilla,
         driver: 'harness',

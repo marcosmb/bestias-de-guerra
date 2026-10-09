@@ -453,9 +453,11 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
           resolves = false;
           break;
         }
-        players[me] = playCardFromHand(
-          updateFieldMonster(players[me], targetUid, (fm) => ({ ...fm, magic: card })),
-          card,
+        // La carta se consume una sola vez en el bloque común de abajo.
+        players[me] = updateFieldMonster(
+          players[me],
+          targetUid,
+          (fm) => ({ ...fm, magic: card }),
         );
         log.push(`${card.name}: queda asociada a ${target.card.name}. Ese Monstruo puede elegir atacar a cualquier Monstruo rival o directamente a los LP, incluso si hay Defensas.`);
       }
@@ -1390,7 +1392,9 @@ export function reducer(state: GameState, action: Action): GameState {
       };
     }
     case 'TRAP_2_SELECT_OWN': {
-      if (state.selection.kind !== 'choose-trap-2-own') return state;
+      // En modo local primero debe confirmarse el paso de turno. La selección
+      // se conserva y puede resolverse en cuanto la fase vuelve a 'playing'.
+      if (state.phase !== 'playing' || state.selection.kind !== 'choose-trap-2-own') return state;
       const sel = state.selection;
       if (sel.selectedUids.includes(action.fieldUid)) return state;
 

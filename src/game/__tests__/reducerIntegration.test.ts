@@ -158,6 +158,47 @@ describe('Reducer integration — TRAMPA 2', () => {
     expect(state.players[0].graveyard.some((c) => c.id === trap2.id)).toBe(true);
   });
 
+  it('espera a confirmar el paso local antes de resolver la selección de Trampa 2', () => {
+    let state = makeState({ mode: 'local', turnCount: 1, currentPlayer: 0 });
+    const trap2 = getTrapByEffect('destroy_2_self_1_opp');
+    const carrier = monster(getMonsterWithAtk(8), { uid: 'trap2-pass-carrier', trap: trap2 });
+    const ownA = monster(getMonsterWithAtk(3), { uid: 'trap2-pass-own-a' });
+    const ownB = monster(getMonsterWithAtk(4), { uid: 'trap2-pass-own-b' });
+    const rival = monster(getMonsterWithAtk(9), { uid: 'trap2-pass-rival' });
+
+    state = setField(state, 0, [carrier, ownA, ownB]);
+    state = setField(state, 1, [rival]);
+
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.phase).toBe('pass');
+    state = dispatch(state, { type: 'CONFIRM_PASS' });
+    expect(state.currentPlayer).toBe(1);
+    expect(state.phase).toBe('playing');
+
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.currentPlayer).toBe(0);
+    expect(state.phase).toBe('pass');
+    expect(state.selection.kind).toBe('choose-trap-2-own');
+
+    const premature = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownA.uid });
+    expect(premature).toBe(state);
+
+    state = dispatch(state, { type: 'CONFIRM_PASS' });
+    expect(state.phase).toBe('playing');
+    expect(state.selection.kind).toBe('choose-trap-2-own');
+
+    state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownA.uid });
+    expect(state.selection.kind).toBe('choose-trap-2-own');
+    if (state.selection.kind !== 'choose-trap-2-own') throw new Error('La selección debería continuar');
+    expect(state.selection.selectedUids).toEqual([ownA.uid]);
+
+    state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownB.uid });
+    expect(state.selection.kind).toBe('none');
+    expect(state.players[0].field.find((f) => f?.uid === ownA.uid)).toBeFalsy();
+    expect(state.players[0].field.find((f) => f?.uid === ownB.uid)).toBeFalsy();
+    expect(state.players[1].field.find((f) => f?.uid === rival.uid)).toBeFalsy();
+  });
+
   it('no se activa como respuesta a un ataque contra el Monstruo que la porta', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const trap2 = getTrapByEffect('destroy_2_self_1_opp');
