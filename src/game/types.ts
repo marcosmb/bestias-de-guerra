@@ -111,10 +111,6 @@ export interface GameState {
   stateVersion: number;
   players: [PlayerState, PlayerState];
   selection: SelectionMode;
-  /** Selecciones adicionales que se dispararon al inicio del turno y deben resolverse en orden. */
-  pendingTurnStartSelections?: SelectionMode[];
-  /** Impide cancelar una elección obligatoria que procede de un efecto de inicio de turno. */
-  turnStartSelectionActive?: boolean;
   log: string[];
   winner: 0 | 1 | null;
   isDraw: boolean;
