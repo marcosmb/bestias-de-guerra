@@ -456,9 +456,11 @@ export function legalActions(state: GameState, player: 0 | 1): Action[] {
 
   const completing = selectionActions(state, player, me, opp);
   if (completing !== null) {
-    // Cancelar siempre es legal mientras haya una elección abierta, y la
-    // interfaz lo ofrece (botón de cerrar y clic fuera del tablero).
-    return [...completing, { type: 'CANCEL_SELECTION' }];
+    // Las elecciones de Trampas activadas al inicio del turno son obligatorias.
+    // No ofrecemos una cancelación que el reducer, correctamente, rechazaría.
+    return state.turnStartSelectionActive
+      ? completing
+      : [...completing, { type: 'CANCEL_SELECTION' }];
   }
 
   return freeActions(state, me, opp);

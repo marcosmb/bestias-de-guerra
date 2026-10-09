@@ -163,39 +163,46 @@ describe('ARREGLO · la cuota de 3 cartas por turno ya no se puede saltar (Regla
   });
 });
 
-describe('DEFECTO 1 · la Trampa 5 borra la Trampa o Mágica rival sin mandarla al cementerio', () => {
-  // La Trampa 5 «Niega el ataque y destruye una Trampa o Mágica del adversario»
-  // pone `trap: null` / `magic: null` directamente. La carta desaparece del
-  // juego: no va a ningún cementerio. El reglamento (§31 y §26) sí establece que
-  // «si una carta asociada es destruida, va al cementerio de su propietario
-  // original».
-  //
-  // CORRESPONDE A: decisión del creador (destino de una carta destruida) +
-  // arreglo del motor. NO se toca en F0/F1.
-
-  it('la carta asociada desaparece en vez de ir al cementerio de su propietario', () => {
-    // La Trampa 5 la tiene el DEFENSOR (se activa al recibir el ataque) y
-    // destruye la primera Trampa o Mágica que encuentre en el campo del atacante.
+describe('REGRESIÓN · Trampa 5 conserva la elección y envía las cartas al cementerio', () => {
+  it('mantiene la elección de objetivo y consume ambas cartas correctamente', () => {
     const victima = trap(1);
     const negadora = trap(5);
     const atacante = fieldMonster(monster(6));
+    const defensor = fieldMonster(monster(4), { uid: 'defensor', trap: negadora });
     const estado = scene({
-      // El atacante juega la Trampa 1 desde su mano (camino de la interfaz).
       me: { field: [atacante, ...blankField().slice(1)], hand: [victima] },
-      opp: { field: [fieldMonster(monster(4), { uid: 'defensor', trap: negadora }), ...blankField().slice(1)] },
+      opp: { field: [defensor, ...blankField().slice(1)] },
     });
-    const eligiendo = reducer(estado, { type: 'SELECT_TRAP_PLACE', card: victima });
-    const conTrampa = reducer(eligiendo, { type: 'PLACE_TRAP_ON_MONSTER', card: victima, fieldUid: atacante.uid });
-    expect(conTrampa.players[0].field[0]!.trap?.id).toBe('t1');
 
-    const trasAtacar = reducer(conTrampa, { type: 'DECLARE_ATTACK', attackerUid: atacante.uid, defenderUid: 'defensor' });
+    const eligiendo = reducer(estado, { type: 'SELECT_TRAP_PLACE', card: victima });
+    const conTrampa = reducer(eligiendo, {
+      type: 'PLACE_TRAP_ON_MONSTER',
+      card: victima,
+      fieldUid: atacante.uid,
+    });
+    const trasAtacar = reducer(conTrampa, {
+      type: 'DECLARE_ATTACK',
+      attackerUid: atacante.uid,
+      defenderUid: 'defensor',
+    });
     expect(trasAtacar.phase).toBe('trap-response');
 
-    const resuelto = reducer(trasAtacar, { type: 'RESOLVE_TRAP', activate: true });
-    // Comportamiento ACTUAL (el defecto): la Trampa 1 desaparece sin más.
+    const respuesta = reducer(trasAtacar, { type: 'RESOLVE_TRAP', activate: true });
+    expect(respuesta.phase).toBe('playing');
+    expect(respuesta.selection.kind).toBe('choose-destroy-associated-card');
+    expect(respuesta.pendingTrap).toBeNull();
+    expect(respuesta.players[0].graveyard.map((c) => c.id)).not.toContain('t1');
+    expect(respuesta.players[1].graveyard.map((c) => c.id)).toContain('t5');
+
+    const resuelto = reducer(respuesta, {
+      type: 'DESTROY_ASSOCIATED_CARD',
+      fieldUid: atacante.uid,
+      cardType: 'trap',
+    });
+    expect(resuelto.selection.kind).toBe('none');
     expect(resuelto.players[0].field[0]?.trap).toBeNull();
-    const enCementerio = resuelto.players.flatMap((p) => p.graveyard.map((c) => c.id));
-    expect(enCementerio).not.toContain('t1');
+    expect(resuelto.players[0].graveyard.map((c) => c.id)).toContain('t1');
+    expect(resuelto.players[1].graveyard.map((c) => c.id)).toContain('t5');
   });
 });
 
@@ -410,79 +417,57 @@ describe('ARREGLO F1 · la CPU se atascaba con la Mágica 5 (recuperar del cemen
   });
 });
 
-describe('DEFECTO 3 · la Trampa 9 solo puede destruir Monstruos propios', () => {
-  // `DESTROY_MONSTER` solo mira el campo del jugador en turno. La interfaz
-  // resalta también los Monstruos rivales como objetivo válido, así que un clic
-  // sobre ellos no hace nada y la elección sigue pendiente. La CPU, además,
-  // elige el más fuerte entre AMBOS campos: si ese es el rival, su jugada se
-  // rechaza y repite.
-  //
-  // CORRESPONDE A: F1 (interfaz y CPU consultan `legalActions()`, que solo
-  // generará objetivos propios).
-
-  it('el objetivo del rival se rechaza y la elección sigue pendiente', () => {
+describe('REGRESIÓN · Trampa 9 elige un Monstruo rival', () => {
+  it('destruye el objetivo del rival y consume la Trampa 9', () => {
+    const trampa9 = trap(9);
     const conSeleccion = scene({
       selection: { kind: 'choose-destroy-target', trapUid: 'mio' },
-      me: { field: [fieldMonster(monster(2), { uid: 'mio' }), null, null, null, null, null] },
+      me: {
+        field: [fieldMonster(monster(2), { uid: 'mio', trap: trampa9, pendingTurns: 0 }), null, null, null, null, null],
+      },
       opp: { field: [fieldMonster(monster(12), { uid: 'rival' }), null, null, null, null, null] },
     });
-    expect(reducer(conSeleccion, { type: 'DESTROY_MONSTER', fieldUid: 'rival' })).toBe(conSeleccion);
-    expect(reducer(conSeleccion, { type: 'DESTROY_MONSTER', fieldUid: 'mio' })).not.toBe(conSeleccion);
+
+    expect(reducer(conSeleccion, { type: 'DESTROY_MONSTER', fieldUid: 'mio' })).toBe(conSeleccion);
+    const resuelto = reducer(conSeleccion, { type: 'DESTROY_MONSTER', fieldUid: 'rival' });
+    expect(resuelto).not.toBe(conSeleccion);
+    expect(resuelto.players[1].field[0]).toBeNull();
+    expect(resuelto.players[0].field[0]?.trap).toBeNull();
+    expect(resuelto.players[0].graveyard.map((c) => c.id)).toContain('t9');
+    expect(resuelto.selection.kind).toBe('none');
   });
 });
 
-describe('DEFECTO 4 · `DECLARE_ATTACK` no valida quién ataca', () => {
-  // La auditoría lo detectó y F1 lo deja documentado a propósito: cerrar la
-  // separación entre validar y ejecutar es trabajo de F3. Lo que F1 garantiza es
-  // que `legalActions()` NUNCA genera un ataque ilegal, aunque el reducer lo
-  // admita.
-  //
-  // Comprobaciones que el reducer NO hace:
-  //   · que el atacante esté en posición de Ataque;
-  //   · que el atacante no haya atacado ya este turno;
-  //   · la Regla 17 (el primer turno del Jugador 1 no ataca).
-  //
-  // CORRESPONDE A: F3.
-
-  it('acepta un ataque de un monstruo que ya ha atacado y en Defensa', () => {
+describe('REGRESIÓN · el reducer rechaza ataques ilegales', () => {
+  it('rechaza atacar con un Monstruo en Defensa o que ya atacó', () => {
     const estado = scene({
-      me: { field: [fieldMonster(monster(8), { uid: 'a', hasAttacked: true, position: 'defense' as Position, faceDown: false }), null, null, null, null, null] },
+      me: { field: [fieldMonster(monster(8), { uid: 'a', hasAttacked: true, position: 'defense', faceDown: false }), null, null, null, null, null] },
       opp: { field: [fieldMonster(monster(3), { uid: 'd' }), null, null, null, null, null] },
     });
-    const after = reducer(estado, { type: 'DECLARE_ATTACK', attackerUid: 'a', defenderUid: 'd' });
-    expect(changedTheGame(estado, after)).toBe(true);
+    expect(reducer(estado, { type: 'DECLARE_ATTACK', attackerUid: 'a', defenderUid: 'd' })).toBe(estado);
   });
 
-  it('acepta un ataque en el primer turno del Jugador 1 (Regla 17)', () => {
+  it('rechaza atacar durante el primer turno', () => {
     const estado = scene({
       currentPlayer: 0,
       turnCount: 0,
       me: { field: [fieldMonster(monster(8), { uid: 'a' }), null, null, null, null, null] },
       opp: { field: [fieldMonster(monster(3), { uid: 'd' }), null, null, null, null, null] },
     });
-    // `canAttack` lo prohíbe, y el camino de la interfaz respeta esa prohibición…
-    const trasIniciar = reducer(estado, { type: 'START_ATTACK', attackerUid: 'a' });
-    expect(trasIniciar).toBe(estado);
-    // …pero la acción directa de ataque sí pasa.
-    const after = reducer(estado, { type: 'DECLARE_ATTACK', attackerUid: 'a', defenderUid: 'd' });
-    expect(changedTheGame(estado, after)).toBe(true);
+    expect(reducer(estado, { type: 'START_ATTACK', attackerUid: 'a' })).toBe(estado);
+    expect(reducer(estado, { type: 'DECLARE_ATTACK', attackerUid: 'a', defenderUid: 'd' })).toBe(estado);
   });
 });
 
-describe('DEFECTO 5 · el resultado de un dado no se valida', () => {
-  // `ROLL_DICE` acepta cualquier número: la acción lleva el resultado ya
-  // calculado. Un cliente podría enviar `roll: 999`.
-  // En la interfaz el dado se genera en el propio cliente (`GameBoard`), así que
-  // es un hueco de autoridad, no una regla mal aplicada.
-  //
-  // CORRESPONDE A: F3 (y a F2/F9 en cuanto el dado pase al servidor).
-
-  it('acepta cualquier valor de dado, no solo del 1 al 6', () => {
+describe('REGRESIÓN · el dado solo admite resultados entre 1 y 6', () => {
+  it('rechaza un resultado fuera del rango y no altera la partida', () => {
     const estado = scene({
       phase: 'dice-roll',
       pendingDice: { reason: 'Daño por dado', onRoll: (roll: number) => ({ type: 'ROLL_DICE', roll }) as Action },
     });
-    expect(reducer(estado, { type: 'ROLL_DICE', roll: 999 })).not.toBe(estado);
+    expect(reducer(estado, { type: 'ROLL_DICE', roll: 999 })).toBe(estado);
+    expect(reducer(estado, { type: 'ROLL_DICE', roll: 0 })).toBe(estado);
+    expect(reducer(estado, { type: 'ROLL_DICE', roll: 4 })).not.toBe(estado);
   });
 });
 
@@ -581,19 +566,8 @@ describe('ARREGLO · una acción normal ya no cancela una selección pendiente',
   });
 });
 
-describe('DEFECTO 6 · `REVIVE_CHOICE` no contrasta la carta de la acción', () => {
-  // Con la elección de destino abierta por la Mágica 5, el reducer acepta
-  // CUALQUIER acción `REVIVE_CHOICE` que apunte a otra carta de la mano: no
-  // comprueba que `action.card` sea la Mágica de la selección ni que siga en la
-  // mano. El efecto se recupera igualmente, y la cuota se consume igual, pero la
-  // carta que se gasta no es la que ha abierto la elección.
-  //
-  // `legalActions()` de F1 solo genera `REVIVE_CHOICE` con la Mágica 5 de la
-  // selección abierta. Cerrar el hueco en el reducer es F3.
-  //
-  // CORRESPONDE A: F3.
-
-  it('acepta una recuperación abriendo la elección con la Mágica 5 pero gastando otra carta', () => {
+describe('REGRESIÓN · Mágica 5 valida la carta que abrió la elección', () => {
+  it('rechaza resolver Mágica 5 gastando otra Mágica', () => {
     const m5 = magic(5);
     const otra = magic(10);
     const difunto = monster(3);
@@ -601,11 +575,12 @@ describe('DEFECTO 6 · `REVIVE_CHOICE` no contrasta la carta de la acción', () 
       selection: { kind: 'revive-choice', card: m5 },
       me: { hand: [m5, otra], graveyard: [difunto] },
     });
+
     const after = reducer(estado, { type: 'REVIVE_CHOICE', card: otra, choice: 'hand' });
-    expect(changedTheGame(estado, after)).toBe(true);
-    // Comportamiento ACTUAL (el defecto): recupera el Monstruo y sube la cuota,
-    // pero la Mágica 5 sigue en la mano.
+    expect(after).toBe(estado);
     expect(after.players[0].hand.map((c) => c.id)).toContain('m5');
-    expect(after.players[0].cardsPlayedThisTurn).toBe(1);
+    expect(after.players[0].hand.map((c) => c.id)).toContain('m10');
+    expect(after.players[0].graveyard.map((c) => c.id)).toContain(difunto.id);
+    expect(after.players[0].cardsPlayedThisTurn).toBe(0);
   });
 });

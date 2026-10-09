@@ -1188,11 +1188,13 @@ export function reducer(state: GameState, action: Action): GameState {
       if (action.activate) {
         const result = applyTrapEffect(state, pt.trap, pt.attackerPlayer, pt.defenderPlayer, pt.attackerUid, pt.defenderUid);
         let newState = result.state;
-        // Remove the trap from the defender
+        // Una Trampa activada es consumida y va al cementerio de su propietario.
+        // No tocarla durante la fase de dado: esas Trampas se consumen en la
+        // rama especializada que preserva el contexto necesario para la tirada.
         if (newState.phase !== 'dice-roll') {
           const players = [...newState.players] as [PlayerState, PlayerState];
           if (findFieldMonster(players[pt.defenderPlayer], pt.defenderUid)) {
-            players[pt.defenderPlayer] = updateFieldMonster(players[pt.defenderPlayer], pt.defenderUid, (fm) => ({ ...fm, trap: null }));
+            consumeAttachedTrap(players, pt.defenderPlayer, pt.defenderUid);
             newState = { ...newState, players };
           }
         }
@@ -1223,7 +1225,12 @@ export function reducer(state: GameState, action: Action): GameState {
               newState = { ...newState, players };
             }
           }
-          newState = { ...newState, phase: 'playing', pendingTrap: null, selection: { kind: 'none' } };
+          // La Trampa 5 abre una elección para el atacante: conservarla es
+          // obligatorio; borrar aquí selection hacía imposible elegir su objetivo.
+          const pendingSelection = newState.selection.kind === 'choose-destroy-associated-card'
+            ? newState.selection
+            : { kind: 'none' as const };
+          newState = { ...newState, phase: 'playing', pendingTrap: null, selection: pendingSelection };
           const winResult = checkWinner(newState.players);
           if (winResult.winner !== null || winResult.isDraw) return { ...newState, phase: 'game-over', selection: { kind: 'none' }, pendingTurnStartSelections: [], turnStartSelectionActive: false, winner: winResult.winner, isDraw: winResult.isDraw };
           return newState;
