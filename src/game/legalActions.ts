@@ -15,6 +15,7 @@ import {
   hasOwnCopy,
   hasTrapTarget,
   magicRequiredSide,
+  cardInstanceKey,
 } from './types';
 import type { MagicCard } from './cardData';
 
@@ -481,19 +482,19 @@ export function sameAction(a: Action, b: Action): boolean {
   // comprobar su discriminante dentro de la propia rama.
   switch (a.type) {
     case 'SUMMON_MONSTER':
-      return b.type === 'SUMMON_MONSTER' && a.card === b.card && a.position === b.position;
+      return b.type === 'SUMMON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.position === b.position;
     case 'SELECT_TRAP_PLACE':
-      return b.type === 'SELECT_TRAP_PLACE' && a.card === b.card;
+      return b.type === 'SELECT_TRAP_PLACE' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
     case 'PLACE_TRAP_ON_MONSTER':
-      return b.type === 'PLACE_TRAP_ON_MONSTER' && a.card === b.card && a.fieldUid === b.fieldUid;
+      return b.type === 'PLACE_TRAP_ON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid;
     case 'SELECT_MAGIC':
-      return b.type === 'SELECT_MAGIC' && a.card === b.card;
+      return b.type === 'SELECT_MAGIC' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
     case 'PLACE_MAGIC_ON_MONSTER':
-      return b.type === 'PLACE_MAGIC_ON_MONSTER' && a.card === b.card && a.fieldUid === b.fieldUid;
+      return b.type === 'PLACE_MAGIC_ON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid;
     case 'MAGIC_TARGET_MONSTER':
-      return b.type === 'MAGIC_TARGET_MONSTER' && a.card === b.card && a.fieldUid === b.fieldUid;
+      return b.type === 'MAGIC_TARGET_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid;
     case 'MAGIC_INSTANT':
-      return b.type === 'MAGIC_INSTANT' && a.card === b.card;
+      return b.type === 'MAGIC_INSTANT' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
     case 'START_ATTACK':
       return b.type === 'START_ATTACK' && a.attackerUid === b.attackerUid;
     case 'DECLARE_ATTACK':
@@ -517,7 +518,7 @@ export function sameAction(a: Action, b: Action): boolean {
     case 'ROLL_DICE':
       return b.type === 'ROLL_DICE' && a.roll === b.roll;
     case 'REVIVE_CHOICE':
-      return b.type === 'REVIVE_CHOICE' && a.card === b.card && a.choice === b.choice && a.position === b.position;
+      return b.type === 'REVIVE_CHOICE' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.choice === b.choice && a.position === b.position;
     // Sin datos que comparar: que coincidan el tipo ya es suficiente.
     case 'START_GAME':
     case 'CPU_PLAY':
