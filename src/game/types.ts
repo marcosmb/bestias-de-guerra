@@ -111,6 +111,10 @@ export interface GameState {
   stateVersion: number;
   players: [PlayerState, PlayerState];
   selection: SelectionMode;
+  /** Elecciones obligatorias pendientes, generadas por efectos del inicio de turno. */
+  pendingTurnStartSelections?: SelectionMode[];
+  /** Las elecciones activadas al inicio del turno no se pueden cancelar. */
+  turnStartSelectionActive?: boolean;
   log: string[];
   winner: 0 | 1 | null;
   isDraw: boolean;
