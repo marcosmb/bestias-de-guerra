@@ -87,6 +87,8 @@ export type Action =
   | { type: 'RESTART' };
 
 export interface CombatResult {
+  /** Identificador estable para animar este combate una sola vez entre sincronizaciones. */
+  combatId?: string;
   attackerDestroyed: boolean;
   defenderDestroyed: boolean;
   attackerDamage: number;
