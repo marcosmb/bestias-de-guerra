@@ -642,72 +642,71 @@ export function useOnlineGame(): OnlineGameHook {
   }, []);
   
   const dispatchAction = useCallback((action: any) => {
-    if (!gameState) return;
-    
-    // No permitir acciones si se está esperando al rival
+    // Leer siempre desde refs: el callback puede sobrevivir a varios renders y
+    // no debe quedarse con un gameState antiguo en partidas online.
+    const currentViewState = gameStateRef.current;
+    if (!currentViewState) {
+      console.warn('[ONLINE] Acción ignorada: todavía no hay partida cargada.', action?.type);
+      return;
+    }
+
     if (waitingForOpponent) {
-      console.warn('Esperando al rival para poder jugar');
+      console.warn('[ONLINE] Acción ignorada: esperando al rival.', action?.type);
       return;
     }
-    
-    const myIndex = playerRoleRef.current === 'player1' ? 0 : 1;
-    // Usar siempre el estado más reciente vía ref para evitar stale closure
-    const currentPlayer = gameStateRef.current?.currentPlayer ?? gameState.currentPlayer;
-    if (currentPlayer !== myIndex) {
-      console.warn('No es tu turno');
+
+    const role = playerRoleRef.current;
+    if (role !== 'player1' && role !== 'player2') {
+      console.warn('[ONLINE] Acción ignorada: no hay rol de jugador asignado.', action?.type);
       return;
     }
-    
-    if (!isLegalAction(gameStateRef.current ?? gameState, myIndex, action)) {
-      console.warn('Acción no legal:', action);
-      return;
-    }
-    
-    console.log('[ONLINE-TRACE] dispatchAction ENTER', {
-      actionType: action?.type,
-      currentPlayer: gameStateRef.current?.currentPlayer ?? gameState.currentPlayer,
-      myIndex,
-      isHost,
-      playerRole: playerRoleRef.current,
-    });
-    
-    // Usar estado REAL para el reducer (el filtrado rompe el reducer)
-    const currentState = isHost ? realGameStateRef.current : (gameStateRef.current ?? gameState);
-    
-    // En modo online, el guest NO debe ejecutar el reducer localmente
-    // Solo el host ejecuta el reducer; el guest valida y envía la acción al host
-    if (isHost) {
-      // Host: ejecuta reducer localmente
-      const newState = reducer(currentState, action);
-      
-      console.log('[ONLINE-TRACE] LOCAL REDUCER RESULT', {
+
+    const myIndex = role === 'player1' ? 0 : 1;
+    if (currentViewState.currentPlayer !== myIndex) {
+      console.warn('[ONLINE] Acción ignorada: no es tu turno.', {
         actionType: action?.type,
-        currentPlayer: newState.currentPlayer,
-        turnCount: newState.turnCount,
-        player1Field: newState.players[0].field.map((f: any, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
-        player2Field: newState.players[1].field.map((f: any, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
+        currentPlayer: currentViewState.currentPlayer,
+        myIndex,
       });
-      
-      // Incrementar stateVersion para cada acción aceptada
-      newState.stateVersion = (newState.stateVersion ?? 0) + 1;
-      
-      // Filtrar para la vista del jugador actual
-      const filteredState = filterStateForPlayer(newState, myIndex);
-      setGameState(filteredState);
-      console.log('[ONLINE-TRACE] LOCAL STATE UPDATED');
-      
-      // Actualizar estado real local (host es la autoridad)
-      realGameStateRef.current = newState;
-      
-      // Broadcast sync para que el guest tenga el estado correcto
-      broadcastSync(newState);
-    } else {
-      // Guest: NO ejecutar reducer localmente
-      // Solo validar y enviar acción al host
-      console.log('[ONLINE-TRACE] B dispatchAction → broadcastAction', action?.type);
-      broadcastAction(action);
+      return;
     }
-  }, [playerRole, broadcastAction, broadcastSync, waitingForOpponent, filterStateForPlayer, isHost]);
+
+    if (!isLegalAction(currentViewState, myIndex, action)) {
+      console.warn('[ONLINE] Acción no legal:', action);
+      return;
+    }
+
+    const host = isHostRef.current;
+    const authoritativeState = host ? realGameStateRef.current : currentViewState;
+    if (!authoritativeState) {
+      console.warn('[ONLINE] Acción ignorada: falta el estado autoritativo.', action?.type);
+      return;
+    }
+
+    if (host) {
+      const newState = reducer(authoritativeState, action);
+      if (newState === authoritativeState) {
+        console.warn('[ONLINE] El reducer no aplicó la acción:', action?.type);
+        return;
+      }
+
+      // Incrementar stateVersion para cada acción aceptada.
+      newState.stateVersion = (newState.stateVersion ?? 0) + 1;
+
+      const filteredState = filterStateForPlayer(newState, myIndex);
+      // Actualizar las refs sin esperar al siguiente render para evitar que un
+      // segundo evento lea la versión anterior del estado.
+      realGameStateRef.current = newState;
+      gameStateRef.current = filteredState;
+      setGameState(filteredState);
+      void broadcastSync(newState);
+    } else {
+      // El invitado no ejecuta el reducer: envía la acción al anfitrión.
+      // broadcastAction registra los fallos de envío para que no parezca que
+      // el botón simplemente no responde.
+      void broadcastAction(action);
+    }
+  }, [broadcastAction, broadcastSync, filterStateForPlayer, waitingForOpponent]);
   
   const sendRematch = useCallback(async () => {
     if (!roomIdRef.current) return;
