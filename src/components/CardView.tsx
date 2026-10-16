@@ -8,8 +8,27 @@ const SUIT_SYMBOL: Record<string, string> = {
   espadas: '⚔️',
   bastos: '🌿',
   copas: '🥂',
-  oros: '🪙',
 };
+
+function GoldCoinIcon() {
+  return (
+    <svg
+      aria-label="Oros"
+      role="img"
+      viewBox="0 0 32 32"
+      width="1em"
+      height="1em"
+      className="inline-block align-middle drop-shadow-sm"
+      fill="none"
+    >
+      <circle cx="16" cy="16" r="14" fill="#D99A16" stroke="#8A530B" strokeWidth="1.5" />
+      <circle cx="16" cy="16" r="10.5" fill="#F8C943" stroke="#FFF0A0" strokeWidth="1.5" />
+      <path d="M11 10.5c2-2 5.5-2.4 8-1.1" stroke="#FFF8CF" strokeWidth="2" strokeLinecap="round" />
+      <path d="M12 12.5h8M12 16h8M12 19.5h8" stroke="#B8790E" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="16" cy="16" r="13" stroke="#FCE58A" strokeWidth="0.8" />
+    </svg>
+  );
+}
 
 function suitColors(suit: string): { from: string; to: string; accent: string } {
   return SUIT_COLORS[suit as keyof typeof SUIT_COLORS] ?? SUIT_COLORS.espadas;
@@ -137,7 +156,7 @@ export function CardView({
         <div className="card-face w-full h-full flex flex-col p-1 card-shine">
           <img src={card.image ?? `/cards/${card.suit}-${card.number}.webp`} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-75" />
           <div className="flex justify-between items-start relative z-10">
-            <span style={{ fontSize: s.text }}>{SUIT_SYMBOL[mc.suit]}</span>
+            <span style={{ fontSize: s.text }}>{mc.suit === 'oros' ? <GoldCoinIcon /> : SUIT_SYMBOL[mc.suit]}</span>
           </div>
           <div className="text-center font-display font-semibold text-white/90 truncate px-0.5 mt-auto relative z-10" style={{ fontSize: s.text }}>{mc.name}</div>
           <div className="flex justify-between items-center px-1 relative z-10" style={{ height: s.bar }}>
@@ -242,7 +261,7 @@ export function CardView({
         <div className="text-center font-display font-semibold text-white/90 leading-tight relative z-10" style={{ fontSize: s.text }}>{mg.name}</div>
         <div className="flex justify-between items-start relative z-10">
           <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{mg.number}</span>
-          <span style={{ fontSize: s.text }}>🪙</span>
+          <span style={{ fontSize: s.text }}><GoldCoinIcon /></span>
           <span></span>
         </div>
       </div>
