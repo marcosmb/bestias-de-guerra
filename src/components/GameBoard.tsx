@@ -1130,6 +1130,13 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       dispatch({ type: 'DIRECT_ATTACK', attackerUid: sel.attackerUid });
     } else if (sel.kind === 'choose-destroy-target') {
       dispatch({ type: 'DESTROY_MONSTER', fieldUid: uid });
+    } else if (sel.kind === 'choose-trap-2-own') {
+      const action = { type: 'TRAP_2_SELECT_OWN' as const, fieldUid: uid };
+      if (!isLegal(action)) {
+        addToast('¡Jugada errónea! Elige un Monstruo propio que todavía no hayas seleccionado para esta Trampa.', 'warning');
+        return;
+      }
+      dispatch(action);
     }
   };
 
