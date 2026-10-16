@@ -1222,6 +1222,22 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   const trapPrompt = state.phase === 'trap-response' && state.pendingTrap;
   const dicePrompt = state.phase === 'dice-roll' && state.pendingDice;
 
+  // La etiqueta identifica al propietario original de la carta, no al atacante.
+  // En partidas online usamos el nombre real; en local/CPU distinguimos propio y rival.
+  const pendingTrapOwner = state.pendingTrap
+    ? (state.pendingTrap.trap.owner ?? state.pendingTrap.defenderPlayer)
+    : null;
+  const trapOwnerName = pendingTrapOwner === null
+    ? ''
+    : (state.players[pendingTrapOwner]?.name || `Jugador ${pendingTrapOwner + 1}`);
+  const trapHeader = pendingTrapOwner === null
+    ? 'Trampa'
+    : state.mode === 'online'
+      ? `Trampa de ${trapOwnerName}`
+      : pendingTrapOwner === viewer
+        ? `Trampa del Jugador ${pendingTrapOwner + 1}`
+        : 'Trampa del rival';
+
   const selectionPromptText = (): string => {
     switch (sel.kind) {
       case 'attack': return 'Elige un monstruo enemigo para atacar';
@@ -1463,7 +1479,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               <div className="w-10 h-10 rounded-full bg-crimson-500/20 flex items-center justify-center">
                 <AlertTriangle size={20} className="text-crimson-400" />
               </div>
-              <h3 className="font-display font-bold text-crimson-300" style={uiBase}>Trampa del rival</h3>
+              <h3 className="font-display font-bold text-crimson-300" style={uiBase}>{trapHeader}</h3>
             </div>
             <p className="text-white mb-1 font-semibold" style={uiSm}>{state.pendingTrap!.trap.name}</p>
             <p className="text-ink-300 mb-4" style={uiXs}>{state.pendingTrap!.trap.description}</p>
