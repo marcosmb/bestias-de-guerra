@@ -116,7 +116,7 @@ export function CardView({
         style={{
           width: s.w,
           height: s.h,
-          backgroundImage: "url('/cards/reverso-carta.jpg')",
+          backgroundImage: "url('/cards/reverso-carta_2.jpg')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
@@ -283,9 +283,9 @@ export function CardBack({ size = 'md' }: { size?: 'xs' | 'sm' | 'md' | 'lg' }) 
   };
   const d = dimMap[size];
   if (size === 'xs') {
-    return <div className="rounded card-back border border-gold-700/40 shadow-card transition-all duration-300 hover:scale-110" style={{ width: d.w, height: d.h, backgroundImage: "url('/cards/reverso-carta.jpg')", backgroundSize: 'cover', backgroundPosition: 'center' }} />;
+    return <div className="rounded card-back border border-gold-700/40 shadow-card transition-all duration-300 hover:scale-110" style={{ width: d.w, height: d.h, backgroundImage: "url('/cards/reverso-carta_2.jpg')", backgroundSize: 'cover', backgroundPosition: 'center' }} />;
   }
   return (
-    <div className="rounded-lg card-back border border-gold-700/40 shadow-card flex items-center justify-center transition-all duration-300 hover:scale-105" style={{ width: d.w, height: d.h, backgroundImage: "url('/cards/reverso-carta.jpg')", backgroundSize: 'cover', backgroundPosition: 'center' }} />
+    <div className="rounded-lg card-back border border-gold-700/40 shadow-card flex items-center justify-center transition-all duration-300 hover:scale-105" style={{ width: d.w, height: d.h, backgroundImage: "url('/cards/reverso-carta_2.jpg')", backgroundSize: 'cover', backgroundPosition: 'center' }} />
   );
 }
