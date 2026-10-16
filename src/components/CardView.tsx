@@ -113,13 +113,15 @@ export function CardView({
     return (
       <div
         className="rounded-lg card-back border border-gold-700/40 shadow-card relative flex items-center justify-center transition-all duration-300 hover:scale-105"
-        style={{ width: s.w, height: s.h }}
+        style={{
+          width: s.w,
+          height: s.h,
+          backgroundImage: "url('/cards/reverso-carta.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
         onClick={onClick}
       >
-        <div className="rounded-full border-2 border-gold-500/30 flex items-center justify-center"
-          style={{ width: '30%', height: '30%' }}>
-          <span className="text-gold-500/40 font-display" style={{ fontSize: '40%' }}>B</span>
-        </div>
         {isOpponent && showTrap && fieldMonster?.trap && (
           <AssociatedCardMiniature card={fieldMonster.trap} type="trap" hidden />
         )}
@@ -281,13 +283,9 @@ export function CardBack({ size = 'md' }: { size?: 'xs' | 'sm' | 'md' | 'lg' }) 
   };
   const d = dimMap[size];
   if (size === 'xs') {
-    return <div className="rounded card-back border border-gold-700/40 shadow-card transition-all duration-300 hover:scale-110" style={{ width: d.w, height: d.h }} />;
+    return <div className="rounded card-back border border-gold-700/40 shadow-card transition-all duration-300 hover:scale-110" style={{ width: d.w, height: d.h, backgroundImage: "url('/cards/reverso-carta.jpg')", backgroundSize: 'cover', backgroundPosition: 'center' }} />;
   }
   return (
-    <div className="rounded-lg card-back border border-gold-700/40 shadow-card flex items-center justify-center transition-all duration-300 hover:scale-105" style={{ width: d.w, height: d.h }}>
-      <div className="rounded-full border-2 border-gold-500/30 flex items-center justify-center" style={{ width: '30%', height: '30%' }}>
-        <span className="text-gold-500/40 font-display" style={{ fontSize: '40%' }}>B</span>
-      </div>
-    </div>
+    <div className="rounded-lg card-back border border-gold-700/40 shadow-card flex items-center justify-center transition-all duration-300 hover:scale-105" style={{ width: d.w, height: d.h, backgroundImage: "url('/cards/reverso-carta.jpg')", backgroundSize: 'cover', backgroundPosition: 'center' }} />
   );
 }
