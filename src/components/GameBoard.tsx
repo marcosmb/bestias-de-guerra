@@ -1233,7 +1233,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           ? 'Elige un monstruo rival para colocar la mágica'
           : 'Elige uno de tus monstruos para colocar la mágica';
       case 'direct-attack': return 'Elige tu monstruo para atacar directamente';
-      case 'choose-destroy-target': return 'Elige un monstruo del campo para destruir';
+      case 'choose-destroy-target': return 'Jugador 1: Tres turnos: ¡elige un Monstruo rival para destruir!';
       case 'choose-destroy-associated-card': return 'Trampa 5: elige qué Trampa o Mágica asociada destruir';
       case 'choose-trap-2-own':
         return sel.selectedUids.length === 0
@@ -1596,7 +1596,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       )}
 
       {/* Selection prompt bar */}
-      {sel.kind !== 'none' && !trapPrompt && !dicePrompt && sel.kind !== 'revive-choice' && sel.kind !== 'choose-destroy-target' && (
+      {sel.kind !== 'none' && !trapPrompt && !dicePrompt && sel.kind !== 'revive-choice' && (
         <div className="px-3 py-2 bg-gold-500/15 border-t-2 border-gold-500/40 flex items-center justify-between flex-none animate-fade-in shadow-lg" data-no-cancel>
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-2 h-2 rounded-full bg-gold-400 animate-pulse flex-none"></div>
