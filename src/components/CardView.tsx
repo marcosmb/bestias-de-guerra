@@ -156,7 +156,7 @@ export function CardView({
         <div className="card-face w-full h-full flex flex-col p-1 card-shine">
           <img src={card.image ?? `/cards/${card.suit}-${card.number}.webp`} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-75" />
           <div className="flex justify-between items-start relative z-10">
-            <span style={{ fontSize: s.text }}>{mc.suit === 'oros' ? <GoldCoinIcon /> : SUIT_SYMBOL[mc.suit]}</span>
+            <span style={{ fontSize: s.text }}>{mc.suit === 'oros' ? null : SUIT_SYMBOL[mc.suit]}</span>
           </div>
           <div className="text-center font-display font-semibold text-white/90 truncate px-0.5 mt-auto relative z-10" style={{ fontSize: s.text }}>{mc.name}</div>
           <div className="flex justify-between items-center px-1 relative z-10" style={{ height: s.bar }}>
@@ -168,6 +168,9 @@ export function CardView({
               <span className={`font-bold text-white ${hasBuff ? 'text-emerald-400' : ''}`} style={{ fontSize: s.num }}>{def}</span>
               <Shield size={16} className="text-azure-400" />
             </div>
+            {mc.suit === 'oros' && (
+              <span style={{ fontSize: s.text }}><GoldCoinIcon /></span>
+            )}
           </div>
         </div>
         {/* Card type indicator */}
