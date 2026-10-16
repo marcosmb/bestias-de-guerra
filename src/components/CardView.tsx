@@ -239,9 +239,6 @@ export function CardView({
     >
       <div className="card-face w-full h-full flex flex-col p-1 card-shine">
         <img src={card.image ?? `/cards/${card.suit}-${card.number}.webp`} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-75" />
-        <div className="flex-1 flex items-center justify-center relative z-10">
-          <span style={{ fontSize: s.emoji }} className="drop-shadow-lg">🪙</span>
-        </div>
         <div className="text-center font-display font-semibold text-white/90 leading-tight relative z-10" style={{ fontSize: s.text }}>{mg.name}</div>
         <div className="flex justify-between items-start relative z-10">
           <span className="font-bold text-white text-shadow-strong leading-none" style={{ fontSize: s.num }}>{mg.number}</span>
