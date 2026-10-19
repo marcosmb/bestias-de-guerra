@@ -552,7 +552,6 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
 
       fadeTimer = window.setTimeout(() => {
         setGameBackgroundIndex(nextIndex);
-        setNextGameBackgroundIndex((nextIndex + 1) % gameBackgrounds.length);
         setShowNextGameBackground(false);
       }, 3200);
     }, 12000);
@@ -562,6 +561,15 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       if (fadeTimer !== undefined) window.clearTimeout(fadeTimer);
     };
   }, [gameBackgroundIndex]);
+
+  useEffect(() => {
+    if (showNextGameBackground) return;
+    const timer = window.setTimeout(() => {
+      setNextGameBackgroundIndex((gameBackgroundIndex + 1) % gameBackgrounds.length);
+    }, 3300);
+    return () => window.clearTimeout(timer);
+  }, [gameBackgroundIndex, showNextGameBackground]);
+
   const [logCopied, setLogCopied] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   /*
