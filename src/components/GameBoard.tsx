@@ -1001,6 +1001,11 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           defenderIsMe ? `tu ${defenderName}` : `el ${defenderName} rival`,
         );
       }
+      // El daño directo al rival debe mostrarse con signo negativo.
+      contextualCombatLog = contextualCombatLog.replace(
+        /(\.\s*)(\d+\s+PV al rival)/,
+        '$1-$2',
+      );
       addToast(contextualCombatLog, 'combat');
 
       // Mensajes de daño usando los índices reales de atacante/defensor.
@@ -1482,6 +1487,11 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                     defenderIsMe ? `tu ${defenderName}` : `el ${defenderName} rival`,
                   );
                 }
+                // Mantener el signo negativo en el daño directo al rival.
+                contextualCombatLog = contextualCombatLog.replace(
+                  /(\.\s*)(\d+\s+PV al rival)/,
+                  '$1-$2',
+                );
                 return contextualCombatLog;
               })()}
             </span>
