@@ -1466,8 +1466,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                   '-$1 PV',
                 );
                 contextualCombatLog = contextualCombatLog.replace(
-                  /\bEl rival pierde\s+(\d+)\s+PV\b/gi,
-                  'El rival pierde -$1 PV',
+                  /\b((?:El )?rival pierde)\s+(\d+)\s+PV\b/gi,
+                  '$1 -$2 PV',
                 );
                 // Mantener el signo negativo en el daño directo al rival.
                 contextualCombatLog = contextualCombatLog.replace(
