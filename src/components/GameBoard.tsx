@@ -498,22 +498,40 @@ function CombatAnimation({
         </div>
       )}
 
-      {phase === 'result' && (
+      {phase === 'result' && combatState.result === 'both-destroyed' && (
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40">
-          <div className={
-            'px-6 py-3 rounded-xl font-display font-black text-xl sm:text-2xl whitespace-nowrap animate-combat-result border-2 ' +
-            (
-              combatState.result === 'both-destroyed' ||
-              combatState.result === 'attacker-destroyed' ||
-              combatState.result === 'defender-destroyed'
-                ? 'bg-crimson-950/95 text-crimson-100 border-crimson-400/70 shadow-[0_0_35px_rgba(248,113,113,0.55)]'
-                : 'bg-ink-800/95 text-ink-100 border-ink-400/60 shadow-xl'
-            )
-          }>
-            {combatState.result === 'both-destroyed' && '¡Ambos destruidos!'}
-            {combatState.result === 'attacker-destroyed' && '¡Atacante destruido!'}
-            {combatState.result === 'defender-destroyed' && '¡Defensor destruido!'}
-            {combatState.result === 'none-destroyed' && '¡Sin destrucción!'}
+          <div className="px-6 py-3 rounded-xl font-display font-black text-xl sm:text-2xl whitespace-nowrap animate-combat-result border-2 bg-crimson-950/95 text-crimson-100 border-crimson-400/70 shadow-[0_0_35px_rgba(248,113,113,0.55)]">
+            ¡Ambos destruidos!
+          </div>
+        </div>
+      )}
+
+      {phase === 'result' && combatState.result === 'attacker-destroyed' && (
+        <div
+          className="absolute z-40 -translate-x-1/2 -translate-y-full pb-3"
+          style={{ left: from.x, top: from.y }}
+        >
+          <div className="px-4 py-2 rounded-xl font-display font-black text-base sm:text-xl whitespace-nowrap animate-combat-result border-2 bg-crimson-950/95 text-crimson-100 border-crimson-400/70 shadow-[0_0_35px_rgba(248,113,113,0.55)]">
+            ¡Atacante destruido!
+          </div>
+        </div>
+      )}
+
+      {phase === 'result' && combatState.result === 'defender-destroyed' && (
+        <div
+          className="absolute z-40 -translate-x-1/2 -translate-y-full pb-3"
+          style={{ left: to.x, top: to.y }}
+        >
+          <div className="px-4 py-2 rounded-xl font-display font-black text-base sm:text-xl whitespace-nowrap animate-combat-result border-2 bg-crimson-950/95 text-crimson-100 border-crimson-400/70 shadow-[0_0_35px_rgba(248,113,113,0.55)]">
+            ¡Defensor destruido!
+          </div>
+        </div>
+      )}
+
+      {phase === 'result' && combatState.result === 'none-destroyed' && combatState.isDirectAttack && (
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40">
+          <div className="px-6 py-3 rounded-xl font-display font-black text-xl sm:text-2xl whitespace-nowrap animate-combat-result border-2 bg-ink-800/95 text-ink-100 border-ink-400/60 shadow-xl">
+            ¡Ataque directo!
           </div>
         </div>
       )}
