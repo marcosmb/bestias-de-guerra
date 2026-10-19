@@ -1539,7 +1539,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             <p className="text-white mb-1 font-semibold" style={uiSm}>{state.pendingTrap!.trap.name}</p>
             <p className="text-slate-100 mb-4" style={uiXs}>{state.pendingTrap!.trap.description}</p>
             <p className="text-slate-200 mb-4" style={uiXs}>
-              Tu {state.pendingTrap!.attackerCard.name} ataca a {state.pendingTrap!.defenderCard.name}.
+              {state.pendingTrap!.attackerPlayer === viewer
+                ? `Tu ${state.pendingTrap!.attackerCard.name} ataca al ${state.pendingTrap!.defenderCard.name} del rival.`
+                : `${state.pendingTrap!.attackerCard.name} del rival ataca a tu ${state.pendingTrap!.defenderCard.name}.`}
             </p>
             <button
               onClick={() => {
