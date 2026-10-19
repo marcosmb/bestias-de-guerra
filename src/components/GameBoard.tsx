@@ -96,8 +96,8 @@ function CardZoomModal({
               <span className="text-gold-500/40 font-display text-2xl">B</span>
             </div>
           </div>
-          <p className="text-ink-300 text-sm">Carta oculta</p>
-          <p className="text-ink-400 text-xs mt-1">No puedes ver esta carta</p>
+          <p className="text-slate-100 text-sm">Carta oculta</p>
+          <p className="text-slate-200 text-xs mt-1">No puedes ver esta carta</p>
           <button
             onClick={onClose}
             className="mt-4 px-6 py-2 rounded-lg bg-ink-600 text-ink-200 font-display font-bold hover:bg-ink-500 btn-press"
@@ -118,7 +118,7 @@ function CardZoomModal({
       <div className="bg-ink-700 rounded-2xl border-2 border-gold-500/50 p-4 max-w-sm w-full shadow-glow animate-scale-in" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-3">
           <h3 className="font-display font-bold text-gold-300">Vista ampliada</h3>
-          <button onClick={onClose} className="text-ink-300 hover:text-white btn-press">
+          <button onClick={onClose} className="text-slate-100 hover:text-white btn-press">
             <X size={20} />
           </button>
         </div>
@@ -137,7 +137,7 @@ function CardZoomModal({
 
         <div className="space-y-2 text-center">
           <p className="text-white font-display font-bold text-lg">{card.name}</p>
-          <p className="text-ink-300 text-sm">
+          <p className="text-slate-100 text-sm">
             {isMonster && (
               fieldMonster
                 ? `Monstruo · ATQ ${getEffectiveAtk(fieldMonster)} / DEF ${getEffectiveDef(fieldMonster)}`
@@ -150,7 +150,7 @@ function CardZoomModal({
             <div className="mt-2 text-left rounded-lg border border-gold-500/20 bg-gold-900/10 px-3 py-2">
               <p className="text-gold-300 text-xs font-bold">Mágica asociada</p>
               <p className="text-white text-sm font-semibold mt-0.5">{fieldMonster.magic.name}</p>
-              <p className="text-ink-300 text-xs mt-0.5">{fieldMonster.magic.description}</p>
+              <p className="text-slate-100 text-xs mt-0.5">{fieldMonster.magic.description}</p>
             </div>
           )}
           {fieldMonster?.trap && (
@@ -158,17 +158,17 @@ function CardZoomModal({
               <div className="mt-2 text-left rounded-lg border border-crimson-500/20 bg-crimson-900/10 px-3 py-2">
                 <p className="text-crimson-300 text-xs font-bold">Trampa asociada</p>
                 <p className="text-white text-sm font-semibold mt-0.5">{fieldMonster.trap.name}</p>
-                <p className="text-ink-300 text-xs mt-0.5">{fieldMonster.trap.description}</p>
+                <p className="text-slate-100 text-xs mt-0.5">{fieldMonster.trap.description}</p>
               </div>
             ) : (
               <div className="mt-2 text-left rounded-lg border border-ink-500/30 bg-ink-800/40 px-3 py-2">
-                <p className="text-ink-300 text-xs font-bold">Trampa asociada</p>
-                <p className="text-ink-400 text-xs mt-0.5">Trampa oculta · solo se revela al activarse o al ser descubierta por un ataque.</p>
+                <p className="text-slate-100 text-xs font-bold">Trampa asociada</p>
+                <p className="text-slate-200 text-xs mt-0.5">Trampa oculta · solo se revela al activarse o al ser descubierta por un ataque.</p>
               </div>
             )
           )}
           {isOpponentCard && (
-            <p className="text-ink-400 text-xs mt-2">Carta del rival</p>
+            <p className="text-slate-200 text-xs mt-2">Carta del rival</p>
           )}
         </div>
 
@@ -207,7 +207,7 @@ function LPBar({ player, isCurrent, animateDamage }: { player: PlayerState; isCu
         <div className="flex-shrink-0 w-3 h-3 rounded-full bg-gold-400 animate-pulse shadow-glow border-2 border-gold-300/50" />
       )}
       <span className="font-display font-bold whitespace-nowrap" style={{ fontSize: 'var(--ui-text-sm)' }}>
-        <span className={isCurrent ? 'text-gold-300' : 'text-ink-300'}>{player.name}</span>
+        <span className={isCurrent ? 'text-gold-300' : 'text-slate-100'}>{player.name}</span>
         {isCurrent && (
           <span className="ml-1 text-[10px] text-gold-400/80">(Tu turno)</span>
         )}
@@ -309,7 +309,7 @@ function FieldSlot({
             e.stopPropagation();
             onZoom(fm.card, fm, isOpponent, Boolean(isOpponent && fm.faceDown));
           }}
-          className="absolute -top-1 -right-1 w-4 h-4 bg-ink-700/90 rounded-full hidden md:flex items-center justify-center text-ink-300 hover:text-white hover:bg-ink-600 z-30 border border-ink-500/50"
+          className="absolute -top-1 -right-1 w-4 h-4 bg-ink-700/90 rounded-full hidden md:flex items-center justify-center text-slate-100 hover:text-white hover:bg-ink-600 z-30 border border-ink-500/50"
           title={isOpponent ? "Ver carta rival" : "Ampliar carta"}
         >
           <ZoomIn size={8} />
@@ -336,7 +336,7 @@ function TurnBanner({ playerName, turnCount }: { playerName: string; turnCount: 
         <p className="font-display font-bold text-gold-300 text-xl text-center">
           {turnCount === 0 ? 'Empieza ' + playerName : 'Turno de ' + playerName}
         </p>
-        <p className="text-ink-400 text-sm text-center mt-1">
+        <p className="text-slate-200 text-sm text-center mt-1">
           {turnCount === 0 ? 'Primer turno' : 'Turno ' + (turnCount + 1)}
         </p>
       </div>
@@ -1364,27 +1364,27 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             {/* Deck */}
             <div className="flex items-center gap-1">
               <div className="w-4 h-5 rounded-sm bg-gradient-to-br from-ink-600 to-ink-800 border border-ink-500/50 flex items-center justify-center">
-                <span className="text-[8px] text-ink-300 font-bold">{opp.deck.length}</span>
+                <span className="text-[8px] text-slate-100 font-bold">{opp.deck.length}</span>
               </div>
-              <span className="text-ink-400" style={uiXs}>Mazo</span>
+              <span className="text-slate-200" style={uiXs}>Mazo</span>
             </div>
             {/* Hand */}
             <div className="flex items-center gap-1">
-              <span className="text-ink-400" style={uiXs}>Mano {opp.hand.length}/{MAX_HAND_SIZE}</span>
+              <span className="text-slate-200" style={uiXs}>Mano {opp.hand.length}/{MAX_HAND_SIZE}</span>
             </div>
             {/* Graveyard */}
             <div className="flex items-center gap-1">
               <div className="w-4 h-5 rounded-sm bg-gradient-to-br from-ink-700 to-ink-900 border border-ink-600/50 flex items-center justify-center">
-                <span className="text-[8px] text-ink-300 font-bold">{opp.graveyard.length}</span>
+                <span className="text-[8px] text-slate-100 font-bold">{opp.graveyard.length}</span>
               </div>
-              <span className="text-ink-400" style={uiXs}>Cem.</span>
+              <span className="text-slate-200" style={uiXs}>Cem.</span>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-none">
-            <span className="text-ink-400 whitespace-nowrap" style={uiXs}>T{state.turnCount + 1}</span>
+            <span className="text-slate-200 whitespace-nowrap" style={uiXs}>T{state.turnCount + 1}</span>
             {confirmExit ? (
               <div className="flex items-center gap-1" role="group" aria-label="Confirmar finalizar partida">
-                <span className="text-ink-300" style={uiXs}>¿Seguro?</span>
+                <span className="text-slate-100" style={uiXs}>¿Seguro?</span>
                 <button
                   type="button"
                   onClick={onExit}
@@ -1537,8 +1537,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               <h3 className="font-display font-bold text-crimson-300" style={uiBase}>{trapHeader}</h3>
             </div>
             <p className="text-white mb-1 font-semibold" style={uiSm}>{state.pendingTrap!.trap.name}</p>
-            <p className="text-ink-300 mb-4" style={uiXs}>{state.pendingTrap!.trap.description}</p>
-            <p className="text-ink-400 mb-4" style={uiXs}>
+            <p className="text-slate-100 mb-4" style={uiXs}>{state.pendingTrap!.trap.description}</p>
+            <p className="text-slate-200 mb-4" style={uiXs}>
               Tu {state.pendingTrap!.attackerCard.name} ataca a {state.pendingTrap!.defenderCard.name}.
             </p>
             <button
@@ -1566,7 +1566,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               title="Cerrar"
               onClick={() => dispatch({ type: 'CLOSE_DICE_RESULT' })}
               disabled={state.diceResult === null}
-              className="absolute right-3 top-3 w-9 h-9 rounded-full border border-gold-500/40 text-ink-300 hover:text-white hover:bg-ink-600 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center"
+              className="absolute right-3 top-3 w-9 h-9 rounded-full border border-gold-500/40 text-slate-100 hover:text-white hover:bg-ink-600 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center"
             >
               <X size={18} />
             </button>
@@ -1574,7 +1574,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               <Dices size={32} className="text-gold-400" />
             </div>
             <h3 className="font-display font-bold text-gold-300 mb-1" style={uiBase}>Tira el dado</h3>
-            <p className="text-ink-300 mb-4" style={uiXs}>{state.pendingDice!.reason}</p>
+            <p className="text-slate-100 mb-4" style={uiXs}>{state.pendingDice!.reason}</p>
             {state.diceResult !== null ? (
               <>
                 <div className="font-display font-black text-gold-300 mb-4 animate-burst" style={{ fontSize: 'clamp(3rem, 10vw, 4rem)' }}>
@@ -1595,10 +1595,10 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                   {trapCountAnimation.step + 1}
                 </div>
                 <p className="text-gold-200 font-display font-bold mb-1" style={uiSm}>Contando...</p>
-                <p className="text-ink-300 mb-3 truncate" style={uiXs}>
+                <p className="text-slate-100 mb-3 truncate" style={uiXs}>
                   {trapCountAnimation.sequence[trapCountAnimation.step]?.name}
                 </p>
-                <div className="text-ink-400" style={uiXs}>
+                <div className="text-slate-200" style={uiXs}>
                   Ruleta de la Trampa · {trapCountAnimation.step + 1} / {trapCountAnimation.roll}
                 </div>
               </>
@@ -1631,7 +1631,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4 animate-backdrop-fade" data-no-cancel>
           <div className="bg-ink-700 rounded-2xl border-2 border-gold-500/50 p-5 max-w-xs w-full shadow-glow animate-scale-in">
             <h3 className="font-display font-bold text-gold-300 mb-1" style={uiBase}>Mágica 5: Recuperar Monstruo</h3>
-            <p className="text-ink-300 mb-4" style={uiXs}>Elige dónde revivir el Monstruo más fuerte del cementerio:</p>
+            <p className="text-slate-100 mb-4" style={uiXs}>Elige dónde revivir el Monstruo más fuerte del cementerio:</p>
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => dispatch({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'hand' })}
@@ -1690,7 +1690,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             {!state.turnStartSelectionActive && (
             <button
               onClick={() => dispatch({ type: 'CANCEL_SELECTION' })}
-              className="flex items-center gap-1 px-3 py-1 rounded-lg bg-ink-700/80 text-ink-300 hover:text-white hover:bg-ink-600 btn-press border border-ink-500/50"
+              className="flex items-center gap-1 px-3 py-1 rounded-lg bg-ink-700/80 text-slate-100 hover:text-white hover:bg-ink-600 btn-press border border-ink-500/50"
               style={uiXs}
             >
               <X size={12} /> Cancelar
@@ -1710,11 +1710,11 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               <div className="w-5 h-6 rounded-sm bg-gradient-to-br from-ink-600 to-ink-800 border border-ink-500/50 flex items-center justify-center shadow-sm">
                 <span className="text-[9px] text-ink-200 font-bold">{me.deck.length}</span>
               </div>
-              <span className="text-ink-400" style={uiXs}>Mazo</span>
+              <span className="text-slate-200" style={uiXs}>Mazo</span>
             </div>
             {/* Hand */}
             <div className="flex items-center gap-1">
-              <span className={`text-ink-400 ${me.hand.length >= MAX_HAND_SIZE ? 'text-crimson-400 font-semibold' : ''}`} style={uiXs}>
+              <span className={`text-slate-200 ${me.hand.length >= MAX_HAND_SIZE ? 'text-crimson-400 font-semibold' : ''}`} style={uiXs}>
                 Mano {me.hand.length}/{MAX_HAND_SIZE}
               </span>
             </div>
@@ -1723,7 +1723,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               <div className="w-5 h-6 rounded-sm bg-gradient-to-br from-ink-700 to-ink-900 border border-ink-600/50 flex items-center justify-center shadow-sm">
                 <span className="text-[9px] text-ink-200 font-bold">{me.graveyard.length}</span>
               </div>
-              <span className="text-ink-400" style={uiXs}>Cem.</span>
+              <span className="text-slate-200" style={uiXs}>Cem.</span>
             </div>
           </div>
           <span className="text-gold-400 font-semibold whitespace-nowrap" style={uiXs}>
@@ -1737,7 +1737,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         {/* Hand header with counter */}
         <div className="flex items-center justify-between px-2 py-0.5 bg-ink-800/60 border-b border-ink-700/50">
           <div className="flex items-center gap-1">
-            <span className="text-[9px] uppercase tracking-widest text-ink-400 font-display font-bold">Mano</span>
+            <span className="text-[9px] uppercase tracking-widest text-slate-200 font-display font-bold">Mano</span>
             <span className={`font-display font-bold ${me.hand.length >= MAX_HAND_SIZE ? 'text-crimson-400' : 'text-gold-300'}`} style={uiXs}>
               {me.hand.length} / {MAX_HAND_SIZE}
             </span>
@@ -1745,15 +1745,15 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-azure-400"></div>
-              <span className="text-[8px] text-ink-400">Monstruos</span>
+              <span className="text-[8px] text-slate-200">Monstruos</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-crimson-400"></div>
-              <span className="text-[8px] text-ink-400">Trampas</span>
+              <span className="text-[8px] text-slate-200">Trampas</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-gold-400"></div>
-              <span className="text-[8px] text-ink-400">Mágicas</span>
+              <span className="text-[8px] text-slate-200">Mágicas</span>
             </div>
           </div>
         </div>
@@ -1768,7 +1768,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-ink-800/80 to-transparent pointer-events-none z-10"></div>
           <div className="flex items-end w-max mx-auto px-3 py-0" style={{ gap: 'var(--field-gap)' }}>
             {me.hand.length === 0 && (
-              <span className="text-ink-400" style={uiSm}>No tienes cartas en mano</span>
+              <span className="text-slate-200" style={uiSm}>No tienes cartas en mano</span>
             )}
             {me.hand.map((card) => (
               <div
@@ -1789,7 +1789,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                       e.stopPropagation();
                       handleCardZoom(card);
                     }}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-ink-700/90 rounded-full hidden md:flex items-center justify-center text-ink-300 hover:text-white hover:bg-ink-600 z-30 border border-ink-500/50"
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-ink-700/90 rounded-full hidden md:flex items-center justify-center text-slate-100 hover:text-white hover:bg-ink-600 z-30 border border-ink-500/50"
                     title="Ampliar carta"
                   >
                     <ZoomIn size={10} />
@@ -1819,10 +1819,10 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             <CardView card={selectedField.card} size="lg" fieldMonster={selectedField} isField />
             <div className="flex-1 min-w-0">
               <h3 className="font-display font-bold text-white" style={uiBase}>{selectedField.card.name}</h3>
-              <p className="text-ink-300 mt-1" style={{ fontSize: '20px' }}>
+              <p className="text-slate-100 mt-1" style={{ fontSize: '20px' }}>
                 Monstruo · ATQ {selectedField.card.atk + selectedField.tempAtkModifier} / DEF {selectedField.card.def + selectedField.tempDefModifier}
               </p>
-              <p className="text-ink-400 mt-0.5" style={uiXs}>
+              <p className="text-slate-200 mt-0.5" style={uiXs}>
                 Posicion: {selectedField.position === 'attack' ? 'Ataque' : 'Defensa'}
                 {selectedField.hasChangedPosition && ' · Ya cambiada este turno'}
                 {selectedField.hasAttacked && ' · Ya atacó'}
@@ -1834,7 +1834,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                 <p className="text-gold-300 mt-0.5" style={uiXs}>Magica: {selectedField.magic.name}</p>
               )}
             </div>
-            <button onClick={() => setSelectedFieldUid(null)} className="text-ink-300 hover:text-white btn-press">
+            <button onClick={() => setSelectedFieldUid(null)} className="text-slate-100 hover:text-white btn-press">
               <X size={20} />
             </button>
           </div>
@@ -1868,7 +1868,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               </button>
             )}
             {!isLegal({ type: 'CHANGE_POSITION', fieldUid: selectedField.uid }) && (
-              <p className="flex-1 text-ink-400 text-center" style={uiXs}>Ya has cambiado la posicion de este monstruo este turno</p>
+              <p className="flex-1 text-slate-200 text-center" style={uiXs}>Ya has cambiado la posicion de este monstruo este turno</p>
             )}
           </div>
         </div>
@@ -1885,13 +1885,13 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             <CardView card={selectedCard} size="lg" />
             <div className="flex-1 min-w-0">
               <h3 className="font-display font-bold text-white" style={uiBase}>{selectedCard.name}</h3>
-              <p className="text-ink-300 mt-1" style={{ fontSize: '20px' }}>
+              <p className="text-slate-100 mt-1" style={{ fontSize: '20px' }}>
                 {selectedCard.type === 'monster' && `Monstruo · ATQ ${selectedCard.atk} / DEF ${selectedCard.def}`}
                 {selectedCard.type === 'trap' && `Trampa · ${selectedCard.description}`}
                 {selectedCard.type === 'magic' && `Magica · ${selectedCard.description}`}
               </p>
             </div>
-            <button onClick={() => setSelectedHandCard(null)} className="text-ink-300 hover:text-white btn-press">
+            <button onClick={() => setSelectedHandCard(null)} className="text-slate-100 hover:text-white btn-press">
               <X size={20} />
             </button>
           </div>
@@ -1956,13 +1956,13 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             )}
           </div>
           {cp !== viewer && (
-            <p className="text-ink-400 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>Ahora no es tu turno</p>
+            <p className="text-slate-200 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>Ahora no es tu turno</p>
           )}
           {cp === viewer && !canPlayMore && (
             <p className="text-crimson-400 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>Ya has jugado {MAX_CARDS_PER_TURN} cartas este turno</p>
           )}
           {cp === viewer && canPlayMore && !canPlayCard && (
-            <p className="text-ink-400 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>Ahora mismo no puedes jugar ninguna carta</p>
+            <p className="text-slate-200 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>Ahora mismo no puedes jugar ninguna carta</p>
           )}
         </div>
       )}
@@ -1981,7 +1981,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         </button>
         <div className="flex-1 min-w-0 text-center">
           <div className="flex items-center justify-center gap-2">
-            <span className="text-ink-300 leading-tight" style={uiXs}>
+            <span className="text-slate-100 leading-tight" style={uiXs}>
               {attackAllowed ? 'Puedes atacar' : 'Sin ataque este turno'}
             </span>
             <span className={`font-display font-bold ${me.cardsPlayedThisTurn >= 3 ? 'text-crimson-400' : 'text-gold-300'}`} style={uiXs}>
@@ -2003,7 +2003,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           <button
             onClick={toggleSound}
             className={`rounded-lg btn-press flex items-center justify-center ${
-              soundEnabled ? 'bg-ink-600 text-ink-200 hover:bg-ink-500' : 'bg-ink-700 text-ink-400 hover:bg-ink-600'
+              soundEnabled ? 'bg-ink-600 text-ink-200 hover:bg-ink-500' : 'bg-ink-700 text-slate-200 hover:bg-ink-600'
             }`}
             style={{ ...uiXs, padding: '0.4em' }}
             title={soundEnabled ? 'Desactivar sonido' : 'Activar sonido'}
@@ -2014,7 +2014,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           <button
             onClick={onToggleMusic}
             className={`rounded-lg btn-press flex items-center justify-center ${
-              musicEnabled ? 'bg-ink-600 text-ink-200 hover:bg-ink-500' : 'bg-ink-700 text-ink-400 hover:bg-ink-600'
+              musicEnabled ? 'bg-ink-600 text-ink-200 hover:bg-ink-500' : 'bg-ink-700 text-slate-200 hover:bg-ink-600'
             }`}
             style={{ ...uiXs, padding: '0.4em' }}
             title={musicEnabled ? 'Desactivar música' : 'Activar música'}
@@ -2041,7 +2041,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       {/* Control de volumen */}
       {showVolumeControl && (
         <div className="flex items-center gap-2 px-3 py-1.5 bg-ink-800/95 border-t border-ink-600 flex-none animate-fade-in" data-no-cancel>
-          <VolumeX size={13} className="text-ink-400 flex-none" aria-hidden="true" />
+          <VolumeX size={13} className="text-slate-200 flex-none" aria-hidden="true" />
           <input
             type="range"
             min={0}
@@ -2052,8 +2052,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             aria-label="Volumen"
             disabled={!soundEnabled}
           />
-          <Volume2 size={13} className="text-ink-300 flex-none" aria-hidden="true" />
-          <span className="text-ink-300 tabular-nums flex-none" style={uiXs}>
+          <Volume2 size={13} className="text-slate-100 flex-none" aria-hidden="true" />
+          <span className="text-slate-100 tabular-nums flex-none" style={uiXs}>
             {Math.round(volume * 100)}%
           </span>
         </div>
@@ -2089,7 +2089,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                   {logCopied ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
                   <span style={uiXs}>{logCopied ? 'Copiado' : 'Copiar'}</span>
                 </button>
-                <button onClick={() => setShowLog(false)} className="text-ink-300 hover:text-white btn-press">
+                <button onClick={() => setShowLog(false)} className="text-slate-100 hover:text-white btn-press">
                   <X size={18} />
                 </button>
               </div>
@@ -2104,7 +2104,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                   {entry}
                 </div>
               ))}
-              {state.log.length === 0 && <p className="text-ink-400" style={uiXs}>Sin eventos todavía</p>}
+              {state.log.length === 0 && <p className="text-slate-200" style={uiXs}>Sin eventos todavía</p>}
             </div>
           </div>
         </div>
