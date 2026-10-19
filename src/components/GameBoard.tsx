@@ -344,17 +344,6 @@ function TurnBanner({ playerName, turnCount }: { playerName: string; turnCount: 
   );
 }
 
-function DamageFloat({ damage, playerIdx }: { damage: number; playerIdx: 0 | 1 }) {
-  if (damage <= 0) return null;
-  return (
-    <div className={`fixed z-50 pointer-events-none ${playerIdx === 0 ? 'bottom-[35%] left-1/2 -translate-x-1/2' : 'top-[15%] left-1/2 -translate-x-1/2'}`}>
-      <div className="animate-float-damage font-display font-black text-red-400 text-4xl text-shadow-strong">
-        -{damage} PV
-      </div>
-    </div>
-  );
-}
-
 // Animación de combate
 function CombatAnimation({
   combatState,
@@ -1340,7 +1329,6 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       <TurnBanner playerName={state.players[cp].name} turnCount={state.turnCount} />
 
       {/* Damage float */}
-      {lastCombat && <DamageFloat damage={lastCombat.damage} playerIdx={lastCombat.player} />}
 
       {/* Opponent info */}
       <div className="px-2 sm:px-3 pt-1.5 pb-1 bg-ink-800/60 flex-none backdrop-blur-sm" data-no-cancel>
