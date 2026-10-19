@@ -135,15 +135,15 @@ function StartScreen({
           </div>
         </div>
       <h1 className="font-display text-3xl sm:text-4xl font-black text-gold-300 mb-2 text-center" style={{ fontSize: 'clamp(1.5rem, 5vw, 2.5rem)' }}>Bestias de Guerra</h1>
-      <p className="text-sm text-ink-300 text-center mb-1">Juego de cartas con baraja española</p>
-      <p className="text-xs text-ink-400 text-center mb-6 max-w-xs mx-auto">
+      <p className="text-sm text-slate-100 text-center mb-1">Juego de cartas con baraja española</p>
+      <p className="text-xs text-slate-200 text-center mb-6 max-w-xs mx-auto">
         2 jugadores · 48 cartas cada uno · 100 PV · 6 espacios · máx. 9 cartas en mano
       </p>
       <div className="w-full max-w-md mx-auto mb-5">
-        <p className="text-[10px] uppercase tracking-widest text-ink-400 mb-2">Modo de juego</p>
+        <p className="text-[10px] uppercase tracking-widest text-slate-200 mb-2">Modo de juego</p>
         <div className="grid grid-cols-3 gap-2">
           {([['local', '2 jugadores', User], ['cpu', 'Contra CPU', Cpu], ['online', '1v1 Online', Wifi]] as const).map(([value, label, Icon]) => (
-            <button key={value} onClick={() => setMode(value as GameMode)} className={`rounded-lg border px-3 py-3 text-sm font-display font-bold transition-colors flex flex-col items-center gap-1 ${mode === value ? 'border-gold-400 bg-gold-400/15 text-gold-300' : 'border-ink-600 text-ink-300 hover:border-ink-400'}`}>
+            <button key={value} onClick={() => setMode(value as GameMode)} className={`rounded-lg border px-3 py-3 text-sm font-display font-bold transition-colors flex flex-col items-center gap-1 ${mode === value ? 'border-gold-400 bg-gold-400/15 text-gold-300' : 'border-slate-400/70 text-slate-100 hover:border-slate-300'}`}>
               <Icon size={16} className="mx-auto" />
               <span className="font-display font-bold">{label}</span>
             </button>
@@ -169,7 +169,7 @@ function StartScreen({
           className={`relative z-50 pointer-events-auto rounded-lg border px-4 py-2 text-xs font-display font-bold transition-colors flex items-center justify-center gap-2 ${
             musicEnabled
               ? 'border-gold-400 bg-gold-400/15 text-gold-300'
-              : 'border-ink-600 bg-ink-800 text-ink-400 hover:border-ink-400'
+              : 'border-ink-600 bg-ink-800 text-slate-200 hover:border-slate-300'
           }`}
           title={musicEnabled ? 'Desactivar música' : 'Activar música'}
           aria-label={musicEnabled ? 'Desactivar música' : 'Activar música'}
@@ -181,7 +181,7 @@ function StartScreen({
       {mode === 'cpu' ? (
         <>
         <div className="w-full max-w-md mx-auto mb-3">
-          <p className="text-[10px] uppercase tracking-widest text-ink-400 mb-2">Dificultad</p>
+          <p className="text-[10px] uppercase tracking-widest text-slate-200 mb-2">Dificultad</p>
           <div className="grid grid-cols-4 gap-2">
             {(['easy', 'normal', 'hard', 'expert'] as Difficulty[]).map((d) => (
               <button
@@ -190,7 +190,7 @@ function StartScreen({
                 className={`rounded-lg border px-3 py-2 text-xs font-display font-bold transition-colors ${
                   difficulty === d
                     ? 'border-azure-400 bg-azure-400/15 text-azure-300'
-                    : 'border-ink-600 text-ink-300 hover:border-ink-400'
+                    : 'border-slate-400/70 text-slate-100 hover:border-slate-300'
                 }`}
               >
                 {d === 'easy' && 'Fácil'}
