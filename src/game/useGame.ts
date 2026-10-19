@@ -406,10 +406,11 @@ function applyTrapEffect(
     }
     case 'death_after_two_turns':
       if (attacker) {
+        // La Trampa pertenece al defensor, pero su efecto se aplica al atacante.
+        // El ataque continúa resolviéndose: si el defensor es más débil, debe morir
+        // en el combate normal mientras el atacante queda marcado para morir en 2 turnos.
         players[attackerPlayer] = updateFieldMonster(players[attackerPlayer], attackerUid, (fm) => ({ ...fm, pendingEffect: 'death', pendingTurns: 2 }));
         log.push(`¡${trap.name}! ${attacker.card.name} morirá en 2 turnos.`);
-        negateAttack = true;
-        skipCombat = true;
       }
       break;
     case 'damage_per_turn':
