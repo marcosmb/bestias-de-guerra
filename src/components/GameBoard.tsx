@@ -1460,19 +1460,16 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                     defenderIsMe ? `tu ${defenderName}` : `el ${defenderName} rival`,
                   );
                 }
-                // Mostrar las pérdidas de PV con signo negativo en el mensaje central.
+                // Mostrar siempre con signo negativo cualquier pérdida de PV mencionada en el combate.
                 contextualCombatLog = contextualCombatLog.replace(
-                  /\bPierdes\s+(\d+)\s+PV\b/gi,
-                  '-$1 PV',
-                );
-                contextualCombatLog = contextualCombatLog.replace(
-                  /\b((?:El )?rival pierde)\s+(\d+)\s+PV\b/gi,
+                  /\b(pierde|pierdes|pierden)\s+(\d+)\s+PV\b/gi,
                   '$1 -$2 PV',
                 );
-                // Mantener el signo negativo en el daño directo al rival.
+                // El daño directo también debe mostrar el signo negativo, independientemente
+                // de cómo esté redactada la frase del registro.
                 contextualCombatLog = contextualCombatLog.replace(
-                  /(\.\s*)(\d+\s+PV al rival)/,
-                  '$1-$2',
+                  /(^|[.\s])(?<!-)\b(\d+)\s+PV al rival\b/gi,
+                  '$1-$2 PV al rival',
                 );
                 return contextualCombatLog;
               })()}
