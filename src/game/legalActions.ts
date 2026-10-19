@@ -15,6 +15,7 @@ import {
   hasOwnCopy,
   hasTrapTarget,
   magicRequiredSide,
+  cardInstanceKey,
 } from './types';
 import type { MagicCard } from './cardData';
 
@@ -201,6 +202,15 @@ function selectionActions(state: GameState, player: 0 | 1, me: PlayerState, opp:
       );
     }
 
+    case 'direct-attack': {
+      const attacker = monstersOf(me).find((f) => f.uid === sel.attackerUid);
+      return isLegalAttacker(state, player, attacker) && (
+        attacker?.magic?.effect.kind === 'direct_attack' || canDirectAttack(monstersOf(opp))
+      )
+        ? [{ type: 'DIRECT_ATTACK', attackerUid: sel.attackerUid }]
+        : [];
+    }
+
     case 'attack': {
       const attacker = monstersOf(me).find((f) => f.uid === sel.attackerUid);
       if (!isLegalAttacker(state, player, attacker)) return [];
@@ -244,8 +254,19 @@ function selectionActions(state: GameState, player: 0 | 1, me: PlayerState, opp:
     }
 
     case 'choose-destroy-target': {
-      // Trampa 9: el jugador elige un Monstruo de SU campo.
-      return monstersOf(me).map((fm) => ({ type: 'DESTROY_MONSTER', fieldUid: fm.uid }));
+      // Trampa 9: el propietario elige cualquier Monstruo del adversario.
+      return monstersOf(opp).map((fm) => ({ type: 'DESTROY_MONSTER', fieldUid: fm.uid }));
+    }
+    
+    case 'choose-destroy-associated-card': {
+      const owner = sel.player;
+      const field = monstersOf(state.players[owner]);
+      return field
+        .filter((fm) => fm.trap || fm.magic)
+        .flatMap((fm) => [
+          ...(fm.trap ? [{ type: 'DESTROY_ASSOCIATED_CARD' as const, fieldUid: fm.uid, cardType: 'trap' as const }] : []),
+          ...(fm.magic ? [{ type: 'DESTROY_ASSOCIATED_CARD' as const, fieldUid: fm.uid, cardType: 'magic' as const }] : []),
+        ]);
     }
 
     case 'choose-trap-2-own': {
@@ -427,15 +448,28 @@ export function legalActions(state: GameState, player: 0 | 1): Action[] {
     return DICE_FACES.map((roll) => ({ type: 'ROLL_DICE', roll }));
   }
 
+  // Algunas selecciones pertenecen a un jugador que no es el jugador en turno.
+  // Trampa 5 se activa durante el ataque rival, pero la elección de qué carta
+  // destruir corresponde al propietario de la Trampa.
+  if (state.phase === 'playing' && state.selection.kind === 'choose-destroy-associated-card') {
+    if (player !== state.selection.player) return [];
+    return [
+      ...selectionActions(state, player, me, opp) ?? [],
+      { type: 'CANCEL_SELECTION' },
+    ];
+  }
+
   // A partir de aquí solo juega quien tiene el turno: el reducer siempre aplica
   // las acciones al jugador en turno, sin mirar quién las envía.
   if (state.phase !== 'playing' || player !== state.currentPlayer) return [];
 
   const completing = selectionActions(state, player, me, opp);
   if (completing !== null) {
-    // Cancelar siempre es legal mientras haya una elección abierta, y la
-    // interfaz lo ofrece (botón de cerrar y clic fuera del tablero).
-    return [...completing, { type: 'CANCEL_SELECTION' }];
+    // Las elecciones de Trampas activadas al inicio del turno son obligatorias.
+    // No ofrecemos una cancelación que el reducer, correctamente, rechazaría.
+    return state.turnStartSelectionActive
+      ? completing
+      : [...completing, { type: 'CANCEL_SELECTION' }];
   }
 
   return freeActions(state, me, opp);
@@ -459,19 +493,19 @@ export function sameAction(a: Action, b: Action): boolean {
   // comprobar su discriminante dentro de la propia rama.
   switch (a.type) {
     case 'SUMMON_MONSTER':
-      return b.type === 'SUMMON_MONSTER' && a.card === b.card && a.position === b.position;
+      return b.type === 'SUMMON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.position === b.position;
     case 'SELECT_TRAP_PLACE':
-      return b.type === 'SELECT_TRAP_PLACE' && a.card === b.card;
+      return b.type === 'SELECT_TRAP_PLACE' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
     case 'PLACE_TRAP_ON_MONSTER':
-      return b.type === 'PLACE_TRAP_ON_MONSTER' && a.card === b.card && a.fieldUid === b.fieldUid;
+      return b.type === 'PLACE_TRAP_ON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid;
     case 'SELECT_MAGIC':
-      return b.type === 'SELECT_MAGIC' && a.card === b.card;
+      return b.type === 'SELECT_MAGIC' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
     case 'PLACE_MAGIC_ON_MONSTER':
-      return b.type === 'PLACE_MAGIC_ON_MONSTER' && a.card === b.card && a.fieldUid === b.fieldUid;
+      return b.type === 'PLACE_MAGIC_ON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid;
     case 'MAGIC_TARGET_MONSTER':
-      return b.type === 'MAGIC_TARGET_MONSTER' && a.card === b.card && a.fieldUid === b.fieldUid;
+      return b.type === 'MAGIC_TARGET_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid;
     case 'MAGIC_INSTANT':
-      return b.type === 'MAGIC_INSTANT' && a.card === b.card;
+      return b.type === 'MAGIC_INSTANT' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
     case 'START_ATTACK':
       return b.type === 'START_ATTACK' && a.attackerUid === b.attackerUid;
     case 'DECLARE_ATTACK':
@@ -484,6 +518,8 @@ export function sameAction(a: Action, b: Action): boolean {
       return b.type === 'CHANGE_POSITION' && a.fieldUid === b.fieldUid;
     case 'DESTROY_MONSTER':
       return b.type === 'DESTROY_MONSTER' && a.fieldUid === b.fieldUid;
+    case 'DESTROY_ASSOCIATED_CARD':
+      return b.type === 'DESTROY_ASSOCIATED_CARD' && a.fieldUid === b.fieldUid && a.cardType === b.cardType;
     case 'TRAP_2_SELECT_OWN':
       return b.type === 'TRAP_2_SELECT_OWN' && a.fieldUid === b.fieldUid;
     case 'CLOSE_DICE_RESULT':
@@ -491,7 +527,7 @@ export function sameAction(a: Action, b: Action): boolean {
     case 'ROLL_DICE':
       return b.type === 'ROLL_DICE' && a.roll === b.roll;
     case 'REVIVE_CHOICE':
-      return b.type === 'REVIVE_CHOICE' && a.card === b.card && a.choice === b.choice && a.position === b.position;
+      return b.type === 'REVIVE_CHOICE' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.choice === b.choice && a.position === b.position;
     // Sin datos que comparar: que coincidan el tipo ya es suficiente.
     case 'START_GAME':
     case 'CPU_PLAY':

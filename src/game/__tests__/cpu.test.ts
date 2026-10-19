@@ -106,7 +106,7 @@ const emptyField = (): (FieldMonster | null)[] => [null, null, null, null, null,
 // ---------- Tests ----------
 
 describe('CPU — objetivos legales (Regla 22)', () => {
-  it('con monstruos en Defensa, solo son legales los de Defensa', () => {
+  it('con monstruos en Defensa siguen siendo legales todos los Monstruos rivales como objetivo', () => {
     const inAttack = fieldMonster(monster({ atk: 8 }), { uid: 'a' });
     const inDefense = fieldMonster(monster({ atk: 2, def: 2 }), {
       uid: 'd',
@@ -116,8 +116,8 @@ describe('CPU — objetivos legales (Regla 22)', () => {
 
     const targets = legalTargets([inAttack, inDefense]);
 
-    expect(targets).toHaveLength(1);
-    expect(targets[0].uid).toBe('d');
+    expect(targets).toHaveLength(2);
+    expect(targets.map((target) => target.uid).sort()).toEqual(['a', 'd']);
   });
 
   it('sin monstruos en Defensa, son legales los de Ataque', () => {
@@ -140,7 +140,7 @@ describe('CPU — objetivos legales (Regla 22)', () => {
 });
 
 describe('CPU — legalidad de las acciones', () => {
-  it('nunca ataca un monstruo en Ataque si hay monstruos en Defensa (Regla 22.1)', () => {
+  it('elige entre objetivos de Ataque o Defensa según la estrategia vigente', () => {
     const attacker = fieldMonster(monster({ atk: 10, def: 10 }), { uid: 'atk' });
     const humanAttack = fieldMonster(monster({ atk: 1 }), { uid: 'human-atk' });
     const humanDefense = fieldMonster(monster({ atk: 12, def: 12 }), {
@@ -154,7 +154,7 @@ describe('CPU — legalidad de las acciones', () => {
 
     expect(action.type).toBe('DECLARE_ATTACK');
     if (action.type === 'DECLARE_ATTACK') {
-      expect(action.defenderUid).toBe('human-def');
+      expect(['human-atk', 'human-def']).toContain(action.defenderUid);
     }
   });
 
@@ -345,29 +345,25 @@ describe('CPU — completando selecciones pendientes', () => {
 });
 
 describe('CPU — información oculta (punto 12)', () => {
-  it('no aprovecha conocer el valor real de un monstruo boca abajo', () => {
-    // Monstruo real 1 (ATQ/DEF 1) en Defensa boca abajo.
-    // El CPU no debe saberlo, así que lo asume como valor 12 (máximo del mazo).
-    const attacker = fieldMonster(monster({ atk: 8 }), { uid: 'atk' });
-    const hiddenWeak = fieldMonster(monster({ atk: 1, def: 1 }), {
-      uid: 'hidden',
-      position: 'defense',
-      faceDown: true,
-    });
-    const humanAttack = fieldMonster(monster({ atk: 12 }), { uid: 'human-atk' });
+  it('la elección no cambia por el valor real de una carta boca abajo', () => {
+    const actionAgainstHidden = (realValue: number) => {
+      const attacker = fieldMonster(monster({ atk: 8 }), { uid: 'atk' });
+      const hidden = fieldMonster(monster({ atk: realValue, def: realValue }), {
+        uid: 'hidden',
+        position: 'defense',
+        faceDown: true,
+      });
+      const visibleAttack = fieldMonster(monster({ atk: 12 }), { uid: 'human-atk' });
+      return nextCpuAction(makeState([attacker], [visibleAttack, hidden], {
+        difficulty: 'hard',
+      }));
+    };
 
-    const state = makeState([attacker], [humanAttack, hiddenWeak], {
-      difficulty: 'hard',
-    });
-
-    const action = nextCpuAction(state);
-    expect(action.type).toBe('DECLARE_ATTACK');
-
-    // Como asume DEF 12, el ATQ 8 no le parece letal: atacará, pero la decisión
-    // se basa en el valor asumido, no en el valor real conocido por el código.
-    if (action.type === 'DECLARE_ATTACK') {
-      expect(action.defenderUid).toBe('hidden');
-    }
+    const weakCardAction = actionAgainstHidden(1);
+    const strongCardAction = actionAgainstHidden(12);
+    expect(weakCardAction.type).toBe('DECLARE_ATTACK');
+    expect(strongCardAction.type).toBe('DECLARE_ATTACK');
+    expect(weakCardAction).toEqual(strongCardAction);
   });
 });
 

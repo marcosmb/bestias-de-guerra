@@ -373,6 +373,11 @@ function CombatAnimation({
   onComplete: () => void;
 }) {
   const [phase, setPhase] = useState<'attack' | 'impact' | 'result'>('attack');
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
   const [visible, setVisible] = useState(true);
   const [anchors, setAnchors] = useState<{
     from: { x: number; y: number };
@@ -396,7 +401,7 @@ function CombatAnimation({
     const impactTimer = setTimeout(() => setPhase('result'), 1350);
     const completeTimer = setTimeout(() => {
       setVisible(false);
-      onComplete();
+      onCompleteRef.current();
     }, 3200);
 
     const getCenter = (selector: string, fallback: { x: number; y: number }) => {
@@ -443,7 +448,7 @@ function CombatAnimation({
       clearTimeout(impactTimer);
       clearTimeout(completeTimer);
     };
-  }, [combatState, onComplete]);
+  }, [combatState]);
 
   if (!combatState || !visible) return null;
 
@@ -602,6 +607,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     isDirectAttack: boolean;
     result: 'attacker-destroyed' | 'defender-destroyed' | 'both-destroyed' | 'none-destroyed';
     attackerPlayer?: 0 | 1;
+    attackerSlot?: number;
+    defenderPlayer?: 0 | 1;
+    defenderSlot?: number;
     attackerCard?: MonsterCard;
     defenderCard?: MonsterCard;
   } | null>(null);
@@ -876,9 +884,20 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     passiveLpRef.current = [state.players[0].lp, state.players[1].lp];
   }, [state.log, state.players[0].lp, state.players[1].lp, viewer]);
 
+  // Deduplicar efectos visuales, sonidos y mensajes para cada ataque real.
+  const processedCombatIdsRef = useRef<Set<string>>(new Set());
+
   // Track combat for damage float, toast messages and combat animation
   useEffect(() => {
     if (state.lastCombat) {
+      const combatId = state.lastCombat.combatId ?? String(state.turnCount) + ':' + (state.lastCombat.attackerUid ?? 'attacker') + ':' + (state.lastCombat.defenderUid ?? 'defender') + ':' + state.lastCombat.log;
+      if (processedCombatIdsRef.current.has(combatId)) return;
+      processedCombatIdsRef.current.add(combatId);
+      if (processedCombatIdsRef.current.size > 200) {
+        const oldest = processedCombatIdsRef.current.values().next().value;
+        if (oldest) processedCombatIdsRef.current.delete(oldest);
+      }
+
       const { attackerDamage, defenderDamage, attackerDestroyed, defenderDestroyed } = state.lastCombat;
       
       // Determine combat result for animation
@@ -972,7 +991,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         setTimeout(() => setLastCombat(null), 1000);
       }
     }
-  }, [state.lastCombat]);
+  }, [state.lastCombat, state.turnCount, viewer]);
 
   const handleHandCardClick = (card: Card) => {
     setSelectedFieldUid(null);
@@ -1071,6 +1090,17 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         return;
       }
       dispatch(action);
+    } else if (sel.kind === 'choose-destroy-associated-card') {
+      const target = opp.field.find((fm) => fm?.uid === uid) ?? me.field.find((fm) => fm?.uid === uid);
+      if (!target) return;
+      const cardType: 'trap' | 'magic' | null = target.trap ? 'trap' : target.magic ? 'magic' : null;
+      if (!cardType) return;
+      const action = { type: 'DESTROY_ASSOCIATED_CARD' as const, fieldUid: uid, cardType };
+      if (!isLegal(action)) {
+        addToast('Elige una Trampa o Mágica asociada válida.', 'warning');
+        return;
+      }
+      dispatch(action);
     } else if (sel.kind === 'choose-trap-2-own') {
       const action = { type: 'TRAP_2_SELECT_OWN' as const, fieldUid: uid };
       if (!isLegal(action)) {
@@ -1100,6 +1130,13 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       dispatch({ type: 'DIRECT_ATTACK', attackerUid: sel.attackerUid });
     } else if (sel.kind === 'choose-destroy-target') {
       dispatch({ type: 'DESTROY_MONSTER', fieldUid: uid });
+    } else if (sel.kind === 'choose-trap-2-own') {
+      const action = { type: 'TRAP_2_SELECT_OWN' as const, fieldUid: uid };
+      if (!isLegal(action)) {
+        addToast('¡Jugada errónea! Elige un Monstruo propio que todavía no hayas seleccionado para esta Trampa.', 'warning');
+        return;
+      }
+      dispatch(action);
     }
   };
 
@@ -1185,6 +1222,22 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   const trapPrompt = state.phase === 'trap-response' && state.pendingTrap;
   const dicePrompt = state.phase === 'dice-roll' && state.pendingDice;
 
+  // La etiqueta identifica al propietario original de la carta, no al atacante.
+  // En partidas online usamos el nombre real; en local/CPU distinguimos propio y rival.
+  const pendingTrapOwner = state.pendingTrap
+    ? (state.pendingTrap.trap.owner ?? state.pendingTrap.defenderPlayer)
+    : null;
+  const trapOwnerName = pendingTrapOwner === null
+    ? ''
+    : (state.players[pendingTrapOwner]?.name || `Jugador ${pendingTrapOwner + 1}`);
+  const trapHeader = pendingTrapOwner === null
+    ? 'Trampa'
+    : state.mode === 'online'
+      ? `Trampa de ${trapOwnerName}`
+      : pendingTrapOwner === viewer
+        ? `Trampa del Jugador ${pendingTrapOwner + 1}`
+        : 'Trampa del rival';
+
   const selectionPromptText = (): string => {
     switch (sel.kind) {
       case 'attack': return 'Elige un monstruo enemigo para atacar';
@@ -1196,7 +1249,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           ? 'Elige un monstruo rival para colocar la mágica'
           : 'Elige uno de tus monstruos para colocar la mágica';
       case 'direct-attack': return 'Elige tu monstruo para atacar directamente';
-      case 'choose-destroy-target': return 'Elige un monstruo del campo para destruir';
+      case 'choose-destroy-target': return 'Jugador 1: Tres turnos: ¡elige un Monstruo rival para destruir!';
+      case 'choose-destroy-associated-card': return 'Trampa 5: elige qué Trampa o Mágica asociada destruir';
       case 'choose-trap-2-own':
         return sel.selectedUids.length === 0
           ? 'Trampa: elige los 2 Monstruos propios que quieres destruir'
@@ -1210,7 +1264,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   // Solo se dispara cuando el clic llega al fondo del board (e.target === e.currentTarget),
   // los elementos interactivos hijos detienen la propagación con stopPropagation.
   const handleBoardClickOutside = () => {
-    if (sel.kind !== 'none') {
+    if (sel.kind !== 'none' && !state.turnStartSelectionActive) {
       dispatch({ type: 'CANCEL_SELECTION' });
     }
     if (selectedFieldUid !== null) {
@@ -1425,7 +1479,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               <div className="w-10 h-10 rounded-full bg-crimson-500/20 flex items-center justify-center">
                 <AlertTriangle size={20} className="text-crimson-400" />
               </div>
-              <h3 className="font-display font-bold text-crimson-300" style={uiBase}>Trampa del rival</h3>
+              <h3 className="font-display font-bold text-crimson-300" style={uiBase}>{trapHeader}</h3>
             </div>
             <p className="text-white mb-1 font-semibold" style={uiSm}>{state.pendingTrap!.trap.name}</p>
             <p className="text-ink-300 mb-4" style={uiXs}>{state.pendingTrap!.trap.description}</p>
@@ -1558,7 +1612,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       )}
 
       {/* Selection prompt bar */}
-      {sel.kind !== 'none' && !trapPrompt && !dicePrompt && sel.kind !== 'revive-choice' && sel.kind !== 'choose-destroy-target' && (
+      {sel.kind !== 'none' && !trapPrompt && !dicePrompt && sel.kind !== 'revive-choice' && (
         <div className="px-3 py-2 bg-gold-500/15 border-t-2 border-gold-500/40 flex items-center justify-between flex-none animate-fade-in shadow-lg" data-no-cancel>
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-2 h-2 rounded-full bg-gold-400 animate-pulse flex-none"></div>
@@ -1578,6 +1632,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                   <Swords size={12} /> Ataque directo
                 </button>
               )}
+            {!state.turnStartSelectionActive && (
             <button
               onClick={() => dispatch({ type: 'CANCEL_SELECTION' })}
               className="flex items-center gap-1 px-3 py-1 rounded-lg bg-ink-700/80 text-ink-300 hover:text-white hover:bg-ink-600 btn-press border border-ink-500/50"
@@ -1585,6 +1640,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             >
               <X size={12} /> Cancelar
             </button>
+            )}
           </div>
         </div>
       )}

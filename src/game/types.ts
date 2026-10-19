@@ -50,6 +50,7 @@ export type SelectionMode =
   | { kind: 'direct-attack'; attackerUid: string }
   | { kind: 'attack-or-direct'; attackerUid: string }
   | { kind: 'choose-destroy-target'; trapUid: string }
+  | { kind: 'choose-destroy-associated-card'; trapUid: string; player: 0 | 1; targetUid?: string }
   | { kind: 'choose-trap-2-own'; trapUid: string; selectedUids: string[] }
   | { kind: 'revive-choice'; card: MagicCard };
 
@@ -80,11 +81,14 @@ export type Action =
   | { type: 'ROLL_DICE'; roll: number }
   | { type: 'CLOSE_DICE_RESULT' }
   | { type: 'DESTROY_MONSTER'; fieldUid: string }
+  | { type: 'DESTROY_ASSOCIATED_CARD'; fieldUid: string; cardType: 'trap' | 'magic' }
   | { type: 'TRAP_2_SELECT_OWN'; fieldUid: string }
   | { type: 'REVIVE_CHOICE'; card: MagicCard; choice: 'hand' | 'field'; position?: Position }
   | { type: 'RESTART' };
 
 export interface CombatResult {
+  /** Identificador estable para animar este combate una sola vez entre sincronizaciones. */
+  combatId?: string;
   attackerDestroyed: boolean;
   defenderDestroyed: boolean;
   attackerDamage: number;
@@ -107,6 +111,10 @@ export interface GameState {
   stateVersion: number;
   players: [PlayerState, PlayerState];
   selection: SelectionMode;
+  /** Elecciones obligatorias pendientes que se activaron al inicio del turno. */
+  pendingTurnStartSelections?: SelectionMode[];
+  /** Evita que el jugador cancele una elección obligatoria de inicio de turno. */
+  turnStartSelectionActive?: boolean;
   log: string[];
   winner: 0 | 1 | null;
   isDraw: boolean;

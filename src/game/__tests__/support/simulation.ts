@@ -140,6 +140,8 @@ function selectionValue(state: GameState): string {
     case 'direct-attack': return `direct-attack:${s.attackerUid}`;
     case 'attack-or-direct': return `attack-or-direct:${s.attackerUid}`;
     case 'choose-destroy-target': return `choose-destroy-target:${s.trapUid}`;
+    case 'choose-destroy-associated-card': return `choose-destroy-associated-card:${s.trapUid}:${s.player}:${s.targetUid ?? '-'}`;
+    case 'choose-trap-2-own': return `choose-trap-2-own:${s.trapUid}:${s.selectedUids.join('/')}`;
     case 'revive-choice': return `revive-choice:${s.card.id}`;
   }
 }
@@ -228,9 +230,16 @@ export function actionUniverse(state: GameState, seat: 0 | 1): Action[] {
     out.push({ type: 'DIRECT_ATTACK', attackerUid: fm.uid });
     out.push({ type: 'CHANGE_POSITION', fieldUid: fm.uid });
     out.push({ type: 'DESTROY_MONSTER', fieldUid: fm.uid });
+    out.push({ type: 'TRAP_2_SELECT_OWN', fieldUid: fm.uid });
+    if (fm.trap) out.push({ type: 'DESTROY_ASSOCIATED_CARD', fieldUid: fm.uid, cardType: 'trap' });
+    if (fm.magic) out.push({ type: 'DESTROY_ASSOCIATED_CARD', fieldUid: fm.uid, cardType: 'magic' });
     for (const target of oppField) {
       out.push({ type: 'DECLARE_ATTACK', attackerUid: fm.uid, defenderUid: target.uid });
     }
+  }
+  for (const fm of oppField) {
+    if (fm.trap) out.push({ type: 'DESTROY_ASSOCIATED_CARD', fieldUid: fm.uid, cardType: 'trap' });
+    if (fm.magic) out.push({ type: 'DESTROY_ASSOCIATED_CARD', fieldUid: fm.uid, cardType: 'magic' });
   }
   // Objetivo de la Trampa 9 sobre un monstruo RIVAL: el reducer lo rechaza (mira
   // solo el campo propio). Se incluye para MEDIR ese rechazo.
@@ -344,6 +353,14 @@ export function checkInvariants(state: GameState, context: string): string[] {
       break;
     case 'choose-destroy-target':
       if (!monstersOf(me).some((f) => f.uid === sel.trapUid)) push('INVARIANT', 'selección choose-destroy-target sin el Monstruo de la Trampa 9 en el campo propio');
+      break;
+    case 'choose-trap-2-own':
+      if (!monstersOf(me).some((f) => f.uid === sel.trapUid)) push('INVARIANT', 'selección choose-trap-2-own sin su Monstruo portador');
+      if (sel.selectedUids.some((uid) => !monstersOf(me).some((f) => f.uid === uid))) push('INVARIANT', 'Trampa 2 mantiene seleccionado un Monstruo que ya no está en el campo');
+      break;
+    case 'choose-destroy-associated-card':
+      // trapUid identifies the Monster carrying Trampa 5 on the OTHER field;
+      // the chooser selects an associated card from their own field instead.
       break;
   }
 
@@ -545,6 +562,8 @@ function selectionSignature(state: GameState): string {
     case 'direct-attack': return `direct-attack:${who(s.attackerUid)}`;
     case 'attack-or-direct': return `attack-or-direct:${who(s.attackerUid)}`;
     case 'choose-destroy-target': return `choose-destroy-target:${who(s.trapUid)}`;
+    case 'choose-destroy-associated-card': return `choose-destroy-associated-card:${who(s.trapUid)}:${s.player}:${s.targetUid ? who(s.targetUid) : '-'}`;
+    case 'choose-trap-2-own': return `choose-trap-2-own:${who(s.trapUid)}:${s.selectedUids.map(who).join('/')}`;
     case 'revive-choice': return `revive-choice:${s.card.id}`;
   }
 }

@@ -20,7 +20,7 @@ function freshGame(): GameState {
   let p1 = createPlayer(1, 'Jugador 2', buildDeck());
   p1 = drawCards(p1, 7);
   const s = reducer(initialState(), { type: 'START_GAME', mode: 'local' });
-  return { ...s, phase: 'playing', players: [p0, p1] };
+  return { ...s, phase: 'playing', currentPlayer: 0, turnCount: 1, players: [p0, p1] };
 }
 
 function run(s: GameState, ...a: Action[]): GameState {

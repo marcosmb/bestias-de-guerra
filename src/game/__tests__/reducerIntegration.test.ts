@@ -17,8 +17,8 @@ describe('Reducer integration — COMBATE', () => {
       defenderUid: defender.uid,
     });
 
-    expect(state.players[0].field.find((f) => f?.uid === attacker.uid)).toBeNull();
-    expect(state.players[1].field.find((f) => f?.uid === defender.uid)).toBeNull();
+    expect(state.players[0].field.find((f) => f?.uid === attacker.uid)).toBeFalsy();
+    expect(state.players[1].field.find((f) => f?.uid === defender.uid)).toBeFalsy();
     expect(state.lastCombat?.attackerDestroyed).toBe(true);
     expect(state.lastCombat?.defenderDestroyed).toBe(true);
     expect(state.lastCombat?.attackerDamage).toBe(0);
@@ -30,7 +30,7 @@ import { describe, it, expect } from 'vitest';
 import { reducer, initialState } from '../useGame';
 import type { GameState, Action, FieldMonster } from '../types';
 import { createPlayer, drawCards } from '../types';
-import { buildDeck, TRAPS, type MonsterCard, type TrapCard } from '../cardData';
+import { buildDeck, MAGICS, TRAPS, type MagicCard, type MonsterCard, type TrapCard } from '../cardData';
 
 // --- Helpers ---
 
@@ -93,6 +93,10 @@ function getTrapByEffect(kind: string): TrapCard {
   return TRAPS.find((t) => t.effect.kind === kind)!;
 }
 
+function getMagicByEffect(kind: string): MagicCard {
+  return MAGICS.find((m) => m.effect.kind === kind)!;
+}
+
 function dispatch(state: GameState, action: Action): GameState {
   return reducer(state, action);
 }
@@ -147,11 +151,52 @@ describe('Reducer integration — TRAMPA 2', () => {
     state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownA.uid });
     state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownB.uid });
 
-    expect(state.players[0].field.find((f) => f?.uid === ownA.uid)).toBeNull();
-    expect(state.players[0].field.find((f) => f?.uid === ownB.uid)).toBeNull();
-    expect(state.players[1].field.find((f) => f?.uid === rival.uid)).toBeNull();
-    expect(state.players[0].field.find((f) => f?.uid === carrier.uid)?.trap).toBeNull();
+    expect(state.players[0].field.find((f) => f?.uid === ownA.uid)).toBeFalsy();
+    expect(state.players[0].field.find((f) => f?.uid === ownB.uid)).toBeFalsy();
+    expect(state.players[1].field.find((f) => f?.uid === rival.uid)).toBeFalsy();
+    expect(state.players[0].field.find((f) => f?.uid === carrier.uid)?.trap).toBeFalsy();
     expect(state.players[0].graveyard.some((c) => c.id === trap2.id)).toBe(true);
+  });
+
+  it('espera a confirmar el paso local antes de resolver la selección de Trampa 2', () => {
+    let state = makeState({ mode: 'local', turnCount: 1, currentPlayer: 0 });
+    const trap2 = getTrapByEffect('destroy_2_self_1_opp');
+    const carrier = monster(getMonsterWithAtk(8), { uid: 'trap2-pass-carrier', trap: trap2 });
+    const ownA = monster(getMonsterWithAtk(3), { uid: 'trap2-pass-own-a' });
+    const ownB = monster(getMonsterWithAtk(4), { uid: 'trap2-pass-own-b' });
+    const rival = monster(getMonsterWithAtk(9), { uid: 'trap2-pass-rival' });
+
+    state = setField(state, 0, [carrier, ownA, ownB]);
+    state = setField(state, 1, [rival]);
+
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.phase).toBe('pass');
+    state = dispatch(state, { type: 'CONFIRM_PASS' });
+    expect(state.currentPlayer).toBe(1);
+    expect(state.phase).toBe('playing');
+
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.currentPlayer).toBe(0);
+    expect(state.phase).toBe('pass');
+    expect(state.selection.kind).toBe('choose-trap-2-own');
+
+    const premature = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownA.uid });
+    expect(premature).toBe(state);
+
+    state = dispatch(state, { type: 'CONFIRM_PASS' });
+    expect(state.phase).toBe('playing');
+    expect(state.selection.kind).toBe('choose-trap-2-own');
+
+    state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownA.uid });
+    expect(state.selection.kind).toBe('choose-trap-2-own');
+    if (state.selection.kind !== 'choose-trap-2-own') throw new Error('La selección debería continuar');
+    expect(state.selection.selectedUids).toEqual([ownA.uid]);
+
+    state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownB.uid });
+    expect(state.selection.kind).toBe('none');
+    expect(state.players[0].field.find((f) => f?.uid === ownA.uid)).toBeFalsy();
+    expect(state.players[0].field.find((f) => f?.uid === ownB.uid)).toBeFalsy();
+    expect(state.players[1].field.find((f) => f?.uid === rival.uid)).toBeFalsy();
   });
 
   it('no se activa como respuesta a un ataque contra el Monstruo que la porta', () => {
@@ -174,7 +219,44 @@ describe('Reducer integration — TRAMPA 2', () => {
 
     expect(state.phase).toBe('playing');
     expect(state.lastCombat?.defenderDestroyed).toBe(true);
-    expect(state.players[1].field.find((f) => f?.uid === defender.uid)).toBeNull();
+    expect(state.players[1].field.find((f) => f?.uid === defender.uid)).toBeFalsy();
+  });
+});
+
+describe('Reducer integration — TRAMPA 9', () => {
+  it('espera a confirmar el paso local antes de destruir el objetivo', () => {
+    let state = makeState({ mode: 'local', turnCount: 1, currentPlayer: 0 });
+    const trap9 = getTrapByEffect('three_turns_kill');
+    const carrier = monster(getMonsterWithAtk(8), {
+      uid: 'trap9-pass-carrier',
+      trap: trap9,
+      pendingTurns: 1,
+    });
+    const rival = monster(getMonsterWithAtk(5), { uid: 'trap9-pass-rival' });
+
+    state = setField(state, 0, [carrier]);
+    state = setField(state, 1, [rival]);
+
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.phase).toBe('pass');
+    state = dispatch(state, { type: 'CONFIRM_PASS' });
+    expect(state.currentPlayer).toBe(1);
+
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.currentPlayer).toBe(0);
+    expect(state.phase).toBe('pass');
+    expect(state.selection.kind).toBe('choose-destroy-target');
+
+    const premature = dispatch(state, { type: 'DESTROY_MONSTER', fieldUid: rival.uid });
+    expect(premature).toBe(state);
+
+    state = dispatch(state, { type: 'CONFIRM_PASS' });
+    expect(state.phase).toBe('playing');
+    expect(state.selection.kind).toBe('choose-destroy-target');
+
+    state = dispatch(state, { type: 'DESTROY_MONSTER', fieldUid: rival.uid });
+    expect(state.selection.kind).toBe('none');
+    expect(state.players[1].field.find((fm) => fm?.uid === rival.uid)).toBeFalsy();
   });
 });
 
@@ -256,6 +338,7 @@ describe('Trampa 9 — countdown and activation', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const fm = monster(m3, { trap: trap9 });
     state = setField(state, 0, [fm]);
+    state = setField(state, 1, [monster(getMonsterWithAtk(4), { uid: 'trap9-rival' })]);
     // Turn 1 (currentPlayer 0) ends → turn 2 (player 1)
     state = dispatch(state, { type: 'END_TURN' });
     // After END_TURN, applyTurnStartEffects runs for player 1.
@@ -286,8 +369,9 @@ describe('Trampa 9 — countdown and activation', () => {
   it('allows destroying any monster on the field', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const myFm = monster(m3, { trap: trap9 });
-    const targetFm = monster(m5);
-    state = setField(state, 0, [myFm, targetFm]);
+    const targetFm = monster(m5, { uid: 'trap9-rival-target' });
+    state = setField(state, 0, [myFm]);
+    state = setField(state, 1, [targetFm]);
     // Fast-forward through 3 countdowns
     for (let i = 0; i < 6; i++) {
       state = dispatch(state, { type: 'END_TURN' });
@@ -295,7 +379,7 @@ describe('Trampa 9 — countdown and activation', () => {
     expect(state.selection.kind).toBe('choose-destroy-target');
     // Destroy the target monster
     state = dispatch(state, { type: 'DESTROY_MONSTER', fieldUid: targetFm.uid });
-    expect(state.players[0].field.find((f) => f?.uid === targetFm.uid)).toBeUndefined();
+    expect(state.players[1].field.find((f) => f?.uid === targetFm.uid)).toBeFalsy();
     expect(state.selection.kind).toBe('none');
     // Trap should be removed from the monster that had it
     const trapHolder = state.players[0].field.find((f) => f?.uid === myFm.uid);
@@ -592,7 +676,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     let state = makeState();
     state = setHand(state, 0, [m, trap]);
     // Summon the monster first
-    state = dispatch(state, { type: 'SUMMON_MONSTER', card: m, position: 'attack' });
+    state = dispatch(state, { type: 'SUMMON_MONSTER', card: m, position: 'defense' });
     const fm = state.players[0].field.find((f) => f !== null)!;
     expect(fm.summonedThisTurn).toBe(true);
     // Place trap — should now work (summonedThisTurn no longer blocks)
@@ -657,7 +741,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     state = setField(state, 0, [fm]);
     state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: 'non-existent-uid' });
     // Nothing changed
-    expect(state.players[0].field.find((f) => f?.uid === fm.uid)?.trap).toBeNull();
+    expect(state.players[0].field.find((f) => f?.uid === fm.uid)?.trap).toBeFalsy();
     expect(state.players[0].hand.some((c) => c.id === trap.id)).toBe(true);
   });
 
@@ -669,7 +753,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     const fm = monster(m);
     state = setField(state, 0, [fm]);
     state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: fm.uid });
-    expect(state.players[0].field.find((f) => f?.uid === fm.uid)?.trap).toBeNull();
+    expect(state.players[0].field.find((f) => f?.uid === fm.uid)?.trap).toBeFalsy();
   });
 
   it('blocks trap on opponent monster (wrong player)', () => {
@@ -682,7 +766,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     // Player 0 tries to place trap on player 1's monster
     state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: oppFm.uid });
     // Should be blocked — reducer only looks at currentPlayer's field
-    expect(state.players[1].field.find((f) => f?.uid === oppFm.uid)?.trap).toBeNull();
+    expect(state.players[1].field.find((f) => f?.uid === oppFm.uid)?.trap).toBeFalsy();
     expect(state.players[0].hand.some((c) => c.id === trap.id)).toBe(true);
   });
 
@@ -707,7 +791,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     let state = makeState({ turnCount: 0, currentPlayer: 0 });
     state = setHand(state, 0, [m, trap]);
     // Summon monster on first turn
-    state = dispatch(state, { type: 'SUMMON_MONSTER', card: m, position: 'attack' });
+    state = dispatch(state, { type: 'SUMMON_MONSTER', card: m, position: 'defense' });
     const fm = state.players[0].field.find((f) => f !== null)!;
     expect(fm.summonedThisTurn).toBe(true);
     // Select trap
@@ -818,5 +902,54 @@ describe('Reducer integration — Trap 2 target selection', () => {
     expect(state.players[0].field.some((f) => f?.uid === firstUid)).toBe(false);
     expect(state.players[0].field.some((f) => f?.uid === secondUid)).toBe(false);
     expect(state.players[1].field.filter(Boolean)).toHaveLength(0);
+  });
+});
+
+
+describe('Reducer integration — cola de efectos de inicio de turno', () => {
+  it('resuelve la Trampa 2 y después la Trampa 9 sin perder ninguna elección', () => {
+    let state = makeState({ currentPlayer: 0, turnCount: 1, mode: 'cpu' });
+    const trap2 = getTrapByEffect('destroy_2_self_1_opp');
+    const trap9 = getTrapByEffect('three_turns_kill');
+    const cards = getDistinctMonsterCards(5);
+    const rivalA = monster(cards[0], { uid: 'queue-rival-a' });
+    const rivalB = monster(cards[1], { uid: 'queue-rival-b' });
+    const trap2Carrier = monster(cards[2], { uid: 'queue-trap2-carrier', trap: trap2 });
+    const trap9Carrier = monster(cards[3], { uid: 'queue-trap9-carrier', trap: trap9, pendingTurns: 1 });
+    const ownSacrifice = monster(cards[4], { uid: 'queue-own-sacrifice' });
+
+    state = setField(state, 0, [rivalA, rivalB]);
+    state = setField(state, 1, [trap2Carrier, trap9Carrier, ownSacrifice]);
+
+    // Al empezar el turno de P2 se disparan las dos Trampas.
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.currentPlayer).toBe(1);
+    expect(state.selection.kind).toBe('choose-trap-2-own');
+    expect(state.turnStartSelectionActive).toBe(true);
+    expect(state.pendingTurnStartSelections).toEqual([
+      { kind: 'choose-destroy-target', trapUid: trap9Carrier.uid },
+    ]);
+
+    // Una elección obligatoria no se puede cancelar accidentalmente.
+    const beforeCancel = state;
+    state = dispatch(state, { type: 'CANCEL_SELECTION' });
+    expect(state).toBe(beforeCancel);
+
+    // La Trampa 2 resuelve sus dos sacrificios y pasa a la elección de Trampa 9.
+    state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: trap2Carrier.uid });
+    state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownSacrifice.uid });
+    expect(state.selection.kind).toBe('choose-destroy-target');
+    expect(state.turnStartSelectionActive).toBe(true);
+    expect(state.players[0].field.some((fm) => fm?.uid === rivalA.uid)).toBe(false);
+    expect(state.players[0].field.some((fm) => fm?.uid === rivalB.uid)).toBe(true);
+
+    // La Trampa 9 puede destruir el Monstruo rival restante y cerrar la cola.
+    state = dispatch(state, { type: 'DESTROY_MONSTER', fieldUid: rivalB.uid });
+    expect(state.selection.kind).toBe('none');
+    expect(state.turnStartSelectionActive).toBe(false);
+    expect(state.pendingTurnStartSelections).toEqual([]);
+    expect(state.players[0].field.every((fm) => fm === null)).toBe(true);
+    expect(state.players[1].field.find((fm) => fm?.uid === trap9Carrier.uid)?.trap).toBeFalsy();
+    expect(state.players[1].graveyard.some((card) => card.id === trap9.id)).toBe(true);
   });
 });

@@ -332,3 +332,21 @@ describe('Regla 5 — sin estado pendiente imposible', () => {
     expect(s.players[0].cardsPlayedThisTurn).toBe(1);
   });
 });
+
+describe('Regla 16 — Mágica 1 consume una sola carta', () => {
+  it('la coloca sobre un Monstruo propio e incrementa la cuota exactamente una vez', () => {
+    const m1 = byId('m1');
+    const propio = fm(monster('portador'), { uid: 'portador' });
+    let s = makeState(player(0, { hand: [m1], field: [propio] }), player(1, {}));
+
+    s = run(s, { type: 'SELECT_MAGIC', card: m1 });
+    expect(s.selection.kind).toBe('place-magic');
+    expect(s.players[0].cardsPlayedThisTurn).toBe(0);
+
+    s = run(s, { type: 'PLACE_MAGIC_ON_MONSTER', card: m1, side: 'self', fieldUid: 'portador' });
+
+    expect(s.players[0].field[0]!.magic?.id).toBe('m1');
+    expect(s.players[0].hand.some((c) => c.id === 'm1')).toBe(false);
+    expect(s.players[0].cardsPlayedThisTurn).toBe(1);
+  });
+});

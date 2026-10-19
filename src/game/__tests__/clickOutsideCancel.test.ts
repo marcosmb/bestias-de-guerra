@@ -70,6 +70,12 @@ function setHand(state: GameState, playerIdx: 0 | 1, cards: typeof state.players
   return { ...state, players };
 }
 
+function stateWithTrapAndOwnMonster(trap: TrapCard): GameState {
+  let state = setHand(makeState(), 0, [trap]);
+  state = setField(state, 0, [monster(getMonsterWithAtk(5))]);
+  return state;
+}
+
 function dispatch(state: GameState, action: Action): GameState {
   return reducer(state, action);
 }
@@ -122,7 +128,7 @@ describe('CANCEL_SELECTION — barra de ataque', () => {
 describe('CANCEL_SELECTION — selección de objetivo de Trampa', () => {
   it('cancela la selección de colocación de trampa', () => {
     const trap = getFirstTrapCard();
-    let state = setHand(makeState(), 0, [trap]);
+    let state = stateWithTrapAndOwnMonster(trap);
     state = dispatch(state, { type: 'SELECT_TRAP_PLACE', card: trap });
     expect(state.selection.kind).toBe('place-trap');
 
@@ -132,7 +138,7 @@ describe('CANCEL_SELECTION — selección de objetivo de Trampa', () => {
 
   it('cancelar no consume la carta de trampa de la mano', () => {
     const trap = getFirstTrapCard();
-    let state = setHand(makeState(), 0, [trap]);
+    let state = stateWithTrapAndOwnMonster(trap);
     const handBefore = state.players[0].hand.length;
     state = dispatch(state, { type: 'SELECT_TRAP_PLACE', card: trap });
     state = dispatch(state, { type: 'CANCEL_SELECTION' });
@@ -142,7 +148,7 @@ describe('CANCEL_SELECTION — selección de objetivo de Trampa', () => {
 
   it('cancelar no incrementa cardsPlayedThisTurn', () => {
     const trap = getFirstTrapCard();
-    let state = setHand(makeState(), 0, [trap]);
+    let state = stateWithTrapAndOwnMonster(trap);
     const playedBefore = state.players[0].cardsPlayedThisTurn;
     state = dispatch(state, { type: 'SELECT_TRAP_PLACE', card: trap });
     state = dispatch(state, { type: 'CANCEL_SELECTION' });

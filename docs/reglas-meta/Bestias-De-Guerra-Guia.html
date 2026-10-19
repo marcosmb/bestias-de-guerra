@@ -85,6 +85,21 @@ tr:last-child td{border-bottom:0}
   <a href="#trampas">Trampas</a>
   <a href="#magicas">Mágicas</a>
 </nav>
+<script>
+  // Los enlaces del índice deben desplazarse dentro de este reglamento,
+  // incluso cuando el HTML se muestra dentro de un iframe srcDoc.
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.toc a[href^="#"]').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        const id = link.getAttribute('href').slice(1);
+        const target = document.getElementById(id);
+        if (!target) return;
+        event.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  });
+</script>
 
 <section id="inicio">
   <h2>1. Lo esencial</h2>
@@ -223,7 +238,7 @@ tr:last-child td{border-bottom:0}
   <div class="table-wrap"><table>
     <tbody>
       <tr><td><b>1.</b></td><td>Cada jugador prepara y baraja su mazo de 48 cartas.</td></tr>
-      <tr><td><b>2.</b></td><td>Ambos empiezan con 100 PV y roban 7 cartas.</td></tr>
+      <tr><td><b>2.</b></td><td>Ambos empiezan con 100 PV y reciben 7 cartas iniciales.</td></tr>
       <tr><td><b>3.</b></td><td>Se decide al azar quién comienza.</td></tr>
       <tr><td><b>4.</b></td><td>El primer jugador no ataca ese primer turno y sus Monstruos entran en Defensa.</td></tr>
     </tbody>

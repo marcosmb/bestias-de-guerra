@@ -127,7 +127,7 @@ export const TRAPS: TrapCard[] = [
   { id: 't9', type: 'trap', suit: 'copas', number: 9, name: 'Tres turnos', description: 'Puesta, en tres turnos destruye un Monstruo.', effect: { kind: 'three_turns_kill' }, image: '/cards/copas-9.webp' },
   { id: 't10', type: 'trap', suit: 'copas', number: 10, name: 'Control 2 turnos', description: 'El Monstruo que te ataca es tuyo durante dos turnos.', effect: { kind: 'control_two_turns' }, image: '/cards/copas-10.webp' },
   { id: 't11', type: 'trap', suit: 'copas', number: 11, name: 'Muerte 2 turnos', description: 'El Monstruo atacante muere después de dos turnos.', effect: { kind: 'death_after_two_turns' }, image: '/cards/copas-11.webp' },
-  { id: 't12', type: 'trap', suit: 'copas', number: 12, name: '-5 PV por turno', description: 'Al colocarse hace perder 5 PV inmediatamente. Después, cada turno que esta carta permanezca en un Monstruo, el rival pierde 5 PV.', effect: { kind: 'damage_per_turn', amount: 5 }, image: '/cards/copas-12.webp' },
+  { id: 't12', type: 'trap', suit: 'copas', number: 12, name: '-5 PV por turno', description: 'Al comienzo de cada turno, el rival pierde 5 PV mientras esta carta permanezca en un Monstruo.', effect: { kind: 'damage_per_turn', amount: 5 }, image: '/cards/copas-12.webp' },
 ];
 
 export const MAGICS: MagicCard[] = [
