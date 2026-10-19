@@ -1464,7 +1464,27 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       <div className="px-3 py-1 flex items-center justify-center min-h-[2rem] flex-none bg-ink-800/40 border-y border-ink-700/50" data-no-cancel>
         {state.lastCombat && !trapPrompt && !dicePrompt && (
           <div className="text-center animate-fade-in">
-            <span className="text-gold-200 text-shadow-strong font-medium" style={uiSm}>{state.lastCombat.log}</span>
+            <span className="text-gold-200 text-shadow-strong font-medium" style={uiSm}>
+              {(() => {
+                const combatAttackerPlayer = state.lastCombat!.attackerPlayer ?? state.currentPlayer;
+                const attackerIsMe = combatAttackerPlayer === viewer;
+                const defenderIsMe = !attackerIsMe;
+                const attackerName = state.lastCombat!.attackerCard?.name ?? 'Monstruo';
+                const defenderName = state.lastCombat!.defenderCard?.name ?? 'Monstruo';
+                let contextualCombatLog = state.lastCombat!.log;
+                contextualCombatLog = contextualCombatLog.replace(
+                  attackerName,
+                  attackerIsMe ? `Tu ${attackerName}` : `El ${attackerName} rival`,
+                );
+                if (state.lastCombat!.defenderCard?.name) {
+                  contextualCombatLog = contextualCombatLog.replace(
+                    defenderName,
+                    defenderIsMe ? `tu ${defenderName}` : `el ${defenderName} rival`,
+                  );
+                }
+                return contextualCombatLog;
+              })()}
+            </span>
           </div>
         )}
         {trapPrompt && (
