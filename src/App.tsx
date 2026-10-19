@@ -34,6 +34,34 @@ function StartScreen({
   const [mode, setMode] = useState<GameMode>('local');
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
 
+  const menuBackgrounds = Array.from(
+    { length: 14 },
+    (_, index) => `/fondos-menu/fondo_menu_${index + 1}.jpg`,
+  );
+  const [backgroundIndex, setBackgroundIndex] = useState(0);
+  const [nextBackgroundIndex, setNextBackgroundIndex] = useState(1);
+  const [showNextBackground, setShowNextBackground] = useState(false);
+
+  useEffect(() => {
+    let fadeTimer: number | undefined;
+    const changeTimer = window.setTimeout(() => {
+      const nextIndex = (backgroundIndex + 1) % menuBackgrounds.length;
+      setNextBackgroundIndex(nextIndex);
+      setShowNextBackground(true);
+
+      fadeTimer = window.setTimeout(() => {
+        setBackgroundIndex(nextIndex);
+        setNextBackgroundIndex((nextIndex + 1) % menuBackgrounds.length);
+        setShowNextBackground(false);
+      }, 3200);
+    }, 12000);
+
+    return () => {
+      window.clearTimeout(changeTimer);
+      if (fadeTimer !== undefined) window.clearTimeout(fadeTimer);
+    };
+  }, [backgroundIndex]);
+
   useEffect(() => {
     const debugPointer = (event: PointerEvent) => {
       const button = document.querySelector('[data-music-toggle]') as HTMLButtonElement | null;
@@ -53,16 +81,27 @@ function StartScreen({
   }, []);
 
   return (
-    <div
-      className="bg-ink-900 min-h-[100dvh] flex items-center justify-center px-3 sm:px-6 py-6"
-      style={{
-        backgroundImage: "linear-gradient(rgba(8, 12, 20, 0.62), rgba(8, 12, 20, 0.82)), url('/fondos-menu/fondo_menu_1.jpg')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }}
-    >
-      <div className="w-full max-w-md mx-auto">
+    <div className="relative isolate min-h-[100dvh] overflow-hidden bg-ink-900 flex items-center justify-center px-3 sm:px-6 py-6">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
+        style={{
+          backgroundImage: `linear-gradient(rgba(8, 12, 20, 0.60), rgba(8, 12, 20, 0.78)), radial-gradient(ellipse at 50% 35%, rgba(255, 210, 135, 0.12), transparent 62%), url('${menuBackgrounds[backgroundIndex]}')`,
+          opacity: showNextBackground ? 0 : 1,
+          transform: 'scale(1.025)',
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
+        style={{
+          backgroundImage: `linear-gradient(rgba(8, 12, 20, 0.60), rgba(8, 12, 20, 0.78)), radial-gradient(ellipse at 50% 35%, rgba(255, 210, 135, 0.12), transparent 62%), url('${menuBackgrounds[nextBackgroundIndex]}')`,
+          opacity: showNextBackground ? 1 : 0,
+          transform: 'scale(1.025)',
+        }}
+      />
+      <div aria-hidden="true" className="absolute inset-0 pointer-events-none bg-gradient-to-br from-amber-200/[0.035] via-transparent to-sky-200/[0.045]" />
+      <div className="relative z-10 w-full max-w-md mx-auto">
         <div className="mb-6 w-full flex items-center justify-between gap-3">
           <div className="animate-pulse-glow w-[clamp(4rem,18vw,5rem)] h-[clamp(4rem,18vw,5rem)] shrink-0 rounded-2xl border-2 border-gold-500/40 flex items-center justify-center">
             <Swords size={36} className="text-gold-400" />
