@@ -897,6 +897,16 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         latestEntry.includes('Una Trampa activa te hace recuperar') ||
         latestEntry.includes('Una Trampa activa hace perder') ||
         latestEntry.includes('Su efecto empieza inmediatamente: el rival pierde');
+      const drewTwoCards = latestEntry.includes('Robar dos cartas: Robas');
+
+      if (drewTwoCards) {
+        addToast(
+          viewer === state.currentPlayer
+            ? 'Robar dos cartas: has robado 2 cartas.'
+            : 'El rival usa Robar dos cartas y roba 2 cartas.',
+          'info',
+        );
+      }
 
       if (passiveEffectHappened) {
         const viewerLp = state.players[viewer].lp;
