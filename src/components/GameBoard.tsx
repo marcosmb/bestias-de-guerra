@@ -534,6 +534,34 @@ function CombatAnimation({
 
 export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic, localPlayerIndex }: GameBoardProps) {
   const [showLog, setShowLog] = useState(false);
+
+  const gameBackgrounds = Array.from(
+    { length: 8 },
+    (_, index) => `/fondos-juego-tablero/fondos-tablero-juego_${index + 1}.jpg`,
+  );
+  const [gameBackgroundIndex, setGameBackgroundIndex] = useState(0);
+  const [nextGameBackgroundIndex, setNextGameBackgroundIndex] = useState(1);
+  const [showNextGameBackground, setShowNextGameBackground] = useState(false);
+
+  useEffect(() => {
+    let fadeTimer: number | undefined;
+    const changeTimer = window.setTimeout(() => {
+      const nextIndex = (gameBackgroundIndex + 1) % gameBackgrounds.length;
+      setNextGameBackgroundIndex(nextIndex);
+      setShowNextGameBackground(true);
+
+      fadeTimer = window.setTimeout(() => {
+        setGameBackgroundIndex(nextIndex);
+        setNextGameBackgroundIndex((nextIndex + 1) % gameBackgrounds.length);
+        setShowNextGameBackground(false);
+      }, 3200);
+    }, 12000);
+
+    return () => {
+      window.clearTimeout(changeTimer);
+      if (fadeTimer !== undefined) window.clearTimeout(fadeTimer);
+    };
+  }, [gameBackgroundIndex]);
   const [logCopied, setLogCopied] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   /*
@@ -1281,7 +1309,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
 
   return (
     <div
-      className="board-bg flex flex-col w-full overflow-y-auto overflow-x-hidden lg:overflow-x-visible"
+      className="board-bg relative isolate flex flex-col w-full overflow-y-auto overflow-x-hidden lg:overflow-x-visible"
       style={{
         height: '100dvh',
         paddingTop: 'env(safe-area-inset-top)',
@@ -1295,6 +1323,25 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         handleBoardClickOutside();
       }}
     >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
+        style={{
+          backgroundImage: `linear-gradient(rgba(8, 12, 20, 0.48), rgba(8, 12, 20, 0.68)), radial-gradient(ellipse at 50% 35%, rgba(255, 210, 135, 0.10), transparent 62%), url('${gameBackgrounds[gameBackgroundIndex]}')`,
+          opacity: showNextGameBackground ? 0 : 1,
+          transform: 'scale(1.025)',
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
+        style={{
+          backgroundImage: `linear-gradient(rgba(8, 12, 20, 0.48), rgba(8, 12, 20, 0.68)), radial-gradient(ellipse at 50% 35%, rgba(255, 210, 135, 0.10), transparent 62%), url('${gameBackgrounds[nextGameBackgroundIndex]}')`,
+          opacity: showNextGameBackground ? 1 : 0,
+          transform: 'scale(1.025)',
+        }}
+      />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[-1] bg-gradient-to-br from-amber-200/[0.025] via-transparent to-sky-200/[0.035]" />
       {/* Turn banner */}
       <TurnBanner playerName={state.players[cp].name} turnCount={state.turnCount} />
 
