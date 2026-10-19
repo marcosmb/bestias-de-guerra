@@ -657,8 +657,16 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
     // en el bloque agrupado de la línea 445, que aplica la validación de lado
     // exigida por la Regla 5. Aquí no se repiten.
     case 'draw_cards': {
-      players[me] = drawCards(players[me], eff.amount);
-      log.push(`${card.name}: Robas ${eff.amount} cartas.`);
+      // Excepción de la Mágica «Robar dos cartas»: roba las cartas disponibles
+      // aunque la mano supere el límite normal de 9 cartas.
+      const drawCount = Math.min(eff.amount, players[me].deck.length);
+      const drawnCards = players[me].deck.slice(0, drawCount);
+      players[me] = {
+        ...players[me],
+        hand: [...players[me].hand, ...drawnCards],
+        deck: players[me].deck.slice(drawCount),
+      };
+      log.push(`${card.name}: Robas ${drawCount} cartas.`);
       break;
     }
     case 'dice_damage': {
@@ -784,19 +792,19 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
   const log: string[] = [];
   const queuedSelections: SelectionMode[] = [];
 
-  // Trampa 12 es continua: se aplica al comienzo de cada turno mientras el
-  // Monstruo portador siga vivo. Si sigue oculta, no revelamos su identidad.
+  // Trampa 12: el efecto se anuncia a ambos jugadores y se revela la Trampa
+  // que lo provoca cuando se aplica.
   for (const ownerIdx of [0, 1] as const) {
     const opponentIdx = (ownerIdx === 0 ? 1 : 0) as 0 | 1;
     for (const fm of players[ownerIdx].field) {
       if (!fm?.trap || fm.trap.effect.kind !== 'damage_per_turn') continue;
       const amount = fm.trap.effect.amount;
       players[opponentIdx] = applyDamage(players[opponentIdx], amount);
-      log.push(
-        fm.trapRevealed
-          ? fm.trap.name + ': el rival pierde ' + amount + ' PV por su efecto continuo.'
-          : 'Una Trampa activa hace perder ' + amount + ' PV al rival.',
-      );
+      players[ownerIdx] = updateFieldMonster(players[ownerIdx], fm.uid, (current) => ({
+        ...current,
+        trapRevealed: true,
+      }));
+      log.push(fm.trap.name + ': el rival pierde -' + amount + ' PV por su efecto continuo.');
     }
   }
 
@@ -828,15 +836,16 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
     let fm = findFieldMonster(players[playerIdx], uid);
     if (!fm) continue;
 
-    // Trampa 1: +5 PV al comienzo de cada turno de su propietario.
+    // Trampa 1: +5 PV al comienzo del turno. Se revela y se anuncia
+    // el nombre de la Trampa para que ambos jugadores sepan qué carta lo causa.
     if (fm.trap?.effect.kind === 'heal_per_turn') {
       const amount = fm.trap.effect.amount;
       players[playerIdx] = applyHeal(players[playerIdx], amount);
-      log.push(
-        fm.trapRevealed
-          ? fm.trap.name + ': +' + amount + ' PV por su efecto continuo.'
-          : 'Una Trampa activa te hace recuperar ' + amount + ' PV.',
-      );
+      players[playerIdx] = updateFieldMonster(players[playerIdx], uid, (current) => ({
+        ...current,
+        trapRevealed: true,
+      }));
+      log.push(fm.trap.name + ': recuperas +' + amount + ' PV por su efecto continuo.');
     }
 
     fm = findFieldMonster(players[playerIdx], uid);
