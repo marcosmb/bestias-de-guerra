@@ -1456,6 +1456,15 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                     defenderIsMe ? `tu ${defenderName}` : `el ${defenderName} rival`,
                   );
                 }
+                // Mostrar las pérdidas de PV con signo negativo en el mensaje central.
+                contextualCombatLog = contextualCombatLog.replace(
+                  /\bPierdes\s+(\d+)\s+PV\b/gi,
+                  '-$1 PV',
+                );
+                contextualCombatLog = contextualCombatLog.replace(
+                  /\bEl rival pierde\s+(\d+)\s+PV\b/gi,
+                  'El rival pierde -$1 PV',
+                );
                 // Mantener el signo negativo en el daño directo al rival.
                 contextualCombatLog = contextualCombatLog.replace(
                   /(\.\s*)(\d+\s+PV al rival)/,
