@@ -53,7 +53,15 @@ function StartScreen({
   }, []);
 
   return (
-    <div className="bg-ink-900 min-h-[100dvh] flex items-center justify-center px-3 sm:px-6 py-6">
+    <div
+      className="bg-ink-900 min-h-[100dvh] flex items-center justify-center px-3 sm:px-6 py-6"
+      style={{
+        backgroundImage: "linear-gradient(rgba(8, 12, 20, 0.62), rgba(8, 12, 20, 0.82)), url('/fondos-menu/fondo_menu_1.jpg')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
       <div className="w-full max-w-md mx-auto">
         <div className="mb-6 w-full flex items-center justify-between gap-3">
           <div className="animate-pulse-glow w-[clamp(4rem,18vw,5rem)] h-[clamp(4rem,18vw,5rem)] shrink-0 rounded-2xl border-2 border-gold-500/40 flex items-center justify-center">
