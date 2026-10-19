@@ -984,6 +984,11 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
 
       // El texto del combate ya se muestra en la barra central; no repetirlo como destello.
 
+      // Determinar quién controla al atacante y al defensor para los avisos de daño.
+      const combatAttackerPlayer = state.lastCombat.attackerPlayer ?? state.currentPlayer;
+      const attackerIsMe = combatAttackerPlayer === viewer;
+      const defenderIsMe = !attackerIsMe;
+
       // Mensajes de daño usando los índices reales de atacante/defensor.
       if (defenderDamage > 0) {
         addToast(
