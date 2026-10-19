@@ -971,27 +971,13 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         setTimeout(() => playSound('damage'), 600);
       }
 
-      // El texto del combate ya se muestra en la barra central; no repetirlo como destello.
+      // El daño se indica únicamente en la barra central; no mostrar avisos duplicados.
 
-      // Determinar quién controla al atacante y al defensor para los avisos de daño.
       const combatAttackerPlayer = state.lastCombat.attackerPlayer ?? state.currentPlayer;
       const attackerIsMe = combatAttackerPlayer === viewer;
       const defenderIsMe = !attackerIsMe;
 
-      // Mensajes de daño usando los índices reales de atacante/defensor.
-      if (defenderDamage > 0) {
-        addToast(
-          defenderIsMe ? `¡-${defenderDamage} PV! Has perdido vida` : `¡-${defenderDamage} PV al rival!`,
-          'combat',
-        );
-      }
-      if (attackerDamage > 0) {
-        addToast(
-          attackerIsMe ? `¡-${attackerDamage} PV! Has perdido vida` : `¡-${attackerDamage} PV al rival!`,
-          'combat',
-        );
-      }
-            // Show damage for the player who received it
+      // Show damage for the player who received it
       if (defenderDamage > 0) {
         // Defender received damage
         setLastCombat({ damage: defenderDamage, player: defenderIsMe ? viewer : (viewer === 0 ? 1 : 0) as 0 | 1 });
