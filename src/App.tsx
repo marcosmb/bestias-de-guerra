@@ -51,7 +51,6 @@ function StartScreen({
 
       fadeTimer = window.setTimeout(() => {
         setBackgroundIndex(nextIndex);
-        setNextBackgroundIndex((nextIndex + 1) % menuBackgrounds.length);
         setShowNextBackground(false);
       }, 3200);
     }, 12000);
@@ -61,6 +60,14 @@ function StartScreen({
       if (fadeTimer !== undefined) window.clearTimeout(fadeTimer);
     };
   }, [backgroundIndex]);
+
+  useEffect(() => {
+    if (showNextBackground) return;
+    const timer = window.setTimeout(() => {
+      setNextBackgroundIndex((backgroundIndex + 1) % menuBackgrounds.length);
+    }, 3300);
+    return () => window.clearTimeout(timer);
+  }, [backgroundIndex, showNextBackground]);
 
   useEffect(() => {
     const debugPointer = (event: PointerEvent) => {
