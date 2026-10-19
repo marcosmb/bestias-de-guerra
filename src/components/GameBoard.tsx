@@ -982,31 +982,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         setTimeout(() => playSound('damage'), 600);
       }
 
-      // Mensaje de combate contextualizado según quién controla cada Monstruo.
-      // El jugador local se determina por el índice real del atacante, no por
-      // palabras como "Pierdes" dentro del texto.
-      const combatAttackerPlayer = state.lastCombat.attackerPlayer ?? state.currentPlayer;
-      const attackerIsMe = combatAttackerPlayer === viewer;
-      const defenderIsMe = !attackerIsMe;
-      const attackerName = state.lastCombat.attackerCard?.name ?? 'Monstruo';
-      const defenderName = state.lastCombat.defenderCard?.name ?? 'Monstruo';
-      let contextualCombatLog = state.lastCombat.log;
-      contextualCombatLog = contextualCombatLog.replace(
-        attackerName,
-        attackerIsMe ? `Tu ${attackerName}` : `El ${attackerName} rival`,
-      );
-      if (state.lastCombat.defenderCard?.name) {
-        contextualCombatLog = contextualCombatLog.replace(
-          defenderName,
-          defenderIsMe ? `tu ${defenderName}` : `el ${defenderName} rival`,
-        );
-      }
-      // El daño directo al rival debe mostrarse con signo negativo.
-      contextualCombatLog = contextualCombatLog.replace(
-        /(\.\s*)(\d+\s+PV al rival)/,
-        '$1-$2',
-      );
-      addToast(contextualCombatLog, 'combat');
+      // El texto del combate ya se muestra en la barra central; no repetirlo como destello.
 
       // Mensajes de daño usando los índices reales de atacante/defensor.
       if (defenderDamage > 0) {
