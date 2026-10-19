@@ -907,18 +907,21 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         const viewerDelta = viewerLp - previousViewerLp;
         const rivalDelta = rivalLp - previousRivalLp;
 
-        // Avisamos de cada cambio relevante desde la perspectiva del jugador,
-        // sin revelar la identidad de la Trampa mientras siga oculta.
+        // La entrada del registro identifica la Trampa; el aviso se adapta
+        // a la perspectiva de cada jugador y aparece en ambos dispositivos.
+        const trapName = latestEntry.includes(':')
+          ? latestEntry.slice(0, latestEntry.indexOf(':'))
+          : 'Trampa activa';
         if (viewerDelta > 0) {
-          addToast(`Has ganado ${viewerDelta} PV por un efecto continuo.`, 'info');
+          addToast(`${trapName}: recuperas +${viewerDelta} PV.`, 'info');
         } else if (viewerDelta < 0) {
-          addToast(`Pierdes ${Math.abs(viewerDelta)} PV por un efecto continuo.`, 'combat');
+          addToast(`${trapName}: pierdes -${Math.abs(viewerDelta)} PV.`, 'combat');
         }
 
         if (rivalDelta > 0) {
-          addToast(`El rival gana ${rivalDelta} PV por un efecto continuo.`, 'info');
+          addToast(`${trapName}: el rival recupera +${rivalDelta} PV.`, 'info');
         } else if (rivalDelta < 0) {
-          addToast(`El rival pierde ${Math.abs(rivalDelta)} PV por un efecto continuo.`, 'combat');
+          addToast(`${trapName}: el rival pierde -${Math.abs(rivalDelta)} PV.`, 'combat');
         }
       }
     }
