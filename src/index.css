@@ -852,7 +852,7 @@ html[data-appearance="tema2"] .theme-tema2-board::after {
   background: linear-gradient(180deg, rgba(4,8,18,.30), rgba(4,8,18,.12) 45%, rgba(4,8,18,.48));
   box-shadow: inset 0 0 110px rgba(0,0,0,.38);
 }
-html[data-appearance="tema2"] .theme-tema2-board > * {
+html[data-appearance="tema2"] .theme-tema2-board > *:not([role="dialog"]) {
   position: relative;
   z-index: 1;
 }
