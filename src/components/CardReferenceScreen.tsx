@@ -6,6 +6,7 @@ import { CardView } from './CardView';
 
 interface CardReferenceScreenProps {
   onBack: () => void;
+  appearanceMode: import('./ThemePicker').AppearanceMode;
 }
 
 const allCards = buildDeck();
@@ -29,7 +30,7 @@ function CardReferenceItem({ card }: { card: Card }) {
 
 type CardFilter = 'all' | 'espadas' | 'bastos' | 'magic' | 'trap';
 
-export function CardReferenceScreen({ onBack }: CardReferenceScreenProps) {
+export function CardReferenceScreen({ onBack, appearanceMode }: CardReferenceScreenProps) {
   const [filter, setFilter] = useState<CardFilter>('all');
 
   const filteredCards = allCards.filter((card) => {
@@ -49,7 +50,7 @@ export function CardReferenceScreen({ onBack }: CardReferenceScreenProps) {
   ];
 
   return (
-    <div className="bg-ink-900 h-[100dvh] min-h-0 text-ink-100 flex flex-col">
+    <div className={`bg-ink-900 h-[100dvh] min-h-0 text-ink-100 flex flex-col ${appearanceMode === "tema2" ? "theme-tema2-cards" : ""}`}>
       <header className="shrink-0 flex items-center gap-3 px-4 sm:px-6 py-3 border-b border-ink-700 bg-ink-900/95">
         <button type="button" onClick={onBack} className="px-3 py-2 rounded-lg bg-ink-800 border border-ink-600 text-ink-200 font-display font-bold hover:border-gold-400 hover:bg-ink-700 transition-colors flex items-center gap-1.5 btn-press">
           <ArrowLeft size={18} /> Atrás
