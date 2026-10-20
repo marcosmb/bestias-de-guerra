@@ -28,6 +28,7 @@ import { CardView, CardBack } from './CardView';
 import { playSound, vibrate, getAudioPreferences, setSoundEnabled, setVolume, initAudio } from '@/game/audio';
 import { getTrap3CountingOrder } from '@/game/trapCounting';
 import { ThemePicker, type AppearanceMode, type BackgroundMode } from '@/components/ThemePicker';
+import { gameBackgrounds } from '@/generated/backgrounds';
 
 interface GameBoardProps {
   state: GameState;
@@ -555,10 +556,6 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   const [showLog, setShowLog] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
 
-  const gameBackgrounds = Array.from(
-    { length: 8 },
-    (_, index) => `/fondos-juego-tablero/fondos-tablero-juego_${index + 1}.jpg`,
-  );
   const [gameBackgroundIndex, setLocalGameBackgroundIndex] = useState(selectedGameBackgroundIndex);
   const [nextGameBackgroundIndex, setNextGameBackgroundIndex] = useState(1);
   const [showNextGameBackground, setShowNextGameBackground] = useState(false);
