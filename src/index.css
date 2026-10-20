@@ -956,3 +956,39 @@ html[data-appearance="tema2"] .theme-tema2-board [data-field-uid] {
     transition: none;
   }
 }
+
+
+/* Pulido de cartas y controles para Tema 2 */
+html[data-appearance="tema2"] .theme-tema2-board .card-face {
+  filter: saturate(1.04) contrast(1.025);
+}
+html[data-appearance="tema2"] .theme-tema2-board [class*="rounded-lg"][class*="border-2"][class*="shadow-card"] {
+  border-radius: 14px !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.05) inset;
+  transition: transform .22s ease, box-shadow .22s ease, filter .22s ease;
+}
+html[data-appearance="tema2"] .theme-tema2-board [class*="rounded-lg"][class*="border-2"][class*="shadow-card"]:hover {
+  transform: translateY(-4px) scale(1.035);
+  box-shadow: 0 12px 32px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.08) inset;
+  z-index: 30;
+}
+html[data-appearance="tema2"] .theme-tema2-board [class*="ring-2"][class*="scale-105"] {
+  box-shadow: 0 0 28px rgba(251,191,36,.42);
+}
+html[data-appearance="tema2"] .theme-tema2-board .log-scroll {
+  background: rgba(8,13,24,.96) !important;
+  border-color: rgba(255,255,255,.13) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+html[data-appearance="tema2"] .theme-tema2-board [data-no-cancel] {
+  scroll-margin-block: .5rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-appearance="tema2"] .theme-tema2-board [class*="rounded-lg"][class*="border-2"][class*="shadow-card"] {
+    transition: none;
+  }
+  html[data-appearance="tema2"] .theme-tema2-board [class*="rounded-lg"][class*="border-2"][class*="shadow-card"]:hover {
+    transform: none;
+  }
+}
