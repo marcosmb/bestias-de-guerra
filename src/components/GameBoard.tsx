@@ -1332,7 +1332,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
 
   return (
     <div
-      className="board-bg relative isolate flex flex-col w-full overflow-y-auto overflow-x-hidden lg:overflow-x-visible"
+      className={`board-bg relative isolate flex flex-col w-full overflow-y-auto overflow-x-hidden lg:overflow-x-visible ${appearanceMode === 'new' ? 'theme-new-board' : ''}`}
       style={{
         height: '100dvh',
         paddingTop: 'env(safe-area-inset-top)',
