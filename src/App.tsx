@@ -102,7 +102,7 @@ function StartScreen({
   }, [backgroundIndex, showNextBackground, menuBackgroundMode]);
 
   return (
-    <div className="relative isolate min-h-[100dvh] overflow-hidden bg-ink-900 flex items-center justify-center px-3 sm:px-6 py-6">
+    <div className={`relative isolate min-h-[100dvh] overflow-hidden bg-ink-900 flex items-center justify-center px-3 sm:px-6 py-6 ${appearanceMode === 'new' ? 'theme-new-menu' : ''}`}>
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
@@ -384,7 +384,7 @@ function App() {
   const [gameBackgroundMode, setGameBackgroundMode] = useState<BackgroundMode>(() => window.localStorage.getItem('bg-game-mode') === 'fixed' ? 'fixed' : 'slideshow');
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>(() => {
     const saved = window.localStorage.getItem('game-appearance');
-    return saved === 'light' ? 'light' : 'dark';
+    return saved === 'light' || saved === 'new' ? saved : 'dark';
   });
 
   useEffect(() => {
