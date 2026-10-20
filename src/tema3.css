@@ -1,0 +1,215 @@
+/* Tema 3: Luz de Guerra — estilos aislados de presentación. No fija ni sustituye fondos. */
+html[data-appearance="tema3"] {
+  color-scheme: light;
+  --tema3-bg: #F5F2E9;
+  --tema3-panel: #FFFEFA;
+  --tema3-border: #D5CDBD;
+  --tema3-gold: #B8892E;
+  --tema3-gold-light: #E8C66A;
+  --tema3-text: #202838;
+  --tema3-muted: #657084;
+}
+html[data-appearance="tema3"] body {
+  background: var(--tema3-bg);
+  color: var(--tema3-text);
+}
+html[data-appearance="tema3"] .theme-tema3-menu {
+  background-color: transparent !important;
+  color: var(--tema3-text) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-menu::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 12% 18%, rgba(255,255,255,.92), transparent 30%),
+              radial-gradient(circle at 88% 78%, rgba(232,198,106,.16), transparent 34%),
+              linear-gradient(145deg, rgba(245,242,233,.94), rgba(255,254,250,.90));
+}
+html[data-appearance="tema3"] .theme-tema3-menu > div[class*="relative z-10"] {
+  isolation: isolate;
+  max-width: 900px !important;
+  padding: clamp(18px, 4vw, 36px);
+  border: 1px solid var(--tema3-border);
+  border-radius: 24px;
+  background: rgba(255,254,250,.88);
+  box-shadow: 0 24px 60px rgba(52,42,20,.08);
+  backdrop-filter: blur(10px);
+}
+html[data-appearance="tema3"] .theme-tema3-menu h1 {
+  color: var(--tema3-text) !important;
+  font-family: "Cinzel Decorative", Georgia, serif !important;
+  letter-spacing: .025em;
+  text-shadow: none !important;
+}
+html[data-appearance="tema3"] .theme-tema3-menu p,
+html[data-appearance="tema3"] .theme-tema3-menu span {
+  color: var(--tema3-muted) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-menu button {
+  color: var(--tema3-text) !important;
+  background-color: var(--tema3-panel) !important;
+  background-image: none;
+  border-color: var(--tema3-border) !important;
+  box-shadow: 0 5px 16px rgba(52,42,20,.07);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+html[data-appearance="tema3"] .theme-tema3-menu button:hover {
+  border-color: var(--tema3-gold) !important;
+  box-shadow: 0 10px 24px rgba(52,42,20,.11);
+}
+html[data-appearance="tema3"] .theme-tema3-menu button[class*="bg-gold-400"],
+html[data-appearance="tema3"] .theme-tema3-menu button[class*="from-gold-"] {
+  background: linear-gradient(135deg,var(--tema3-gold-light),var(--tema3-gold)) !important;
+  color: #2B1D0A !important;
+  border-color: #a67c2a !important;
+}
+html[data-appearance="tema3"] .theme-tema3-menu button svg { color: var(--tema3-gold) !important; }
+html[data-appearance="tema3"] .theme-tema3-menu button[class*="bg-gold-400"] svg { color: #2B1D0A !important; }
+
+/* Selector de tema: panel claro por encima del tablero; conserva las imágenes reales del selector. */
+html[data-appearance="tema3"] .theme-picker-tema3 {
+  z-index: 9999 !important;
+  background: rgba(245,242,233,.72) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+html[data-appearance="tema3"] .theme-picker-tema3 .theme-picker-panel {
+  position: relative;
+  z-index: 2;
+  border: 1px solid var(--tema3-border) !important;
+  border-radius: 20px !important;
+  background: var(--tema3-panel) !important;
+  color: var(--tema3-text) !important;
+  box-shadow: 0 24px 60px rgba(52,42,20,.16) !important;
+}
+html[data-appearance="tema3"] .theme-picker-tema3 h2,
+html[data-appearance="tema3"] .theme-picker-tema3 h3 { color: var(--tema3-text) !important; }
+html[data-appearance="tema3"] .theme-picker-tema3 p { color: var(--tema3-muted) !important; }
+html[data-appearance="tema3"] .theme-picker-tema3 section {
+  background: #F7F3E9 !important;
+  border-color: var(--tema3-border) !important;
+}
+html[data-appearance="tema3"] .theme-picker-tema3 button {
+  color: var(--tema3-text) !important;
+  border-color: var(--tema3-border) !important;
+  background-color: var(--tema3-panel) !important;
+}
+html[data-appearance="tema3"] .theme-picker-tema3 button[aria-pressed="true"] {
+  border-color: var(--tema3-gold) !important;
+  box-shadow: 0 0 0 3px rgba(184,137,46,.15);
+}
+html[data-appearance="tema3"] .theme-picker-tema3 button[class*="bg-gold-400"],
+html[data-appearance="tema3"] .theme-picker-tema3 button[class*="bg-gold-300"] {
+  background: linear-gradient(135deg,var(--tema3-gold-light),var(--tema3-gold)) !important;
+  color: #2B1D0A !important;
+}
+
+/* Tablero: superficies claras y contraste legible, sin cambiar acciones, slots ni fondos seleccionados. */
+html[data-appearance="tema3"] .theme-tema3-board {
+  color: var(--tema3-text) !important;
+  background-color: transparent !important;
+  background-blend-mode: normal;
+}
+html[data-appearance="tema3"] .theme-tema3-board .field-zone {
+  border: 1px solid rgba(213,205,189,.95) !important;
+  border-radius: 14px !important;
+  background-color: rgba(255,254,250,.82) !important;
+  box-shadow: 0 8px 24px rgba(52,42,20,.08);
+  backdrop-filter: blur(5px);
+}
+html[data-appearance="tema3"] .theme-tema3-board .field-zone:first-of-type {
+  background-color: rgba(230,238,246,.91) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board .field-zone:last-of-type {
+  background-color: rgba(241,238,223,.91) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-800"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-700"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-900"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-600"] {
+  background-color: rgba(255,254,250,.94) !important;
+  background-image: none;
+}
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-white"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-slate-100"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-slate-200"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-ink-100"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-ink-200"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-ink-300"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-gold-300"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-gold-400"] {
+  color: var(--tema3-text) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board [class*="border-ink-"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="border-gold-"] {
+  border-color: var(--tema3-border) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board [data-field-slot]:not([data-field-uid]) {
+  border-color: rgba(213,205,189,.95) !important;
+  background-color: rgba(255,254,250,.62);
+}
+html[data-appearance="tema3"] .theme-tema3-board [data-field-slot][data-playable],
+html[data-appearance="tema3"] .theme-tema3-board [class*="ring-gold-"] {
+  box-shadow: 0 0 0 3px rgba(232,198,106,.34);
+}
+html[data-appearance="tema3"] .theme-tema3-board button {
+  border-color: var(--tema3-border);
+}
+html[data-appearance="tema3"] .theme-tema3-board button[class*="bg-gold-400"],
+html[data-appearance="tema3"] .theme-tema3-board button[class*="from-gold-"] {
+  background: linear-gradient(135deg,var(--tema3-gold-light),var(--tema3-gold)) !important;
+  color: #2B1D0A !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board [data-lp-player] > div {
+  background-color: #E8E0CF;
+  border-color: var(--tema3-border);
+}
+html[data-appearance="tema3"] .theme-tema3-board [data-lp-player] > div > div {
+  background-image: linear-gradient(90deg,#2F855A,#E8C66A);
+}
+
+/* Biblioteca de cartas: mantiene CardView y los datos reales de cada carta. */
+html[data-appearance="tema3"] .theme-tema3-cards {
+  background: var(--tema3-bg) !important;
+  color: var(--tema3-text) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-cards header,
+html[data-appearance="tema3"] .theme-tema3-cards > div {
+  background: rgba(255,254,250,.96) !important;
+  border-color: var(--tema3-border) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-cards article {
+  background: var(--tema3-panel) !important;
+  color: var(--tema3-text) !important;
+  border: 1px solid var(--tema3-border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 24px rgba(52,42,20,.07);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+@media (hover:hover) {
+  html[data-appearance="tema3"] .theme-tema3-cards article:hover {
+    transform: translateY(-3px);
+    border-color: var(--tema3-gold) !important;
+    box-shadow: 0 14px 30px rgba(52,42,20,.12);
+  }
+}
+html[data-appearance="tema3"] .theme-tema3-cards h1,
+html[data-appearance="tema3"] .theme-tema3-cards h2,
+html[data-appearance="tema3"] .theme-tema3-cards h3 { color: var(--tema3-text) !important; }
+html[data-appearance="tema3"] .theme-tema3-cards p,
+html[data-appearance="tema3"] .theme-tema3-cards span { color: var(--tema3-muted); }
+html[data-appearance="tema3"] .theme-tema3-cards button {
+  background: #FFFEFA !important;
+  color: var(--tema3-text) !important;
+  border-color: var(--tema3-border) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-cards button[aria-pressed="true"] {
+  background: #F8E8B8 !important;
+  border-color: var(--tema3-gold) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-appearance="tema3"] .theme-tema3-menu button,
+  html[data-appearance="tema3"] .theme-tema3-cards article { transition: none; }
+}
