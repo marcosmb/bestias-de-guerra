@@ -602,6 +602,13 @@ function App() {
           }}
           musicEnabled={musicEnabled}
           onToggleMusic={toggleMusic}
+          gameBackgroundIndex={gameBackgroundIndex}
+          setGameBackgroundIndex={setGameBackgroundIndex}
+          gameBackgroundMode={gameBackgroundMode}
+          menuBackgroundIndex={menuBackgroundIndex}
+          setMenuBackgroundIndex={setMenuBackgroundIndex}
+          menuBackgroundMode={menuBackgroundMode}
+          setMenuBackgroundMode={setMenuBackgroundMode}
           localPlayerIndex={playerRole === 'player1' ? 0 : 1}
         />
         {waitingForOpponent && isHost && roomId && playerRole === 'player1' && (
@@ -633,6 +640,13 @@ function App() {
       }}
       musicEnabled={musicEnabled}
       onToggleMusic={toggleMusic}
+      gameBackgroundIndex={gameBackgroundIndex}
+      setGameBackgroundIndex={setGameBackgroundIndex}
+      gameBackgroundMode={gameBackgroundMode}
+      menuBackgroundIndex={menuBackgroundIndex}
+      setMenuBackgroundIndex={setMenuBackgroundIndex}
+      menuBackgroundMode={menuBackgroundMode}
+      setMenuBackgroundMode={setMenuBackgroundMode}
     />
   );
 }
