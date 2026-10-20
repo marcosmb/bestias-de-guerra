@@ -549,7 +549,7 @@ function CombatAnimation({
   );
 }
 
-export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic, localPlayerIndex, gameBackgroundIndex: selectedGameBackgroundIndex, setGameBackgroundIndex, gameBackgroundMode, menuBackgroundIndex, setMenuBackgroundIndex, menuBackgroundMode, setMenuBackgroundMode }: GameBoardProps) {
+export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic, localPlayerIndex, gameBackgroundIndex: selectedGameBackgroundIndex, setGameBackgroundIndex, gameBackgroundMode, setGameBackgroundMode, menuBackgroundIndex, setMenuBackgroundIndex, menuBackgroundMode, setMenuBackgroundMode }: GameBoardProps) {
   const [showLog, setShowLog] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
 
