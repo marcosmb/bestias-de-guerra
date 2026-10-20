@@ -107,7 +107,7 @@ function StartScreen({
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
         style={{
-          backgroundImage: `linear-gradient(rgba(8, 12, 20, 0.60), rgba(8, 12, 20, 0.78)), radial-gradient(ellipse at 50% 35%, rgba(255, 210, 135, 0.12), transparent 62%), url('${menuBackgrounds[menuBackgroundMode === 'fixed' ? menuBackgroundIndex : backgroundIndex]}')`,
+          backgroundImage: `url('${menuBackgrounds[menuBackgroundMode === 'fixed' ? menuBackgroundIndex : backgroundIndex]}')`,
           opacity: showNextBackground ? 0 : 1,
           transform: 'scale(1.025)',
         }}
@@ -116,12 +116,11 @@ function StartScreen({
         aria-hidden="true"
         className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
         style={{
-          backgroundImage: `linear-gradient(rgba(8, 12, 20, 0.60), rgba(8, 12, 20, 0.78)), radial-gradient(ellipse at 50% 35%, rgba(255, 210, 135, 0.12), transparent 62%), url('${menuBackgrounds[nextBackgroundIndex]}')`,
+          backgroundImage: `url('${menuBackgrounds[nextBackgroundIndex]}')`,
           opacity: menuBackgroundMode === 'slideshow' && showNextBackground ? 1 : 0,
           transform: 'scale(1.025)',
         }}
       />
-      <div aria-hidden="true" className="absolute inset-0 pointer-events-none bg-gradient-to-br from-amber-200/[0.035] via-transparent to-sky-200/[0.045]" />
       <div className="relative z-10 w-full max-w-md mx-auto">
         <div className="mb-6 w-full flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 shrink-0">
