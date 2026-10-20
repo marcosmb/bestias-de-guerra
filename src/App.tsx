@@ -97,29 +97,11 @@ function StartScreen({
     return () => window.clearTimeout(timer);
   }, [backgroundIndex, showNextBackground, menuBackgroundMode]);
 
-  useEffect(() => {
-    const debugPointer = (event: PointerEvent) => {
-      const button = document.querySelector('[data-music-toggle]') as HTMLButtonElement | null;
-      const underPointer = document.elementFromPoint(event.clientX, event.clientY);
-      const rect = button?.getBoundingClientRect();
-      console.log('[MUSICA][POINTER]', {
-        target: event.target instanceof Element ? event.target.tagName + '.' + event.target.className : event.target,
-        underPointer: underPointer instanceof Element ? underPointer.tagName + '.' + underPointer.className : underPointer,
-        isOverMusicButton: !!rect && event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom,
-        pointerEvents: button ? getComputedStyle(button).pointerEvents : 'button-not-found',
-        zIndex: button ? getComputedStyle(button).zIndex : 'button-not-found',
-      });
-    };
-
-    document.addEventListener('pointerdown', debugPointer, true);
-    return () => document.removeEventListener('pointerdown', debugPointer, true);
-  }, []);
-
   return (
     <div className="relative isolate min-h-[100dvh] overflow-hidden bg-ink-900 flex items-center justify-center px-3 sm:px-6 py-6">
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
+        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
         style={{
           backgroundImage: `linear-gradient(rgba(8, 12, 20, 0.60), rgba(8, 12, 20, 0.78)), radial-gradient(ellipse at 50% 35%, rgba(255, 210, 135, 0.12), transparent 62%), url('${menuBackgrounds[menuBackgroundMode === 'fixed' ? menuBackgroundIndex : backgroundIndex]}')`,
           opacity: showNextBackground ? 0 : 1,
@@ -298,6 +280,18 @@ function StartScreen({
         </>
       ) : null}
       </div>
+      <ThemePicker
+        open={showThemePicker}
+        onClose={() => setShowThemePicker(false)}
+        menuIndex={menuBackgroundIndex}
+        setMenuIndex={setMenuBackgroundIndex}
+        menuMode={menuBackgroundMode}
+        setMenuMode={setMenuBackgroundMode}
+        gameIndex={gameBackgroundIndex}
+        setGameIndex={setGameBackgroundIndex}
+        gameMode={gameBackgroundMode}
+        setGameMode={setGameBackgroundMode}
+      />
     </div>
   );
 }
