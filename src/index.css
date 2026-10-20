@@ -685,3 +685,15 @@ html[data-appearance="light"] [class~="border-ink-600"] { border-color: #c7bda9 
   html[data-appearance="auto"] [class~="text-slate-100"],
   html[data-appearance="auto"] [class~="text-slate-200"] { color: #293241 !important; }
 }
+
+/* En tema claro, texto e iconos dorados pasan a negro para mantener contraste. */
+html[data-appearance="light"] [class*="text-gold-"],
+html[data-appearance="light"] [class*="text-amber-"] {
+  color: #111111 !important;
+}
+@media (prefers-color-scheme: light) {
+  html[data-appearance="auto"] [class*="text-gold-"],
+  html[data-appearance="auto"] [class*="text-amber-"] {
+    color: #111111 !important;
+  }
+}
