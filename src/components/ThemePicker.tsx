@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { X, Palette, Check, Shuffle } from 'lucide-react';
+import { X, Palette, Check, Shuffle, Sun, Moon, Monitor } from 'lucide-react';
 
 export type BackgroundMode = 'fixed' | 'slideshow';
+export type AppearanceMode = 'light' | 'dark' | 'auto';
 
 interface ThemePickerProps {
   open: boolean;
@@ -14,6 +15,8 @@ interface ThemePickerProps {
   setGameIndex: (index: number) => void;
   gameMode: BackgroundMode;
   setGameMode: (mode: BackgroundMode) => void;
+  appearanceMode: AppearanceMode;
+  setAppearanceMode: (mode: AppearanceMode) => void;
 }
 
 type ThemeTab = 'menu' | 'board';
@@ -29,6 +32,8 @@ export function ThemePicker({
   setGameIndex,
   gameMode,
   setGameMode,
+  appearanceMode,
+  setAppearanceMode,
 }: ThemePickerProps) {
   const [activeTab, setActiveTab] = useState<ThemeTab>('menu');
 
@@ -78,6 +83,34 @@ export function ThemePicker({
             <X size={22} />
           </button>
         </div>
+
+        <section className="mb-5 rounded-xl border border-gold-500/30 bg-ink-800/70 p-3">
+          <h3 className="font-display font-bold text-gold-300 mb-1">Apariencia del juego</h3>
+          <p className="text-ink-200 text-xs mb-3">Cambia el contraste de los paneles y del tablero sin modificar las ilustraciones de las cartas.</p>
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              ['light', 'Claro', Sun],
+              ['dark', 'Oscuro', Moon],
+              ['auto', 'Automático', Monitor],
+            ] as const).map(([value, label, Icon]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setAppearanceMode(value)}
+                aria-pressed={appearanceMode === value}
+                className={`rounded-lg border px-2 py-3 flex flex-col items-center gap-1 text-xs sm:text-sm font-display font-bold transition-colors ${
+                  appearanceMode === value
+                    ? 'border-gold-300 bg-gold-300/20 text-gold-200'
+                    : 'border-ink-600 bg-ink-900 text-ink-200 hover:border-gold-500/60'
+                }`}
+              >
+                <Icon size={19} />
+                {label}
+              </button>
+            ))}
+          </div>
+          {appearanceMode === 'auto' && <p className="text-ink-300 text-[11px] mt-2">Automático sigue la preferencia de apariencia de tu dispositivo.</p>}
+        </section>
 
         <div className="grid grid-cols-2 gap-2 mb-5" role="tablist" aria-label="Tipo de fondo">
           <button
