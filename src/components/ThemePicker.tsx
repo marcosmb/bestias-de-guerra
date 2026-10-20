@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { menuBackgrounds, gameBackgrounds } from '@/generated/backgrounds';
 import { X, Palette, Check, Shuffle, Sun, Moon, Sunrise } from 'lucide-react';
 
 export type BackgroundMode = 'fixed' | 'slideshow';
@@ -41,15 +42,13 @@ export function ThemePicker({
 
   const isMenuTab = activeTab === 'menu';
   const title = isMenuTab ? 'Fondo del menú' : 'Fondo del tablero';
-  const count = isMenuTab ? 14 : 8;
+  const backgrounds = isMenuTab ? menuBackgrounds : gameBackgrounds;
+  const count = backgrounds.length;
   const selectedIndex = isMenuTab ? menuIndex : gameIndex;
   const mode = isMenuTab ? menuMode : gameMode;
   const setSelectedIndex = isMenuTab ? setMenuIndex : setGameIndex;
   const setMode = isMenuTab ? setMenuMode : setGameMode;
-  const imagePath = (index: number) =>
-    isMenuTab
-      ? `/fondos-menu/fondo_menu_${index + 1}.jpg`
-      : `/fondos-juego-tablero/fondos-tablero-juego_${index + 1}.jpg`;
+  const imagePath = (index: number) => backgrounds[index] ?? backgrounds[0] ?? '';
 
   const chooseRotating = () => setMode('slideshow');
   const chooseFixed = (index: number) => {
