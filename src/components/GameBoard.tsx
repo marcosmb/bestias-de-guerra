@@ -18,6 +18,7 @@ import {
   Copy,
   Check,
   Music,
+  Palette,
 } from 'lucide-react';
 import type { Card, MonsterCard, TrapCard, MagicCard } from '@/game/cardData';
 import type { Action, GameState, FieldMonster, PlayerState } from '@/game/types';
@@ -26,6 +27,7 @@ import { legalActions, sameAction } from '@/game/legalActions';
 import { CardView, CardBack } from './CardView';
 import { playSound, vibrate, getAudioPreferences, setSoundEnabled, setVolume, initAudio } from '@/game/audio';
 import { getTrap3CountingOrder } from '@/game/trapCounting';
+import { ThemePicker, type BackgroundMode } from '@/components/ThemePicker';
 
 interface GameBoardProps {
   state: GameState;
@@ -33,6 +35,14 @@ interface GameBoardProps {
   onExit: () => void;
   musicEnabled: boolean;
   onToggleMusic: () => void;
+  gameBackgroundIndex: number;
+  setGameBackgroundIndex: (index: number) => void;
+  gameBackgroundMode: BackgroundMode;
+  setGameBackgroundMode: (mode: BackgroundMode) => void;
+  menuBackgroundIndex: number;
+  setMenuBackgroundIndex: (index: number) => void;
+  menuBackgroundMode: BackgroundMode;
+  setMenuBackgroundMode: (mode: BackgroundMode) => void;
   // Para modo online: índice del jugador local (0 = host/player1, 1 = guest/player2)
   // En modo local/CPU no se usa (se determina por currentPlayer)
   localPlayerIndex?: 0 | 1;
@@ -539,18 +549,29 @@ function CombatAnimation({
   );
 }
 
-export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic, localPlayerIndex }: GameBoardProps) {
+export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic, localPlayerIndex, gameBackgroundIndex: selectedGameBackgroundIndex, setGameBackgroundIndex, gameBackgroundMode, menuBackgroundIndex, setMenuBackgroundIndex, menuBackgroundMode, setMenuBackgroundMode }: GameBoardProps) {
   const [showLog, setShowLog] = useState(false);
+  const [showThemePicker, setShowThemePicker] = useState(false);
 
   const gameBackgrounds = Array.from(
     { length: 8 },
     (_, index) => `/fondos-juego-tablero/fondos-tablero-juego_${index + 1}.jpg`,
   );
-  const [gameBackgroundIndex, setGameBackgroundIndex] = useState(0);
+  const [gameBackgroundIndex, setLocalGameBackgroundIndex] = useState(selectedGameBackgroundIndex);
   const [nextGameBackgroundIndex, setNextGameBackgroundIndex] = useState(1);
   const [showNextGameBackground, setShowNextGameBackground] = useState(false);
 
   useEffect(() => {
+    setLocalGameBackgroundIndex(selectedGameBackgroundIndex);
+    setNextGameBackgroundIndex((selectedGameBackgroundIndex + 1) % gameBackgrounds.length);
+    setShowNextGameBackground(false);
+  }, [selectedGameBackgroundIndex]);
+
+  useEffect(() => {
+    if (gameBackgroundMode !== 'slideshow') {
+      setShowNextGameBackground(false);
+      return;
+    }
     let fadeTimer: number | undefined;
     const changeTimer = window.setTimeout(() => {
       const nextIndex = (gameBackgroundIndex + 1) % gameBackgrounds.length;
@@ -567,15 +588,15 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       window.clearTimeout(changeTimer);
       if (fadeTimer !== undefined) window.clearTimeout(fadeTimer);
     };
-  }, [gameBackgroundIndex]);
+  }, [gameBackgroundIndex, gameBackgroundMode]);
 
   useEffect(() => {
-    if (showNextGameBackground) return;
+    if (gameBackgroundMode !== 'slideshow' || showNextGameBackground) return;
     const timer = window.setTimeout(() => {
       setNextGameBackgroundIndex((gameBackgroundIndex + 1) % gameBackgrounds.length);
     }, 3300);
     return () => window.clearTimeout(timer);
-  }, [gameBackgroundIndex, showNextGameBackground]);
+  }, [gameBackgroundIndex, showNextGameBackground, gameBackgroundMode]);
 
   const [logCopied, setLogCopied] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
@@ -1327,7 +1348,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
         style={{
-          backgroundImage: `linear-gradient(rgba(8, 12, 20, 0.48), rgba(8, 12, 20, 0.68)), radial-gradient(ellipse at 50% 35%, rgba(255, 210, 135, 0.10), transparent 62%), url('${gameBackgrounds[gameBackgroundIndex]}')`,
+          backgroundImage: `linear-gradient(rgba(8, 12, 20, 0.48), rgba(8, 12, 20, 0.68)), radial-gradient(ellipse at 50% 35%, rgba(255, 210, 135, 0.10), transparent 62%), url('${gameBackgrounds[gameBackgroundMode === 'fixed' ? selectedGameBackgroundIndex : gameBackgroundIndex]}')`,
           opacity: showNextGameBackground ? 0 : 1,
           transform: 'scale(1.025)',
         }}
@@ -1337,11 +1358,23 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         className="pointer-events-none absolute inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
         style={{
           backgroundImage: `linear-gradient(rgba(8, 12, 20, 0.48), rgba(8, 12, 20, 0.68)), radial-gradient(ellipse at 50% 35%, rgba(255, 210, 135, 0.10), transparent 62%), url('${gameBackgrounds[nextGameBackgroundIndex]}')`,
-          opacity: showNextGameBackground ? 1 : 0,
+          opacity: gameBackgroundMode === 'slideshow' && showNextGameBackground ? 1 : 0,
           transform: 'scale(1.025)',
         }}
       />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[-1] bg-gradient-to-br from-amber-200/[0.025] via-transparent to-sky-200/[0.035]" />
+      <ThemePicker
+        open={showThemePicker}
+        onClose={() => setShowThemePicker(false)}
+        menuIndex={menuBackgroundIndex}
+        setMenuIndex={setMenuBackgroundIndex}
+        menuMode={menuBackgroundMode}
+        setMenuMode={setMenuBackgroundMode}
+        gameIndex={selectedGameBackgroundIndex}
+        setGameIndex={setGameBackgroundIndex}
+        gameMode={gameBackgroundMode}
+        setGameMode={setGameBackgroundMode}
+      />
       {/* Turn banner */}
       <TurnBanner playerName={state.players[cp].name} turnCount={state.turnCount} />
 
@@ -2045,6 +2078,17 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             aria-label={musicEnabled ? 'Desactivar música' : 'Activar música'}
           >
             {musicEnabled ? <Music size={14} /> : <VolumeX size={14} />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowThemePicker(true)}
+            className="rounded-lg btn-press flex items-center gap-1 bg-ink-600 text-gold-300 hover:bg-ink-500"
+            style={{ ...uiXs, padding: '0.4em 0.55em' }}
+            title="Cambiar temas y fondos"
+            aria-label="Cambiar temas y fondos"
+          >
+            <Palette size={14} />
+            Temas
           </button>
           <button
             onClick={() => {
