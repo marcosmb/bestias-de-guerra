@@ -3,6 +3,7 @@ import rulesHtml from '../../docs/reglas-meta/Bestias-De-Guerra-Guia.html?raw';
 
 interface RulesScreenProps {
   onBack: () => void;
+  appearanceMode: import('./ThemePicker').AppearanceMode;
 }
 
 /**
@@ -13,9 +14,11 @@ interface RulesScreenProps {
  * convertirlo a texto/Markdown. Así se conservan estilos, tablas, bloques,
  * iconos y maquetación responsive del reglamento.
  */
-export function RulesScreen({ onBack }: RulesScreenProps) {
+export function RulesScreen({ onBack, appearanceMode }: RulesScreenProps) {
+  const tema2RulesCss = '<style>:root{color-scheme:dark}*{box-sizing:border-box}body{background:#080d18!important;color:#f8fafc!important;font-family:Inter,system-ui,sans-serif!important;line-height:1.7}header,nav,aside{background:linear-gradient(180deg,rgba(26,39,66,.96),rgba(10,16,30,.94))!important;border-color:rgba(255,255,255,.12)!important;box-shadow:0 12px 36px rgba(0,0,0,.35)}main,article,section,.card,.panel,.content,.rule{background:linear-gradient(145deg,rgba(26,39,66,.88),rgba(10,16,30,.9))!important;color:#f8fafc!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.06)}h1,h2,h3,strong{color:#f4c45e!important}p,li,td,th,label{color:#e2e8f0!important}a,button{border-radius:10px!important}button{background:linear-gradient(135deg,#ffe29a,#c58a25)!important;color:#211707!important;border:1px solid rgba(255,226,154,.7)!important;padding:.65rem 1rem}table{border-collapse:collapse}td,th{border-color:rgba(255,255,255,.12)!important}img{max-width:100%;height:auto}</style>';
+  const themedRulesHtml = appearanceMode === 'tema2' && rulesHtml.includes('</head>') ? rulesHtml.replace('</head>', tema2RulesCss + '</head>') : rulesHtml;
   return (
-    <div className="bg-ink-950 h-[100dvh] min-h-0 text-ink-100 flex flex-col">
+    <div className={`bg-ink-950 h-[100dvh] min-h-0 text-ink-100 flex flex-col ${appearanceMode === "tema2" ? "theme-tema2-rules" : ""}`}>
       <header className="shrink-0 z-30 border-b border-gold-500/20 bg-ink-950/95 backdrop-blur-md shadow-lg">
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-3 py-3 sm:px-5 lg:px-7">
           <button
@@ -49,7 +52,7 @@ export function RulesScreen({ onBack }: RulesScreenProps) {
           <div className="h-full w-full overflow-hidden rounded-xl border border-ink-700 bg-ink-900 shadow-2xl">
             <iframe
               title="Reglamento oficial de Bestias de Guerra"
-              srcDoc={rulesHtml}
+              srcDoc={themedRulesHtml}
               className="block h-full w-full border-0 bg-white"
               loading="eager"
             />
