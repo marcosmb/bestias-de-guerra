@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Difficulty, GameMode } from '@/game/types';
-import { Swords, ChevronRight, History, Wifi, Cpu, User, Link2, Copy, X, ArrowLeft, BookOpen, Layers3, Music, VolumeX } from 'lucide-react';
+import { Swords, ChevronRight, History, Wifi, Cpu, User, Link2, Copy, X, ArrowLeft, BookOpen, Layers3, Music, VolumeX, Palette } from 'lucide-react';
 import { useGame } from '@/game/useGame';
 import { useOnlineGame } from '@/hooks/useOnlineGame';
 import { PassDeviceScreen } from '@/components/PassDeviceScreen';
@@ -11,6 +11,7 @@ import { loadHistoryFrom, getDefaultStorage, type MatchHistory } from '@/game/hi
 import { CardReferenceScreen } from '@/components/CardReferenceScreen';
 import { RulesScreen } from '@/components/RulesScreen';
 import { getMusicPreferences, initAudio, setMusicEnabled, setMusicTrack, setMusicVolume } from '@/game/audio';
+import { ThemePicker, type BackgroundMode } from '@/components/ThemePicker';
 
 type FlowPhase = 'menu' | 'pass' | 'play' | 'history' | 'online-setup' | 'cards' | 'rules';
 
@@ -22,6 +23,14 @@ function StartScreen({
   hasHistory,
   musicEnabled,
   onToggleMusic,
+  menuBackgroundIndex,
+  setMenuBackgroundIndex,
+  menuBackgroundMode,
+  setMenuBackgroundMode,
+  gameBackgroundIndex,
+  setGameBackgroundIndex,
+  gameBackgroundMode,
+  setGameBackgroundMode,
 }: {
   onStart: (mode: GameMode, difficulty: Difficulty) => void;
   onOpenHistory: () => void;
@@ -30,19 +39,38 @@ function StartScreen({
   hasHistory: boolean;
   musicEnabled: boolean;
   onToggleMusic: () => void;
+  menuBackgroundIndex: number;
+  setMenuBackgroundIndex: (index: number) => void;
+  menuBackgroundMode: BackgroundMode;
+  setMenuBackgroundMode: (mode: BackgroundMode) => void;
+  gameBackgroundIndex: number;
+  setGameBackgroundIndex: (index: number) => void;
+  gameBackgroundMode: BackgroundMode;
+  setGameBackgroundMode: (mode: BackgroundMode) => void;
 }) {
   const [mode, setMode] = useState<GameMode>('local');
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
+  const [showThemePicker, setShowThemePicker] = useState(false);
 
   const menuBackgrounds = Array.from(
     { length: 14 },
     (_, index) => `/fondos-menu/fondo_menu_${index + 1}.jpg`,
   );
-  const [backgroundIndex, setBackgroundIndex] = useState(0);
+  const [backgroundIndex, setBackgroundIndex] = useState(menuBackgroundIndex);
   const [nextBackgroundIndex, setNextBackgroundIndex] = useState(1);
   const [showNextBackground, setShowNextBackground] = useState(false);
 
   useEffect(() => {
+    setBackgroundIndex(menuBackgroundIndex);
+    setNextBackgroundIndex((menuBackgroundIndex + 1) % menuBackgrounds.length);
+    setShowNextBackground(false);
+  }, [menuBackgroundIndex]);
+
+  useEffect(() => {
+    if (menuBackgroundMode !== 'slideshow') {
+      setShowNextBackground(false);
+      return;
+    }
     let fadeTimer: number | undefined;
     const changeTimer = window.setTimeout(() => {
       const nextIndex = (backgroundIndex + 1) % menuBackgrounds.length;
@@ -59,15 +87,15 @@ function StartScreen({
       window.clearTimeout(changeTimer);
       if (fadeTimer !== undefined) window.clearTimeout(fadeTimer);
     };
-  }, [backgroundIndex]);
+  }, [backgroundIndex, menuBackgroundMode]);
 
   useEffect(() => {
-    if (showNextBackground) return;
+    if (menuBackgroundMode !== 'slideshow' || showNextBackground) return;
     const timer = window.setTimeout(() => {
       setNextBackgroundIndex((backgroundIndex + 1) % menuBackgrounds.length);
     }, 3300);
     return () => window.clearTimeout(timer);
-  }, [backgroundIndex, showNextBackground]);
+  }, [backgroundIndex, showNextBackground, menuBackgroundMode]);
 
   useEffect(() => {
     const debugPointer = (event: PointerEvent) => {
@@ -93,7 +121,7 @@ function StartScreen({
         aria-hidden="true"
         className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
         style={{
-          backgroundImage: `linear-gradient(rgba(8, 12, 20, 0.60), rgba(8, 12, 20, 0.78)), radial-gradient(ellipse at 50% 35%, rgba(255, 210, 135, 0.12), transparent 62%), url('${menuBackgrounds[backgroundIndex]}')`,
+          backgroundImage: `linear-gradient(rgba(8, 12, 20, 0.60), rgba(8, 12, 20, 0.78)), radial-gradient(ellipse at 50% 35%, rgba(255, 210, 135, 0.12), transparent 62%), url('${menuBackgrounds[menuBackgroundMode === 'fixed' ? menuBackgroundIndex : backgroundIndex]}')`,
           opacity: showNextBackground ? 0 : 1,
           transform: 'scale(1.025)',
         }}
@@ -103,15 +131,26 @@ function StartScreen({
         className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
         style={{
           backgroundImage: `linear-gradient(rgba(8, 12, 20, 0.60), rgba(8, 12, 20, 0.78)), radial-gradient(ellipse at 50% 35%, rgba(255, 210, 135, 0.12), transparent 62%), url('${menuBackgrounds[nextBackgroundIndex]}')`,
-          opacity: showNextBackground ? 1 : 0,
+          opacity: menuBackgroundMode === 'slideshow' && showNextBackground ? 1 : 0,
           transform: 'scale(1.025)',
         }}
       />
       <div aria-hidden="true" className="absolute inset-0 pointer-events-none bg-gradient-to-br from-amber-200/[0.035] via-transparent to-sky-200/[0.045]" />
       <div className="relative z-10 w-full max-w-md mx-auto">
         <div className="mb-6 w-full flex items-center justify-between gap-3">
-          <div className="animate-pulse-glow w-[clamp(4rem,18vw,5rem)] h-[clamp(4rem,18vw,5rem)] shrink-0 rounded-2xl border-2 border-gold-500/40 flex items-center justify-center">
-            <Swords size={36} className="text-gold-400" />
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="animate-pulse-glow w-[clamp(4rem,18vw,5rem)] h-[clamp(4rem,18vw,5rem)] shrink-0 rounded-2xl border-2 border-gold-500/40 flex items-center justify-center">
+              <Swords size={36} className="text-gold-400" />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowThemePicker(true)}
+              className="group min-w-[4.3rem] h-[clamp(4rem,18vw,5rem)] rounded-2xl border-2 border-gold-500/40 bg-ink-800/70 hover:border-gold-300 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-1 text-gold-300 shadow-lg px-2"
+              aria-label="Cambiar temas y fondos"
+            >
+              <Palette size={26} strokeWidth={1.8} className="group-hover:scale-110 transition-transform" />
+              <span className="font-display font-bold uppercase text-[10px] leading-none tracking-wide">Temas</span>
+            </button>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <button
@@ -340,6 +379,17 @@ function App() {
   const [onlinePlayerName, setOnlinePlayerName] = useState<string>('');
   const [storedHistory, setStoredHistory] = useState<MatchHistory | null>(null);
   const [copied, setCopied] = useState(false);
+  const [menuBackgroundIndex, setMenuBackgroundIndex] = useState(() => Number(window.localStorage.getItem('bg-menu-index') ?? 0));
+  const [menuBackgroundMode, setMenuBackgroundMode] = useState<BackgroundMode>(() => window.localStorage.getItem('bg-menu-mode') === 'slideshow' ? 'slideshow' : 'fixed');
+  const [gameBackgroundIndex, setGameBackgroundIndex] = useState(() => Number(window.localStorage.getItem('bg-game-index') ?? 0));
+  const [gameBackgroundMode, setGameBackgroundMode] = useState<BackgroundMode>(() => window.localStorage.getItem('bg-game-mode') === 'fixed' ? 'fixed' : 'slideshow');
+
+  useEffect(() => {
+    window.localStorage.setItem('bg-menu-index', String(menuBackgroundIndex));
+    window.localStorage.setItem('bg-menu-mode', menuBackgroundMode);
+    window.localStorage.setItem('bg-game-index', String(gameBackgroundIndex));
+    window.localStorage.setItem('bg-game-mode', gameBackgroundMode);
+  }, [menuBackgroundIndex, menuBackgroundMode, gameBackgroundIndex, gameBackgroundMode]);
 
   const toggleMusic = () => {
     setMusicEnabledState((current) => {
@@ -419,6 +469,14 @@ function App() {
         hasHistory={Boolean(liveHistory ?? storedHistory)}
         musicEnabled={musicEnabled}
         onToggleMusic={toggleMusic}
+        menuBackgroundIndex={menuBackgroundIndex}
+        setMenuBackgroundIndex={setMenuBackgroundIndex}
+        menuBackgroundMode={menuBackgroundMode}
+        setMenuBackgroundMode={setMenuBackgroundMode}
+        gameBackgroundIndex={gameBackgroundIndex}
+        setGameBackgroundIndex={setGameBackgroundIndex}
+        gameBackgroundMode={gameBackgroundMode}
+        setGameBackgroundMode={setGameBackgroundMode}
         onOpenHistory={openHistory}
         onOpenCards={() => setFlow('cards')}
         onOpenRules={() => setFlow('rules')}
