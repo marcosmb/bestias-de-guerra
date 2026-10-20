@@ -1,4 +1,5 @@
-import { X, Palette, Check } from 'lucide-react';
+import { useState } from 'react';
+import { X, Palette, Check, Shuffle } from 'lucide-react';
 
 export type BackgroundMode = 'fixed' | 'slideshow';
 
@@ -15,6 +16,8 @@ interface ThemePickerProps {
   setGameMode: (mode: BackgroundMode) => void;
 }
 
+type ThemeTab = 'menu' | 'board';
+
 export function ThemePicker({
   open,
   onClose,
@@ -27,80 +30,27 @@ export function ThemePicker({
   gameMode,
   setGameMode,
 }: ThemePickerProps) {
+  const [activeTab, setActiveTab] = useState<ThemeTab>('menu');
+
   if (!open) return null;
 
-  const renderOptions = (
-    title: string,
-    prefix: string,
-    count: number,
-    selectedIndex: number,
-    setSelectedIndex: (index: number) => void,
-    mode: BackgroundMode,
-    setMode: (mode: BackgroundMode) => void,
-    imagePath: (index: number) => string,
-  ) => (
-    <section className="mb-6">
-      <h3 className="font-display font-bold text-gold-300 mb-3">{title}</h3>
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        {([
-          ['fixed', 'Fondo fijo'],
-          ['slideshow', 'Rotación automática'],
-        ] as const).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setMode(value)}
-            className={`rounded-lg border px-3 py-2 text-xs sm:text-sm font-display font-bold transition-colors ${
-              mode === value
-                ? 'border-gold-400 bg-gold-400/15 text-gold-300'
-                : 'border-ink-600 bg-ink-800 text-ink-200 hover:border-gold-500/60'
-            }`}
-            aria-pressed={mode === value}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <p className="text-ink-300 text-xs mb-2">
-        {mode === 'fixed'
-          ? 'El fondo seleccionado permanecerá fijo.'
-          : 'Se mostrarán todos los fondos uno a uno, como hasta ahora.'}
-      </p>
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-        {Array.from({ length: count }, (_, index) => {
-          const selected = selectedIndex === index;
-          return (
-            <button
-              key={`${prefix}-${index}`}
-              type="button"
-              onClick={() => setSelectedIndex(index)}
-              className={`relative overflow-hidden rounded-lg border-2 aspect-[4/3] bg-ink-800 transition-all ${
-                selected ? 'border-gold-300 ring-2 ring-gold-400/50' : 'border-ink-600 hover:border-gold-500/70'
-              }`}
-              aria-label={`Seleccionar ${title.toLowerCase()} ${index + 1}`}
-              aria-pressed={selected}
-              title={`Fondo ${index + 1}`}
-            >
-              <img
-                src={imagePath(index)}
-                alt={`Vista previa del fondo ${index + 1}`}
-                loading="lazy"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-              <span className="absolute bottom-0 inset-x-0 bg-black/75 text-white text-[10px] font-bold py-1">
-                {index + 1}
-              </span>
-              {selected && (
-                <span className="absolute top-1 right-1 rounded-full bg-gold-300 text-ink-900 p-1">
-                  <Check size={12} />
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </section>
-  );
+  const isMenuTab = activeTab === 'menu';
+  const title = isMenuTab ? 'Fondo del menú' : 'Fondo del tablero';
+  const count = isMenuTab ? 14 : 8;
+  const selectedIndex = isMenuTab ? menuIndex : gameIndex;
+  const mode = isMenuTab ? menuMode : gameMode;
+  const setSelectedIndex = isMenuTab ? setMenuIndex : setGameIndex;
+  const setMode = isMenuTab ? setMenuMode : setGameMode;
+  const imagePath = (index: number) =>
+    isMenuTab
+      ? `/fondos-menu/fondo_menu_${index + 1}.jpg`
+      : `/fondos-juego-tablero/fondos-tablero-juego_${index + 1}.jpg`;
+
+  const chooseRotating = () => setMode('slideshow');
+  const chooseFixed = (index: number) => {
+    setSelectedIndex(index);
+    setMode('fixed');
+  };
 
   return (
     <div
@@ -128,32 +78,113 @@ export function ThemePicker({
             <X size={22} />
           </button>
         </div>
-        {renderOptions(
-          'Fondo del menú',
-          'menu',
-          14,
-          menuIndex,
-          setMenuIndex,
-          menuMode,
-          setMenuMode,
-          (index) => `/fondos-menu/fondo_menu_${index + 1}.jpg`,
-        )}
-        <div className="border-t border-ink-700 pt-5">
-          {renderOptions(
-            'Fondo del tablero',
-            'board',
-            8,
-            gameIndex,
-            setGameIndex,
-            gameMode,
-            setGameMode,
-            (index) => `/fondos-juego-tablero/fondos-tablero-juego_${index + 1}.jpg`,
-          )}
+
+        <div className="grid grid-cols-2 gap-2 mb-5" role="tablist" aria-label="Tipo de fondo">
+          <button
+            id="theme-tab-menu"
+            type="button"
+            role="tab"
+            aria-selected={isMenuTab}
+            aria-controls="theme-panel"
+            onClick={() => setActiveTab('menu')}
+            className={`rounded-xl border px-3 py-3 text-sm sm:text-base font-display font-bold transition-colors ${
+              isMenuTab
+                ? 'border-gold-400 bg-gold-400/15 text-gold-300'
+                : 'border-ink-600 bg-ink-800 text-ink-200 hover:border-gold-500/60'
+            }`}
+          >
+            Fondo del menú
+          </button>
+          <button
+            id="theme-tab-board"
+            type="button"
+            role="tab"
+            aria-selected={!isMenuTab}
+            aria-controls="theme-panel"
+            onClick={() => setActiveTab('board')}
+            className={`rounded-xl border px-3 py-3 text-sm sm:text-base font-display font-bold transition-colors ${
+              !isMenuTab
+                ? 'border-gold-400 bg-gold-400/15 text-gold-300'
+                : 'border-ink-600 bg-ink-800 text-ink-200 hover:border-gold-500/60'
+            }`}
+          >
+            Fondo del tablero
+          </button>
         </div>
+
+        <section id="theme-panel" role="tabpanel" aria-labelledby={isMenuTab ? 'theme-tab-menu' : 'theme-tab-board'}>
+          <h3 className="font-display font-bold text-gold-300 mb-3">{title}</h3>
+          <p className="text-ink-300 text-xs mb-3">
+            Elige una imagen para dejarla fija o selecciona «Fondo rotativo» para alternar automáticamente entre todos los fondos de esta pestaña.
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <button
+              type="button"
+              onClick={chooseRotating}
+              className={`relative overflow-hidden rounded-xl border-2 aspect-[4/3] bg-ink-800 transition-all ${
+                mode === 'slideshow' ? 'border-gold-300 ring-2 ring-gold-400/50' : 'border-ink-600 hover:border-gold-500/70'
+              }`}
+              aria-label={`Seleccionar fondo rotativo para ${title.toLowerCase()}`}
+              aria-pressed={mode === 'slideshow'}
+              title="Fondo rotativo"
+            >
+              <img
+                src={imagePath(0)}
+                alt=""
+                loading="lazy"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2 p-2">
+                <Shuffle size={28} className="text-gold-300 drop-shadow-lg" />
+                <span className="text-white text-sm font-display font-bold text-center">Fondo rotativo</span>
+                <span className="text-white/90 text-[10px] text-center">Todos los fondos</span>
+              </div>
+              {mode === 'slideshow' && (
+                <span className="absolute top-2 right-2 rounded-full bg-gold-300 text-ink-900 p-1">
+                  <Check size={13} />
+                </span>
+              )}
+            </button>
+
+            {Array.from({ length: count }, (_, index) => {
+              const selected = mode === 'fixed' && selectedIndex === index;
+              return (
+                <button
+                  key={`${activeTab}-${index}`}
+                  type="button"
+                  onClick={() => chooseFixed(index)}
+                  className={`relative overflow-hidden rounded-xl border-2 aspect-[4/3] bg-ink-800 transition-all ${
+                    selected ? 'border-gold-300 ring-2 ring-gold-400/50' : 'border-ink-600 hover:border-gold-500/70'
+                  }`}
+                  aria-label={`Seleccionar fondo ${index + 1} de ${title.toLowerCase()}`}
+                  aria-pressed={selected}
+                  title={`Fondo ${index + 1}`}
+                >
+                  <img
+                    src={imagePath(index)}
+                    alt={`Vista previa del fondo ${index + 1}`}
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <span className="absolute bottom-0 inset-x-0 bg-black/75 text-white text-xs font-bold py-1.5">
+                    Fondo {index + 1}
+                  </span>
+                  {selected && (
+                    <span className="absolute top-2 right-2 rounded-full bg-gold-300 text-ink-900 p-1">
+                      <Check size={13} />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
         <button
           type="button"
           onClick={onClose}
-          className="w-full rounded-xl bg-gold-400 text-ink-900 font-display font-bold py-3 hover:bg-gold-300"
+          className="w-full mt-5 rounded-xl bg-gold-400 text-ink-900 font-display font-bold py-3 hover:bg-gold-300"
         >
           Guardar selección
         </button>
