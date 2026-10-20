@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { X, Palette, Check, Shuffle, Sun, Moon } from 'lucide-react';
+import { X, Palette, Check, Shuffle, Sun, Moon, Sunrise } from 'lucide-react';
 
 export type BackgroundMode = 'fixed' | 'slideshow';
-export type AppearanceMode = 'light' | 'dark';
+export type AppearanceMode = 'light' | 'dark' | 'new';
 
 interface ThemePickerProps {
   open: boolean;
@@ -87,9 +87,10 @@ export function ThemePicker({
         <section className="mb-5 rounded-xl border border-gold-500/30 bg-ink-800/70 p-3">
           <h3 className="font-display font-bold text-gold-300 mb-1">Apariencia del juego</h3>
           <p className="text-ink-200 text-xs mb-3">Cambia el contraste de los paneles y del tablero sin modificar las ilustraciones de las cartas.</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {([
               ['dark', 'Tema original', Moon],
+              ['new', 'Tema nuevo', Sunrise],
               ['light', 'Tema claro', Sun],
             ] as const).map(([value, label, Icon]) => (
               <button
