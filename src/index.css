@@ -705,20 +705,8 @@ html[data-appearance="new"] body {
   color: #3D2B1F;
 }
 html[data-appearance="new"] .theme-new-menu {
-  background: #E9DCC3 !important;
+  background: transparent !important;
   color: #3D2B1F;
-}
-html[data-appearance="new"] .theme-new-menu > div[aria-hidden="true"]:first-child {
-  background-image:
-    radial-gradient(ellipse at 16% 91%, #c7aa7c 0 17%, transparent 17.5%),
-    radial-gradient(ellipse at 77% 97%, #d2b98e 0 24%, transparent 24.5%),
-    radial-gradient(ellipse at 50% 110%, #e1cda7 0 42%, transparent 42.5%),
-    linear-gradient(180deg, #b9dcf1 0%, #e9f3f5 37%, #d7c6a2 57%, #E9DCC3 100%) !important;
-  opacity: 1 !important;
-  transform: none !important;
-}
-html[data-appearance="new"] .theme-new-menu > div[aria-hidden="true"]:nth-child(2) {
-  display: none !important;
 }
 html[data-appearance="new"] .theme-new-menu button {
   background-color: #FFFBF0 !important;
@@ -746,10 +734,7 @@ html[data-appearance="new"] .theme-new-menu button svg {
   color: #6B4A2B !important;
 }
 html[data-appearance="new"] .theme-new-board {
-  background:
-    radial-gradient(ellipse at 14% 100%, #d0b489 0 19%, transparent 19.5%),
-    radial-gradient(ellipse at 85% 100%, #dfc79f 0 24%, transparent 24.5%),
-    linear-gradient(180deg, #c7e4f5 0%, #f3f6f0 28%, #E9DCC3 56%, #F0E6D2 100%) !important;
+  background: transparent !important;
   color: #3D2B1F !important;
 }
 html[data-appearance="new"] .theme-new-board .field-zone {
