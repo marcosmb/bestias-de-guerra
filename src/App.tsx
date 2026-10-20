@@ -385,7 +385,7 @@ function App() {
   const [gameBackgroundMode, setGameBackgroundMode] = useState<BackgroundMode>(() => window.localStorage.getItem('bg-game-mode') === 'fixed' ? 'fixed' : 'slideshow');
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>(() => {
     const saved = window.localStorage.getItem('game-appearance');
-    return saved === 'light' || saved === 'dark' || saved === 'auto' ? saved : 'light';
+    return saved === 'dark' ? 'dark' : 'light';
   });
 
   useEffect(() => {
