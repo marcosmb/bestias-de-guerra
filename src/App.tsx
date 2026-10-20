@@ -99,7 +99,7 @@ function StartScreen({
   }, [backgroundIndex, showNextBackground, menuBackgroundMode]);
 
   return (
-    <div className={`relative isolate min-h-[100dvh] overflow-hidden bg-ink-900 flex items-center justify-center px-3 sm:px-6 py-6 ${appearanceMode === 'new' ? 'theme-new-menu' : ''}`}>
+    <div className={`relative isolate min-h-[100dvh] overflow-hidden bg-ink-900 flex items-center justify-center px-3 sm:px-6 py-6 ${appearanceMode === 'new' ? 'theme-new-menu' : appearanceMode === 'tema2' ? 'theme-tema2-menu' : ''}`}>
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
@@ -461,11 +461,11 @@ function App() {
   }
 
   if (flow === 'cards') {
-    return <CardReferenceScreen onBack={() => setFlow('menu')} />;
+    return <CardReferenceScreen onBack={() => setFlow('menu')} appearanceMode={appearanceMode} />;
   }
 
   if (flow === 'rules') {
-    return <RulesScreen onBack={() => setFlow('menu')} />;
+    return <RulesScreen onBack={() => setFlow('menu')} appearanceMode={appearanceMode} />;
   }
 
   if (flow === 'menu') {
