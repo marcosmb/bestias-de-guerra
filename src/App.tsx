@@ -11,7 +11,7 @@ import { loadHistoryFrom, getDefaultStorage, type MatchHistory } from '@/game/hi
 import { CardReferenceScreen } from '@/components/CardReferenceScreen';
 import { RulesScreen } from '@/components/RulesScreen';
 import { getMusicPreferences, initAudio, setMusicEnabled, setMusicTrack, setMusicVolume } from '@/game/audio';
-import { ThemePicker, type BackgroundMode } from '@/components/ThemePicker';
+import { ThemePicker, type AppearanceMode, type BackgroundMode } from '@/components/ThemePicker';
 
 type FlowPhase = 'menu' | 'pass' | 'play' | 'history' | 'online-setup' | 'cards' | 'rules';
 
@@ -31,6 +31,8 @@ function StartScreen({
   setGameBackgroundIndex,
   gameBackgroundMode,
   setGameBackgroundMode,
+  appearanceMode,
+  setAppearanceMode,
 }: {
   onStart: (mode: GameMode, difficulty: Difficulty) => void;
   onOpenHistory: () => void;
@@ -47,6 +49,8 @@ function StartScreen({
   setGameBackgroundIndex: (index: number) => void;
   gameBackgroundMode: BackgroundMode;
   setGameBackgroundMode: (mode: BackgroundMode) => void;
+  appearanceMode: AppearanceMode;
+  setAppearanceMode: (mode: AppearanceMode) => void;
 }) {
   const [mode, setMode] = useState<GameMode>('local');
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
@@ -291,6 +295,8 @@ function StartScreen({
         setGameIndex={setGameBackgroundIndex}
         gameMode={gameBackgroundMode}
         setGameMode={setGameBackgroundMode}
+        appearanceMode={appearanceMode}
+        setAppearanceMode={setAppearanceMode}
       />
     </div>
   );
@@ -377,6 +383,15 @@ function App() {
   const [menuBackgroundMode, setMenuBackgroundMode] = useState<BackgroundMode>(() => window.localStorage.getItem('bg-menu-mode') === 'fixed' ? 'fixed' : 'slideshow');
   const [gameBackgroundIndex, setGameBackgroundIndex] = useState(() => Number(window.localStorage.getItem('bg-game-index') ?? 0));
   const [gameBackgroundMode, setGameBackgroundMode] = useState<BackgroundMode>(() => window.localStorage.getItem('bg-game-mode') === 'fixed' ? 'fixed' : 'slideshow');
+  const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>(() => {
+    const saved = window.localStorage.getItem('game-appearance');
+    return saved === 'light' || saved === 'dark' || saved === 'auto' ? saved : 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.appearance = appearanceMode;
+    window.localStorage.setItem('game-appearance', appearanceMode);
+  }, [appearanceMode]);
 
   useEffect(() => {
     window.localStorage.setItem('bg-menu-index', String(menuBackgroundIndex));
@@ -471,6 +486,8 @@ function App() {
         setGameBackgroundIndex={setGameBackgroundIndex}
         gameBackgroundMode={gameBackgroundMode}
         setGameBackgroundMode={setGameBackgroundMode}
+        appearanceMode={appearanceMode}
+        setAppearanceMode={setAppearanceMode}
         onOpenHistory={openHistory}
         onOpenCards={() => setFlow('cards')}
         onOpenRules={() => setFlow('rules')}
@@ -599,6 +616,9 @@ function App() {
           gameBackgroundIndex={gameBackgroundIndex}
           setGameBackgroundIndex={setGameBackgroundIndex}
           gameBackgroundMode={gameBackgroundMode}
+          setGameBackgroundMode={setGameBackgroundMode}
+          appearanceMode={appearanceMode}
+          setAppearanceMode={setAppearanceMode}
           menuBackgroundIndex={menuBackgroundIndex}
           setMenuBackgroundIndex={setMenuBackgroundIndex}
           menuBackgroundMode={menuBackgroundMode}
@@ -637,6 +657,9 @@ function App() {
       gameBackgroundIndex={gameBackgroundIndex}
       setGameBackgroundIndex={setGameBackgroundIndex}
       gameBackgroundMode={gameBackgroundMode}
+      setGameBackgroundMode={setGameBackgroundMode}
+      appearanceMode={appearanceMode}
+      setAppearanceMode={setAppearanceMode}
       menuBackgroundIndex={menuBackgroundIndex}
       setMenuBackgroundIndex={setMenuBackgroundIndex}
       menuBackgroundMode={menuBackgroundMode}
