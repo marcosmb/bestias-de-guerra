@@ -12,6 +12,7 @@ import { CardReferenceScreen } from '@/components/CardReferenceScreen';
 import { RulesScreen } from '@/components/RulesScreen';
 import { getMusicPreferences, initAudio, setMusicEnabled, setMusicTrack, setMusicVolume } from '@/game/audio';
 import { ThemePicker, type AppearanceMode, type BackgroundMode } from '@/components/ThemePicker';
+import { menuBackgrounds } from '@/generated/backgrounds';
 
 type FlowPhase = 'menu' | 'pass' | 'play' | 'history' | 'online-setup' | 'cards' | 'rules';
 
@@ -56,10 +57,6 @@ function StartScreen({
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
   const [showThemePicker, setShowThemePicker] = useState(false);
 
-  const menuBackgrounds = Array.from(
-    { length: 14 },
-    (_, index) => `/fondos-menu/fondo_menu_${index + 1}.jpg`,
-  );
   const [backgroundIndex, setBackgroundIndex] = useState(menuBackgroundIndex);
   const [nextBackgroundIndex, setNextBackgroundIndex] = useState(1);
   const [showNextBackground, setShowNextBackground] = useState(false);
