@@ -827,3 +827,132 @@ html[data-appearance="new"] .theme-new-board [data-lp-player] > div {
 html[data-appearance="new"] .theme-new-board [data-lp-player] > div > div {
   background-image: linear-gradient(90deg, #8B5E34, #D4A574);
 }
+
+
+/* ===== TEMA 2: cristal oscuro estilo juego de cartas AAA ===== */
+/* Aislado al Tema 2: conserva la lógica y los fondos elegidos por el jugador. */
+html[data-appearance="tema2"] body {
+  background: #080d18;
+  color: #f8fafc;
+}
+html[data-appearance="tema2"] .theme-tema2-board {
+  color: #f8fafc !important;
+  background-color: transparent !important;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(251,191,36,.10), transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(56,189,248,.08), transparent 60%) !important;
+  background-blend-mode: screen, screen, normal;
+}
+html[data-appearance="tema2"] .theme-tema2-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(4,8,18,.30), rgba(4,8,18,.12) 45%, rgba(4,8,18,.48));
+  box-shadow: inset 0 0 110px rgba(0,0,0,.38);
+}
+html[data-appearance="tema2"] .theme-tema2-board > * {
+  position: relative;
+  z-index: 1;
+}
+html[data-appearance="tema2"] .theme-tema2-board .field-zone {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.13) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+html[data-appearance="tema2"] .theme-tema2-board .field-zone:first-of-type {
+  background: linear-gradient(135deg, rgba(127,29,29,.38), rgba(15,23,42,.64)) !important;
+}
+html[data-appearance="tema2"] .theme-tema2-board .field-zone:last-of-type {
+  background: linear-gradient(135deg, rgba(8,47,73,.58), rgba(15,23,42,.66)) !important;
+}
+html[data-appearance="tema2"] .theme-tema2-board .field-zone::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: 10px;
+  pointer-events: none;
+}
+html[data-appearance="tema2"] .theme-tema2-board [class~="bg-ink-800/60"],
+html[data-appearance="tema2"] .theme-tema2-board [class~="bg-ink-800/40"],
+html[data-appearance="tema2"] .theme-tema2-board [class~="bg-ink-800/30"],
+html[data-appearance="tema2"] .theme-tema2-board [class~="bg-ink-800/70"],
+html[data-appearance="tema2"] .theme-tema2-board [class~="bg-ink-800/90"],
+html[data-appearance="tema2"] .theme-tema2-board [class~="bg-ink-900/80"],
+html[data-appearance="tema2"] .theme-tema2-board [class~="bg-ink-700/40"],
+html[data-appearance="tema2"] .theme-tema2-board [class~="bg-ink-700/60"] {
+  background-color: rgba(10,16,30,.72) !important;
+  background-image: linear-gradient(135deg, rgba(255,255,255,.055), rgba(255,255,255,.012)) !important;
+  border-color: rgba(255,255,255,.11) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.045);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+html[data-appearance="tema2"] .theme-tema2-board [class*="border-ink-"] {
+  border-color: rgba(255,255,255,.13) !important;
+}
+html[data-appearance="tema2"] .theme-tema2-board [data-field-slot]:not([data-field-uid]) {
+  border-color: rgba(255,255,255,.20) !important;
+  background-color: rgba(255,255,255,.035);
+  box-shadow: inset 0 0 18px rgba(255,255,255,.025);
+}
+html[data-appearance="tema2"] .theme-tema2-board [data-lp-player] {
+  opacity: 1;
+}
+html[data-appearance="tema2"] .theme-tema2-board [data-lp-player] > div {
+  background-color: rgba(2,6,23,.82);
+  border-color: rgba(255,255,255,.16);
+  box-shadow: inset 0 1px 4px rgba(0,0,0,.55);
+}
+html[data-appearance="tema2"] .theme-tema2-board [data-lp-player] > div > div {
+  box-shadow: 0 0 12px rgba(52,211,153,.26);
+}
+html[data-appearance="tema2"] .theme-tema2-board [data-lp-player] > span:last-child {
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 8px rgba(0,0,0,.75);
+}
+html[data-appearance="tema2"] .theme-tema2-board [data-lp-player] > span:first-of-type {
+  text-shadow: 0 1px 8px rgba(0,0,0,.75);
+}
+html[data-appearance="tema2"] .theme-tema2-board button {
+  transition: transform .18s ease, filter .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+html[data-appearance="tema2"] .theme-tema2-board button[class*="bg-gold-400"],
+html[data-appearance="tema2"] .theme-tema2-board button[class*="from-gold-"] {
+  background-image: linear-gradient(135deg, #fde68a, #d97706) !important;
+  color: #201407 !important;
+  border-color: rgba(253,230,138,.75) !important;
+  box-shadow: 0 0 22px rgba(245,158,11,.20), 0 6px 18px rgba(0,0,0,.30);
+}
+html[data-appearance="tema2"] .theme-tema2-board button[class*="bg-ink-"] {
+  background-color: rgba(15,23,42,.76) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(255,255,255,.14) !important;
+}
+html[data-appearance="tema2"] .theme-tema2-board [class*="shadow-card"],
+html[data-appearance="tema2"] .theme-tema2-board [class*="rounded-lg border-2 shadow-card"] {
+  box-shadow: 0 8px 24px rgba(0,0,0,.50), 0 0 0 1px rgba(255,255,255,.05) inset;
+}
+html[data-appearance="tema2"] .theme-tema2-board [data-field-uid] > div,
+html[data-appearance="tema2"] .theme-tema2-board .card-face {
+  backface-visibility: hidden;
+}
+html[data-appearance="tema2"] .theme-tema2-board [data-field-uid] {
+  filter: drop-shadow(0 7px 10px rgba(0,0,0,.28));
+}
+@media (hover: hover) {
+  html[data-appearance="tema2"] .theme-tema2-board [data-field-uid]:hover {
+    filter: drop-shadow(0 12px 18px rgba(0,0,0,.42));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-appearance="tema2"] .theme-tema2-board button {
+    transition: none;
+  }
+}
