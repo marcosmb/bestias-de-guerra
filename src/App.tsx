@@ -380,7 +380,7 @@ function App() {
   const [storedHistory, setStoredHistory] = useState<MatchHistory | null>(null);
   const [copied, setCopied] = useState(false);
   const [menuBackgroundIndex, setMenuBackgroundIndex] = useState(() => Number(window.localStorage.getItem('bg-menu-index') ?? 0));
-  const [menuBackgroundMode, setMenuBackgroundMode] = useState<BackgroundMode>(() => window.localStorage.getItem('bg-menu-mode') === 'slideshow' ? 'slideshow' : 'fixed');
+  const [menuBackgroundMode, setMenuBackgroundMode] = useState<BackgroundMode>(() => window.localStorage.getItem('bg-menu-mode') === 'fixed' ? 'fixed' : 'slideshow');
   const [gameBackgroundIndex, setGameBackgroundIndex] = useState(() => Number(window.localStorage.getItem('bg-game-index') ?? 0));
   const [gameBackgroundMode, setGameBackgroundMode] = useState<BackgroundMode>(() => window.localStorage.getItem('bg-game-mode') === 'fixed' ? 'fixed' : 'slideshow');
 
