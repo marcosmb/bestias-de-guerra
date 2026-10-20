@@ -1350,7 +1350,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
         style={{
-          backgroundImage: `linear-gradient(rgba(8, 12, 20, 0.48), rgba(8, 12, 20, 0.68)), radial-gradient(ellipse at 50% 35%, rgba(255, 210, 135, 0.10), transparent 62%), url('${gameBackgrounds[gameBackgroundMode === 'fixed' ? selectedGameBackgroundIndex : gameBackgroundIndex]}')`,
+          backgroundImage: `url('${gameBackgrounds[gameBackgroundMode === 'fixed' ? selectedGameBackgroundIndex : gameBackgroundIndex]}')`,
           opacity: showNextGameBackground ? 0 : 1,
           transform: 'scale(1.025)',
         }}
@@ -1359,12 +1359,11 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
         style={{
-          backgroundImage: `linear-gradient(rgba(8, 12, 20, 0.48), rgba(8, 12, 20, 0.68)), radial-gradient(ellipse at 50% 35%, rgba(255, 210, 135, 0.10), transparent 62%), url('${gameBackgrounds[nextGameBackgroundIndex]}')`,
+          backgroundImage: `url('${gameBackgrounds[nextGameBackgroundIndex]}')`,
           opacity: gameBackgroundMode === 'slideshow' && showNextGameBackground ? 1 : 0,
           transform: 'scale(1.025)',
         }}
       />
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[-1] bg-gradient-to-br from-amber-200/[0.025] via-transparent to-sky-200/[0.035]" />
       <ThemePicker
         open={showThemePicker}
         onClose={() => setShowThemePicker(false)}
