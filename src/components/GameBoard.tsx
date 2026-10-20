@@ -27,7 +27,7 @@ import { legalActions, sameAction } from '@/game/legalActions';
 import { CardView, CardBack } from './CardView';
 import { playSound, vibrate, getAudioPreferences, setSoundEnabled, setVolume, initAudio } from '@/game/audio';
 import { getTrap3CountingOrder } from '@/game/trapCounting';
-import { ThemePicker, type BackgroundMode } from '@/components/ThemePicker';
+import { ThemePicker, type AppearanceMode, type BackgroundMode } from '@/components/ThemePicker';
 
 interface GameBoardProps {
   state: GameState;
@@ -39,6 +39,8 @@ interface GameBoardProps {
   setGameBackgroundIndex: (index: number) => void;
   gameBackgroundMode: BackgroundMode;
   setGameBackgroundMode: (mode: BackgroundMode) => void;
+  appearanceMode: AppearanceMode;
+  setAppearanceMode: (mode: AppearanceMode) => void;
   menuBackgroundIndex: number;
   setMenuBackgroundIndex: (index: number) => void;
   menuBackgroundMode: BackgroundMode;
@@ -549,7 +551,7 @@ function CombatAnimation({
   );
 }
 
-export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic, localPlayerIndex, gameBackgroundIndex: selectedGameBackgroundIndex, setGameBackgroundIndex, gameBackgroundMode, setGameBackgroundMode, menuBackgroundIndex, setMenuBackgroundIndex, menuBackgroundMode, setMenuBackgroundMode }: GameBoardProps) {
+export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic, localPlayerIndex, gameBackgroundIndex: selectedGameBackgroundIndex, setGameBackgroundIndex, gameBackgroundMode, setGameBackgroundMode, appearanceMode, setAppearanceMode, menuBackgroundIndex, setMenuBackgroundIndex, menuBackgroundMode, setMenuBackgroundMode }: GameBoardProps) {
   const [showLog, setShowLog] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
 
@@ -1374,6 +1376,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         setGameIndex={setGameBackgroundIndex}
         gameMode={gameBackgroundMode}
         setGameMode={setGameBackgroundMode}
+        appearanceMode={appearanceMode}
+        setAppearanceMode={setAppearanceMode}
       />
       {/* Turn banner */}
       <TurnBanner playerName={state.players[cp].name} turnCount={state.turnCount} />
