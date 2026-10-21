@@ -1329,7 +1329,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
 
   return (
     <div
-      className={`board-bg relative isolate flex flex-col w-full overflow-y-auto overflow-x-hidden lg:overflow-x-visible ${appearanceMode === 'new' ? 'theme-new-board' : appearanceMode === 'tema2' ? 'theme-tema2-board' : ''}`}
+      className={`board-bg relative isolate flex flex-col w-full overflow-y-auto overflow-x-hidden lg:overflow-x-visible ${appearanceMode === 'new' ? 'theme-new-board' : appearanceMode === 'tema2' ? 'theme-tema2-board' : appearanceMode === 'tema3' ? 'theme-tema3-board' : ''}`}
       style={{
         height: '100dvh',
         paddingTop: 'env(safe-area-inset-top)',
