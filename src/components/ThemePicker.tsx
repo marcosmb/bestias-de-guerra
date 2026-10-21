@@ -3,7 +3,7 @@ import { menuBackgrounds, gameBackgrounds } from '@/generated/backgrounds';
 import { X, Palette, Check, Shuffle, Sun, Moon, Sunrise } from 'lucide-react';
 
 export type BackgroundMode = 'fixed' | 'slideshow';
-export type AppearanceMode = 'light' | 'dark' | 'new' | 'tema2';
+export type AppearanceMode = 'light' | 'dark' | 'new' | 'tema2' | 'tema3';
 
 interface ThemePickerProps {
   open: boolean;
@@ -58,7 +58,7 @@ export function ThemePicker({
 
   return (
     <div
-      className={`theme-picker-overlay fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-3 sm:p-5 ${appearanceMode === "tema2" ? "theme-picker-tema2" : ""}`}
+      className={`theme-picker-overlay fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-3 sm:p-5 ${appearanceMode === "tema2" ? "theme-picker-tema2" : appearanceMode === "tema3" ? "theme-picker-tema3" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="theme-picker-title"
@@ -92,6 +92,7 @@ export function ThemePicker({
               ['new', 'Tema 1', Sunrise],
               ['light', 'Tema claro', Sun],
               ['tema2', 'Tema 2', Palette],
+              ['tema3', 'Tema 3: Luz de Guerra', Sunrise],
             ] as const).map(([value, label, Icon]) => (
               <button
                 key={value}
