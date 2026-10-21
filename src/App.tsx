@@ -13,6 +13,7 @@ import { RulesScreen } from '@/components/RulesScreen';
 import { getMusicPreferences, initAudio, setMusicEnabled, setMusicTrack, setMusicVolume } from '@/game/audio';
 import { ThemePicker, type AppearanceMode, type BackgroundMode } from '@/components/ThemePicker';
 import { menuBackgrounds } from '@/generated/backgrounds';
+import './tema3.css';
 
 type FlowPhase = 'menu' | 'pass' | 'play' | 'history' | 'online-setup' | 'cards' | 'rules';
 
@@ -99,7 +100,7 @@ function StartScreen({
   }, [backgroundIndex, showNextBackground, menuBackgroundMode]);
 
   return (
-    <div className={`relative isolate min-h-[100dvh] overflow-hidden bg-ink-900 flex items-center justify-center px-3 sm:px-6 py-6 ${appearanceMode === 'new' ? 'theme-new-menu' : appearanceMode === 'tema2' ? 'theme-tema2-menu' : ''}`}>
+    <div className={`relative isolate min-h-[100dvh] overflow-hidden bg-ink-900 flex items-center justify-center px-3 sm:px-6 py-6 ${appearanceMode === 'new' ? 'theme-new-menu' : appearanceMode === 'tema2' ? 'theme-tema2-menu' : appearanceMode === 'tema3' ? 'theme-tema3-menu' : ''}`}>
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
@@ -381,7 +382,7 @@ function App() {
   const [gameBackgroundMode, setGameBackgroundMode] = useState<BackgroundMode>(() => window.localStorage.getItem('bg-game-mode') === 'fixed' ? 'fixed' : 'slideshow');
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>(() => {
     const saved = window.localStorage.getItem('game-appearance');
-    return saved === 'light' || saved === 'new' || saved === 'tema2' ? saved : 'dark';
+    return saved === 'light' || saved === 'new' || saved === 'tema2' || saved === 'tema3' ? saved : 'dark';
   });
 
   useEffect(() => {
