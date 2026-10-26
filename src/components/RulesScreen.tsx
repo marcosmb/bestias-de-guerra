@@ -50,7 +50,7 @@ export function RulesScreen({ onBack, appearanceMode, overlay = false }: RulesSc
         </div>
       </header>
 
-      <main className={`relative min-h-0 flex-1 overflow-hidden ${overlay ? "bg-transparent" : "bg-[radial-gradient(circle_at_top,rgba(230,185,78,0.05),transparent_35%)]`}>
+      <main className={`relative min-h-0 flex-1 overflow-hidden ${overlay ? "bg-transparent" : "bg-[radial-gradient(circle_at_top,rgba(230,185,78,0.05),transparent_35%)]"}`}>
         <div className="h-full w-full p-2 sm:p-3 lg:p-4">
           <div className={`h-full w-full overflow-hidden rounded-xl border border-ink-700 ${overlay ? "bg-transparent" : "bg-ink-900"} shadow-2xl`}>
             <iframe
