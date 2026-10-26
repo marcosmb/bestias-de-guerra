@@ -1,3 +1,30 @@
+/* Tema 4: conserva el acabado obsidiana/oro del menú con reglas independientes.
+   Estas reglas replican el aspecto previo sin depender de selectores del Tema 2. */
+html[data-appearance="tema4"] .theme-tema4-menu { background-color: #070a13 !important; color: #f7f0df !important; }
+html[data-appearance="tema4"] .theme-tema4-menu::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(900px 480px at 12% 0%, rgba(46,74,130,.40), transparent 65%), radial-gradient(780px 480px at 100% 8%, rgba(122,74,26,.28), transparent 62%), linear-gradient(180deg, rgba(7,10,19,.48), rgba(7,10,19,.82));
+}
+html[data-appearance="tema4"] .theme-tema4-menu > div[class*="relative z-10"] {
+  width: min(100%, 920px) !important; max-width: 920px !important; margin: auto; padding: clamp(18px, 4vw, 36px);
+  border: 1px solid rgba(255,255,255,.12); border-radius: 24px; background: linear-gradient(180deg, rgba(18,26,42,.91), rgba(15,23,40,.91));
+  box-shadow: 0 30px 80px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,255,255,.10); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+}
+html[data-appearance="tema4"] .theme-tema4-menu h1 {
+  font-family: "Cinzel Decorative", Georgia, serif !important; font-weight: 900 !important; letter-spacing: .035em;
+  background: linear-gradient(180deg,#ffdf8a,#e8b94f 55%,#9a6d1d); -webkit-background-clip: text; background-clip: text; color: transparent !important;
+  filter: drop-shadow(0 5px 20px rgba(232,185,79,.20));
+}
+html[data-appearance="tema4"] .theme-tema4-menu p { color: #c2cce0 !important; }
+html[data-appearance="tema4"] .theme-tema4-menu button {
+  min-height: 44px; border-color: rgba(255,255,255,.15) !important; border-radius: 13px !important;
+  background: linear-gradient(180deg,rgba(42,57,85,.96),rgba(30,44,68,.96)) !important; color: #f7f0df !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06); transition: transform .18s ease, filter .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+html[data-appearance="tema4"] .theme-tema4-menu button:hover { transform: translateY(-2px); border-color: rgba(232,185,79,.6) !important; box-shadow: 0 12px 28px rgba(0,0,0,.35), inset 0 0 0 1px rgba(232,185,79,.10); }
+html[data-appearance="tema4"] .theme-tema4-menu button[class*="bg-gold-400"] { background: linear-gradient(135deg,#ffe29a,#d89a2a 55%,#a66d12) !important; color: #211707 !important; border-color: #ffe6a4 !important; box-shadow: 0 12px 32px rgba(197,138,37,.32), inset 0 1px 0 rgba(255,255,255,.5); }
+html[data-appearance="tema4"] .theme-tema4-menu button svg { filter: drop-shadow(0 2px 5px rgba(0,0,0,.25)); }
+
 /* Tema 4: conservar la imagen JPG del menú nítida y con su luminosidad original.
    Desactiva únicamente la capa de oscurecimiento heredada del Tema 2. */
 html[data-appearance="tema4"] .theme-tema4-menu {
