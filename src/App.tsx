@@ -213,7 +213,7 @@ function StartScreen({
                 onClick={() => setDifficulty(d)}
                 className={`rounded-lg border px-3 py-2 text-xs font-display font-bold transition-colors ${
                   difficulty === d
-                    ? 'border-azure-400 bg-azure-400/15 text-azure-300'
+                    ? 'border-gold-400 bg-gold-400/15 text-gold-300'
                     : 'border-slate-400/70 text-slate-100 hover:border-slate-300'
                 }`}
               >
