@@ -86,18 +86,53 @@ tr:last-child td{border-bottom:0}
   <a href="#magicas">Mágicas</a>
 </nav>
 <script>
-  // Los enlaces del índice deben desplazarse dentro de este reglamento,
-  // incluso cuando el HTML se muestra dentro de un iframe srcDoc.
+  // Mantiene resaltada la sección que se está leyendo, tanto al hacer clic
+  // en el índice como al desplazarse manualmente por el reglamento.
   document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.toc a[href^="#"]').forEach((link) => {
+    const links = Array.from(document.querySelectorAll('.toc a[href^="#"]'));
+    const sections = links
+      .map((link) => ({ link, section: document.getElementById(link.getAttribute('href').slice(1)) }))
+      .filter((item) => item.section);
+
+    const setActive = (activeLink) => {
+      links.forEach((link) => {
+        const isActive = link === activeLink;
+        link.classList.toggle('is-active', isActive);
+        if (isActive) link.setAttribute('aria-current', 'location');
+        else link.removeAttribute('aria-current');
+      });
+    };
+
+    links.forEach((link) => {
       link.addEventListener('click', (event) => {
-        const id = link.getAttribute('href').slice(1);
-        const target = document.getElementById(id);
+        const target = document.getElementById(link.getAttribute('href').slice(1));
         if (!target) return;
         event.preventDefault();
+        setActive(link);
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     });
+
+    if ('IntersectionObserver' in window) {
+      const visibleSections = new Map();
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) visibleSections.set(entry.target, entry.intersectionRatio);
+          else visibleSections.delete(entry.target);
+        });
+
+        const current = sections
+          .filter(({ section }) => visibleSections.has(section))
+          .sort((a, b) => {
+            const ratioDifference = visibleSections.get(b.section) - visibleSections.get(a.section);
+            return ratioDifference || a.section.getBoundingClientRect().top - b.section.getBoundingClientRect().top;
+          })[0];
+
+        if (current) setActive(current.link);
+      }, { root: null, rootMargin: '-12% 0px -62% 0px', threshold: [0, 0.05, 0.15, 0.3, 0.5] });
+
+      sections.forEach(({ section }) => observer.observe(section));
+    }
   });
 </script>
 
