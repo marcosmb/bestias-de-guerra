@@ -1084,10 +1084,10 @@ html[data-appearance="tema2"] .theme-picker-tema4 {
 /* Tema 4: botones y textos de Cartas con el mismo lenguaje visual que Temas y fondos. */
 html[data-appearance="tema2"] .theme-tema4-cards header,
 html[data-appearance="tema2"] .theme-tema4-cards > div {
-  background: rgba(18,26,42,.50) !important;
-  border-color: rgba(255,255,255,.12) !important;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background-color: rgba(10,16,30,.88) !important;
+  border-color: rgba(255,255,255,.11) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 html[data-appearance="tema2"] .theme-tema4-cards h1,
 html[data-appearance="tema2"] .theme-tema4-cards h2,
@@ -1126,7 +1126,7 @@ html[data-appearance="tema2"] .theme-tema4-cards {
 }
 html[data-appearance="tema2"] .theme-tema4-cards header,
 html[data-appearance="tema2"] .theme-tema4-cards > div {
-  background: rgba(18,26,42,.50) !important;
+  background-color: rgba(10,16,30,.88) !important;
 }
 html[data-appearance="tema2"] .theme-tema4-cards main {
   background: transparent !important;
