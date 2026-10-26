@@ -829,6 +829,31 @@ html[data-appearance="new"] .theme-new-board [data-lp-player] > div > div {
 }
 
 
+/* ===== TEMA 4: permitir que se vea el fondo elegido en el tablero ===== */
+/* El Tema 4 comparte la clase del tablero con el Tema 2, pero necesita sus
+   propias reglas porque el atributo data-appearance es distinto. */
+html[data-appearance="tema4"] .theme-tema2-board {
+  color: #f8fafc !important;
+  background-color: transparent !important;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(251,191,36,.06), transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(56,189,248,.045), transparent 60%) !important;
+  background-blend-mode: screen, screen, normal;
+}
+html[data-appearance="tema4"] .theme-tema2-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(4,8,18,.12), rgba(4,8,18,.08) 45%, rgba(4,8,18,.24));
+  box-shadow: inset 0 0 80px rgba(0,0,0,.20);
+}
+html[data-appearance="tema4"] .theme-tema2-board > *:not([role="dialog"]) {
+  position: relative;
+  z-index: 1;
+}
+
 /* ===== TEMA 2: cristal oscuro estilo juego de cartas AAA ===== */
 /* Aislado al Tema 2: conserva la lógica y los fondos elegidos por el jugador. */
 html[data-appearance="tema2"] body {
