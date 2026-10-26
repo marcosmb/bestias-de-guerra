@@ -382,7 +382,7 @@ function App() {
   const [gameBackgroundMode, setGameBackgroundMode] = useState<BackgroundMode>(() => window.localStorage.getItem('bg-game-mode') === 'fixed' ? 'fixed' : 'slideshow');
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>(() => {
     const saved = window.localStorage.getItem('game-appearance');
-    return saved === 'light' || saved === 'new' || saved === 'tema2' || saved === 'tema3' ? saved : 'dark';
+    return saved === 'light' || saved === 'new' || saved === 'tema2' || saved === 'tema3' || saved === 'tema4' ? saved : 'dark';
   });
 
   useEffect(() => {
