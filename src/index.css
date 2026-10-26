@@ -1039,7 +1039,7 @@ html[data-appearance="tema2"] .theme-tema2-cards article { background: linear-gr
 html[data-appearance="tema2"] .theme-tema2-cards button[aria-pressed="true"] { background: linear-gradient(180deg,#2f446d,#1d2d4e) !important; border-color: #f4c45e !important; color: #f4c45e !important; box-shadow: 0 0 0 3px rgba(244,196,94,.12); }
 html[data-appearance="tema2"] .theme-tema2-cards h1, html[data-appearance="tema2"] .theme-tema2-cards h2, html[data-appearance="tema2"] .theme-tema2-cards h3 { color: #f4c45e !important; }
 
-html[data-appearance="tema2"] .theme-tema2-rules { background: #080d18 !important; color: #f8fafc !important; }
+html[data-appearance="tema2"] .theme-tema2-rules { background: transparent !important; color: #f8fafc !important; }
 html[data-appearance="tema2"] .theme-tema2-rules header { background: rgba(10,16,30,.94) !important; border-color: rgba(255,255,255,.12) !important; }
 html[data-appearance="tema2"] .theme-tema2-rules main > div > div { border-color: rgba(255,255,255,.13) !important; box-shadow: 0 18px 50px rgba(0,0,0,.48); }
 @media (prefers-reduced-motion: reduce) { html[data-appearance="tema2"] .theme-tema2-menu button, html[data-appearance="tema2"] .theme-picker-tema2 button, html[data-appearance="tema2"] .theme-tema2-cards article { transition: none; } }
