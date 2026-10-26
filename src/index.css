@@ -1118,3 +1118,16 @@ html[data-appearance="tema2"] .theme-tema4-cards button[aria-pressed="true"] {
 html[data-appearance="tema2"] .theme-tema4-cards button[aria-pressed="true"] svg {
   color: #211707 !important;
 }
+
+
+/* Tema 4: dejar visible el menú y la imagen de fondo detrás de la pantalla Cartas. */
+html[data-appearance="tema2"] .theme-tema4-cards {
+  background: transparent !important;
+}
+html[data-appearance="tema2"] .theme-tema4-cards header,
+html[data-appearance="tema2"] .theme-tema4-cards > div {
+  background: rgba(18,26,42,.50) !important;
+}
+html[data-appearance="tema2"] .theme-tema4-cards main {
+  background: transparent !important;
+}
