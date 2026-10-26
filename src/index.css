@@ -1079,3 +1079,42 @@ html[data-appearance="tema2"] .theme-picker-tema4 {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
+
+
+/* Tema 4: botones y textos de Cartas con el mismo lenguaje visual que Temas y fondos. */
+html[data-appearance="tema2"] .theme-tema4-cards header,
+html[data-appearance="tema2"] .theme-tema4-cards > div {
+  background: rgba(18,26,42,.50) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+html[data-appearance="tema2"] .theme-tema4-cards h1,
+html[data-appearance="tema2"] .theme-tema4-cards h2,
+html[data-appearance="tema2"] .theme-tema4-cards h3 {
+  color: #f4c45e !important;
+}
+html[data-appearance="tema2"] .theme-tema4-cards header p,
+html[data-appearance="tema2"] .theme-tema4-cards main > section > div > span {
+  color: rgba(247,240,223,.78) !important;
+}
+html[data-appearance="tema2"] .theme-tema4-cards button {
+  border-radius: 12px !important;
+  border-color: rgba(244,196,94,.32) !important;
+  background: linear-gradient(180deg,rgba(26,39,66,.72),rgba(10,16,30,.72)) !important;
+  color: #f7f0df !important;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+html[data-appearance="tema2"] .theme-tema4-cards button:hover {
+  border-color: rgba(244,196,94,.75) !important;
+  box-shadow: 0 8px 22px rgba(0,0,0,.24);
+}
+html[data-appearance="tema2"] .theme-tema4-cards button[aria-pressed="true"] {
+  background: linear-gradient(135deg,#ffe29a,#d89a2a 55%,#a66d12) !important;
+  border-color: #ffe6a4 !important;
+  color: #211707 !important;
+  box-shadow: 0 0 0 3px rgba(244,196,94,.13), inset 0 1px 0 rgba(255,255,255,.5);
+}
+html[data-appearance="tema2"] .theme-tema4-cards button[aria-pressed="true"] svg {
+  color: #211707 !important;
+}
