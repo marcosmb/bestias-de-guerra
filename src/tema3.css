@@ -323,12 +323,3 @@ html[data-appearance="tema3"] .theme-tema3-board button[class*="bg-gold-500"] {
   }
 }
 
-/* Tema 4: igual que Tema 2 en «Temas y fondos»;
-   el menú principal conserva el azul oscuro al 50 % de opacidad. */
-html[data-appearance="tema2"] .theme-tema4-menu {
-  background-color: rgba(15, 23, 42, 0.5) !important;
-}
-html[data-appearance="tema2"] .theme-tema4-menu [class*="bg-ink-900"],
-html[data-appearance="tema2"] .theme-tema4-menu [class*="bg-ink-800"] {
-  background-color: rgba(15, 23, 42, 0.5) !important;
-}
