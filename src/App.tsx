@@ -58,6 +58,7 @@ function StartScreen({
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
   const [showThemePicker, setShowThemePicker] = useState(false);
   const [showCardsOverlay, setShowCardsOverlay] = useState(false);
+  const [showRulesOverlay, setShowRulesOverlay] = useState(false);
 
   const [backgroundIndex, setBackgroundIndex] = useState(menuBackgroundIndex);
   const [nextBackgroundIndex, setNextBackgroundIndex] = useState(1);
@@ -148,7 +149,7 @@ function StartScreen({
             </button>
             <button
               type="button"
-              onClick={onOpenRules}
+              onClick={() => appearanceMode === 'tema4' ? setShowRulesOverlay(true) : onOpenRules()}
               aria-label="Ver reglas"
               className="group w-[clamp(4rem,18vw,5rem)] h-[clamp(4rem,18vw,5rem)] shrink-0 rounded-2xl border-2 border-gold-500/40 bg-ink-800/70 hover:border-gold-400/70 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-1 text-gold-400 hover:text-gold-300 shadow-lg"
             >
@@ -282,6 +283,13 @@ function StartScreen({
         </>
       ) : null}
       </div>
+      {showRulesOverlay && appearanceMode === 'tema4' && (
+        <RulesScreen
+          onBack={() => setShowRulesOverlay(false)}
+          appearanceMode={appearanceMode}
+          overlay
+        />
+      )}
       {showCardsOverlay && appearanceMode === 'tema4' && (
         <CardReferenceScreen
           onBack={() => setShowCardsOverlay(false)}
