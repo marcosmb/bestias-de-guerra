@@ -1070,3 +1070,12 @@ html[data-appearance="tema2"] .theme-picker-tema4 .theme-picker-panel {
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
+
+
+/* Tema 4: dejar visible el menú y la imagen detrás del selector de Temas y fondos.
+   Solo se aclara la capa exterior; el panel azul conserva su transparencia propia. */
+html[data-appearance="tema2"] .theme-picker-tema4 {
+  background: rgba(0, 0, 0, .15) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
