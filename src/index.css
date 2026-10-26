@@ -1054,3 +1054,11 @@ html[data-appearance="tema2"] .theme-tema4-menu::after {
   content: none !important;
   display: none !important;
 }
+
+
+/* Tema 4: panel azul oscuro semitransparente para dejar ver el JPG detrás. */
+html[data-appearance="tema2"] .theme-tema4-menu > div[class*="relative z-10"] {
+  background: linear-gradient(180deg, rgba(18,26,42,.58), rgba(15,23,40,.58)) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
