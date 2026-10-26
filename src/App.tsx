@@ -100,7 +100,7 @@ function StartScreen({
   }, [backgroundIndex, showNextBackground, menuBackgroundMode]);
 
   return (
-    <div className={`relative isolate min-h-[100dvh] overflow-hidden bg-ink-900 flex items-center justify-center px-3 sm:px-6 py-6 ${appearanceMode === 'new' ? 'theme-new-menu' : (appearanceMode === 'tema2' || appearanceMode === 'tema4') ? 'theme-tema2-menu' : appearanceMode === 'tema3' ? 'theme-tema3-menu' : ''}`}>
+    <div className={`relative isolate min-h-[100dvh] overflow-hidden bg-ink-900 flex items-center justify-center px-3 sm:px-6 py-6 ${appearanceMode === 'new' ? 'theme-new-menu' : appearanceMode === 'tema4' ? 'theme-tema4-menu' : appearanceMode === 'tema2' ? 'theme-tema2-menu' : appearanceMode === 'tema3' ? 'theme-tema3-menu' : ''}`}>
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
