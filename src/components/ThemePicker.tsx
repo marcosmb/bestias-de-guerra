@@ -65,7 +65,7 @@ export function ThemePicker({
       onClick={onClose}
     >
       <div
-        className="theme-picker-panel bg-ink-900 border-2 border-gold-500/50 rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[92dvh] overflow-y-auto shadow-2xl"
+        className="theme-picker-panel !bg-transparent border-2 border-gold-500/50 rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[92dvh] overflow-y-auto shadow-none"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 mb-5">
