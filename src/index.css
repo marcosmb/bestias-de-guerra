@@ -1062,3 +1062,11 @@ html[data-appearance="tema2"] .theme-tema4-menu > div[class*="relative z-10"] {
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
+
+
+/* Tema 4: el panel de Temas y fondos usa la misma transparencia que el panel principal. */
+html[data-appearance="tema2"] .theme-picker-tema4 .theme-picker-panel {
+  background: linear-gradient(180deg, rgba(18,26,42,.50), rgba(15,23,40,.50)) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
