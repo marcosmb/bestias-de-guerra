@@ -57,6 +57,7 @@ function StartScreen({
   const [mode, setMode] = useState<GameMode>('local');
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
   const [showThemePicker, setShowThemePicker] = useState(false);
+  const [showCardsOverlay, setShowCardsOverlay] = useState(false);
 
   const [backgroundIndex, setBackgroundIndex] = useState(menuBackgroundIndex);
   const [nextBackgroundIndex, setNextBackgroundIndex] = useState(1);
@@ -138,7 +139,7 @@ function StartScreen({
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               type="button"
-              onClick={onOpenCards}
+              onClick={() => appearanceMode === 'tema4' ? setShowCardsOverlay(true) : onOpenCards()}
               aria-label="Ver cartas"
               className="group w-[clamp(4rem,18vw,5rem)] h-[clamp(4rem,18vw,5rem)] shrink-0 rounded-2xl border-2 border-gold-500/40 bg-ink-800/70 hover:border-azure-400/70 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-1 text-gold-400 hover:text-gold-300 shadow-lg"
             >
@@ -281,6 +282,13 @@ function StartScreen({
         </>
       ) : null}
       </div>
+      {showCardsOverlay && appearanceMode === 'tema4' && (
+        <CardReferenceScreen
+          onBack={() => setShowCardsOverlay(false)}
+          appearanceMode={appearanceMode}
+          overlay
+        />
+      )}
       <ThemePicker
         open={showThemePicker}
         onClose={() => setShowThemePicker(false)}
