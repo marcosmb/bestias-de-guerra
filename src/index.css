@@ -829,31 +829,6 @@ html[data-appearance="new"] .theme-new-board [data-lp-player] > div > div {
 }
 
 
-/* ===== TEMA 4: mostrar directamente la imagen JPG del tablero ===== */
-/* El tablero no debe pintar una capa azul opaca sobre el fondo seleccionado. */
-html[data-appearance="tema4"] .theme-tema2-board {
-  color: #f8fafc !important;
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-}
-/* Se elimina por completo la capa oscura decorativa del tablero. */
-html[data-appearance="tema4"] .theme-tema2-board::after {
-  content: none !important;
-  display: none !important;
-}
-/* Las capas JPG deben conservar su posición absoluta detrás de la interfaz. */
-html[data-appearance="tema4"] .theme-tema2-board > [aria-hidden="true"] {
-  position: absolute !important;
-  inset: 0 !important;
-  z-index: -1 !important;
-}
-/* El contenido del juego permanece por encima de la imagen. */
-html[data-appearance="tema4"] .theme-tema2-board > *:not([aria-hidden="true"]):not([role="dialog"]) {
-  position: relative;
-  z-index: 1;
-}
-
 /* ===== TEMA 2: cristal oscuro estilo juego de cartas AAA ===== */
 /* Aislado al Tema 2: conserva la lógica y los fondos elegidos por el jugador. */
 html[data-appearance="tema2"] body {
