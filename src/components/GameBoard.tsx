@@ -1345,7 +1345,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
+        className="pointer-events-none fixed inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
         style={{
           backgroundImage: `url('${gameBackgrounds[gameBackgroundMode === 'fixed' ? selectedGameBackgroundIndex : gameBackgroundIndex]}')`,
           opacity: showNextGameBackground ? 0 : 1,
@@ -1354,7 +1354,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
+        className="pointer-events-none fixed inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
         style={{
           backgroundImage: `url('${gameBackgrounds[nextGameBackgroundIndex]}')`,
           opacity: gameBackgroundMode === 'slideshow' && showNextGameBackground ? 1 : 0,
