@@ -648,27 +648,6 @@ img {
 }
 
 
-/* ===== APARIENCIA CLARA PARA MEJORAR LA LEGIBILIDAD ===== */
-html[data-appearance="light"] body { background: #f4efe4; color: #252b35; }
-html[data-appearance="light"] .board-bg {
-  background: radial-gradient(ellipse at 50% 0%, rgba(202,153,55,.10) 0%, transparent 60%), linear-gradient(180deg,#f5f0e5 0%,#e7dfcf 100%) !important;
-  color: #252b35;
-}
-html[data-appearance="light"] .field-zone { background: rgba(255,255,255,.64) !important; border-color: rgba(92,78,55,.28) !important; }
-html[data-appearance="light"] [class~="bg-ink-800"],
-html[data-appearance="light"] [class~="bg-ink-700"] { background-color: #f8f4eb !important; }
-html[data-appearance="light"] [class~="bg-ink-900"] { background-color: #eee6d8 !important; }
-html[data-appearance="light"] [class~="bg-ink-800/60"],
-html[data-appearance="light"] [class~="bg-ink-800/70"],
-html[data-appearance="light"] [class~="bg-ink-800/90"] { background-color: rgba(248,244,235,.94) !important; }
-html[data-appearance="light"] [class~="text-ink-100"],
-html[data-appearance="light"] [class~="text-ink-200"],
-html[data-appearance="light"] [class~="text-ink-300"],
-html[data-appearance="light"] [class~="text-slate-100"],
-html[data-appearance="light"] [class~="text-slate-200"] { color: #293241 !important; }
-html[data-appearance="light"] [class~="border-ink-500"],
-html[data-appearance="light"] [class~="border-ink-600"] { border-color: #c7bda9 !important; }
-
 @media (prefers-color-scheme: light) {
   html[data-appearance="auto"] body { background: #f4efe4; color: #252b35; }
   html[data-appearance="auto"] .board-bg {
@@ -686,11 +665,6 @@ html[data-appearance="light"] [class~="border-ink-600"] { border-color: #c7bda9 
   html[data-appearance="auto"] [class~="text-slate-200"] { color: #293241 !important; }
 }
 
-/* En tema claro, texto e iconos dorados pasan a negro para mantener contraste. */
-html[data-appearance="light"] [class*="text-gold-"],
-html[data-appearance="light"] [class*="text-amber-"] {
-  color: #111111 !important;
-}
 @media (prefers-color-scheme: light) {
   html[data-appearance="auto"] [class*="text-gold-"],
   html[data-appearance="auto"] [class*="text-amber-"] {
