@@ -122,3 +122,20 @@ html[data-appearance="tema4"] .theme-picker-tema4 button { border-radius: 12px; 
 html[data-appearance="tema4"] .theme-picker-tema4 button[aria-pressed="true"],
 html[data-appearance="tema4"] .theme-picker-tema4 button[aria-selected="true"] { border-color: #f4c45e !important; box-shadow: 0 0 0 3px rgba(244,196,94,.13); }
 @media (prefers-reduced-motion: reduce) { html[data-appearance="tema4"] .theme-picker-tema4 button { transition: none; } }
+
+
+/* Tema 4: permitir desplazamiento vertical si el menú supera la altura de pantalla. */
+html[data-appearance="tema4"] .theme-tema4-menu {
+  display: block !important;
+  height: 100dvh;
+  min-height: 100dvh !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain;
+  box-sizing: border-box;
+  padding-top: max(18px, env(safe-area-inset-top)) !important;
+  padding-bottom: max(24px, env(safe-area-inset-bottom)) !important;
+}
+html[data-appearance="tema4"] .theme-tema4-menu > div[class*="relative z-10"] {
+  margin: 0 auto !important;
+}
