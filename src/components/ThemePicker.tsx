@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { menuBackgrounds, gameBackgrounds } from '@/generated/backgrounds';
-import { X, Palette, Check, Shuffle, Sun, Moon, Sunrise } from 'lucide-react';
+import { X, Palette, Check, Shuffle, Moon, Sunrise } from 'lucide-react';
 
 export type BackgroundMode = 'fixed' | 'slideshow';
-export type AppearanceMode = 'light' | 'dark' | 'tema2' | 'tema3' | 'tema4';
+export type AppearanceMode = 'dark' | 'tema2' | 'tema3' | 'tema4';
 
 interface ThemePickerProps {
   open: boolean;
@@ -89,7 +89,6 @@ export function ThemePicker({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {([
               ['dark', 'Tema original', Moon],
-              ['light', 'Tema claro', Sun],
               ['tema2', 'Tema 2', Palette],
               ['tema3', 'Tema 3: Luz de Guerra', Sunrise],
               ['tema4', 'Tema 4: Copia del original', Moon],
