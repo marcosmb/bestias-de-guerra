@@ -278,9 +278,15 @@ html[data-appearance="tema3"] .theme-picker-tema3 button[aria-pressed="true"] {
   background: linear-gradient(180deg, rgba(255,254,250,.72), rgba(255,246,214,.72)) !important;
   border-color: var(--tema3-gold) !important;
 }
+/* Reglas: deja visible el fondo igual que en «Temas y fondos». */
+html[data-appearance="tema3"] .theme-tema3-rules {
+  background: transparent !important;
+}
 html[data-appearance="tema3"] .theme-tema3-rules header {
-  background: rgba(255,254,250,.82) !important;
+  background: rgba(255,254,250,.50) !important;
   border-color: var(--tema3-border) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 html[data-appearance="tema3"] .theme-tema3-rules header h1 {
   color: var(--tema3-text) !important;
@@ -289,9 +295,14 @@ html[data-appearance="tema3"] .theme-tema3-rules header h1 {
 html[data-appearance="tema3"] .theme-tema3-rules header p {
   color: var(--tema3-muted) !important;
 }
+html[data-appearance="tema3"] .theme-tema3-rules main {
+  background: transparent !important;
+}
 html[data-appearance="tema3"] .theme-tema3-rules main > div > div {
   border-color: var(--tema3-border) !important;
-  background: rgba(255,254,250,.82) !important;
+  background: rgba(255,254,250,.50) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 html[data-appearance="tema3"] .theme-tema3-cards {
   font-family: Inter, system-ui, sans-serif;
