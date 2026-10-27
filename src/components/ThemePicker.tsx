@@ -58,7 +58,7 @@ export function ThemePicker({
 
   return (
     <div
-      className={`theme-picker-overlay fixed inset-0 z-[200] flex items-center justify-center ${appearanceMode === "tema4" ? "bg-transparent" : "bg-black/80"} p-3 sm:p-5 ${appearanceMode === "tema4" ? "theme-picker-tema4" : appearanceMode === "tema3" ? "theme-picker-tema3" : ""}`}
+      className={`theme-picker-overlay fixed inset-0 z-[200] flex items-center justify-center ${appearanceMode === "tema4" || appearanceMode === "tema3" ? "bg-transparent" : "bg-black/80"} p-3 sm:p-5 ${appearanceMode === "tema4" ? "theme-picker-tema4" : appearanceMode === "tema3" ? "theme-picker-tema3" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="theme-picker-title"
