@@ -89,8 +89,8 @@ export function ThemePicker({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {([
               ['dark', 'Tema original', Moon],
-              ['tema3', 'Tema 3: Luz de Guerra', Sunrise],
-              ['tema4', 'Tema 4: Reino Arcano', Moon],
+              ['tema3', 'Tema: Luz de Guerra', Sunrise],
+              ['tema4', 'Tema: Reino Arcano', Moon],
             ] as const).map(([value, label, Icon]) => (
               <button
                 key={value}
