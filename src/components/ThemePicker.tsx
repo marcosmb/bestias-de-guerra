@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { menuBackgrounds, gameBackgrounds } from '@/generated/backgrounds';
-import { X, Check, Shuffle, Moon, Sunrise } from 'lucide-react';
+import { X, Check, Shuffle, Moon, Sunrise, Palette } from 'lucide-react';
 
 export type BackgroundMode = 'fixed' | 'slideshow';
 export type AppearanceMode = 'dark' | 'tema3' | 'tema4';
