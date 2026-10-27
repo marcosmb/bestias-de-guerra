@@ -673,3 +673,7 @@ img {
 }
 
 /* Los estilos específicos de cada tema se importan por separado desde main.tsx. */
+/* Tema original: «Temas y fondos» sin el borde dorado del panel. */
+html[data-appearance="dark"] .theme-picker-panel {
+  border-color: transparent !important;
+}
