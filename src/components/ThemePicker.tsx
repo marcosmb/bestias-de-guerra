@@ -88,7 +88,7 @@ export function ThemePicker({
           <p className="text-ink-200 text-xs mb-3">Cambia el contraste de los paneles y del tablero sin modificar las ilustraciones de las cartas.</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {([
-              ['dark', 'Tema original', Moon],
+              ['dark', 'Tema: Bestias de Guerra', Moon],
               ['tema3', 'Tema: Luz de Guerra', Sunrise],
               ['tema4', 'Tema: Reino Arcano', Moon],
             ] as const).map(([value, label, Icon]) => (
