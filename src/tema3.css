@@ -139,7 +139,7 @@ html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-800"],
 html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-700"],
 html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-900"],
 html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-600"] {
-  background-color: rgba(255,254,250,.94) !important;
+  background-color: rgba(255,254,250,.72) !important;
   background-image: none;
 }
 html[data-appearance="tema3"] .theme-tema3-board [class*="text-white"],
@@ -312,7 +312,7 @@ html[data-appearance="tema3"] .theme-tema3-board {
 }
 html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-950"],
 html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-900"] {
-  background-color: rgba(255,254,250,.97) !important;
+  background-color: rgba(255,254,250,.72) !important;
 }
 html[data-appearance="tema3"] .theme-tema3-board [class*="text-white"],
 html[data-appearance="tema3"] .theme-tema3-board [class*="text-slate-100"],
