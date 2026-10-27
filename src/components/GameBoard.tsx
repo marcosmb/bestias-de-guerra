@@ -1442,7 +1442,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       </div>
 
       {/* Opponent hand */}
-      <div className="flex justify-center py-1 bg-ink-800/30 flex-none" data-no-cancel aria-label={`El rival tiene ${opp.hand.length} cartas en mano`}>
+      <div className={`flex justify-center py-1 bg-ink-800/30 flex-none ${appearanceMode === 'tema3' ? 'tema3-opponent-hand-strip' : ''}`} data-no-cancel aria-label={`El rival tiene ${opp.hand.length} cartas en mano`}>
         <div className="flex" style={{ gap: 'calc(var(--card-back-w) * -0.3)' }}>
           {/* La clave es la identidad de instancia de cada carta del rival, no
               el índice: así los dorsos no se reutilizan al reordenarse la mano
