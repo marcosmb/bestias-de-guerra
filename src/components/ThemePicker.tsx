@@ -90,7 +90,7 @@ export function ThemePicker({
             {([
               ['dark', 'Tema original', Moon],
               ['tema3', 'Tema 3: Luz de Guerra', Sunrise],
-              ['tema4', 'Tema 4: Copia del original', Moon],
+              ['tema4', 'Tema 4: Reino Arcano', Moon],
             ] as const).map(([value, label, Icon]) => (
               <button
                 key={value}
