@@ -23,9 +23,9 @@ html[data-appearance="tema3"] .theme-tema3-menu::before {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: radial-gradient(circle at 12% 18%, rgba(255,255,255,.72), transparent 30%),
+  background: radial-gradient(circle at 12% 18%, rgba(255,255,255,.60), transparent 30%),
               radial-gradient(circle at 88% 78%, rgba(232,198,106,.16), transparent 34%),
-              linear-gradient(145deg, rgba(245,242,233,.72), rgba(255,254,250,.72));
+              linear-gradient(145deg, rgba(245,242,233,.60), rgba(255,254,250,.60));
 }
 html[data-appearance="tema3"] .theme-tema3-menu > div[class*="relative z-10"] {
   isolation: isolate;
@@ -33,7 +33,7 @@ html[data-appearance="tema3"] .theme-tema3-menu > div[class*="relative z-10"] {
   padding: clamp(18px, 4vw, 36px);
   border: 1px solid var(--tema3-border);
   border-radius: 24px;
-  background: rgba(255,254,250,.72);
+  background: rgba(255,254,250,.60);
   box-shadow: 0 24px 60px rgba(52,42,20,.08);
   backdrop-filter: blur(10px);
 }
