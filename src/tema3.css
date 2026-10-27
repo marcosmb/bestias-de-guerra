@@ -114,18 +114,28 @@ html[data-appearance="tema3"] .theme-tema3-board {
   background-image: none !important;
   background-blend-mode: normal;
 }
+/* El tablero del Tema 3 no añade capas ni velos sobre el JPG. */
+html[data-appearance="tema3"] .theme-tema3-board,
+html[data-appearance="tema3"] .theme-tema3-board::before,
+html[data-appearance="tema3"] .theme-tema3-board::after {
+  background: transparent !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
 html[data-appearance="tema3"] .theme-tema3-board .field-zone {
-  border: 1px solid rgba(213,205,189,.95) !important;
+  border: 1px solid rgba(213,205,189,.7) !important;
   border-radius: 14px !important;
-  background-color: rgba(255,254,250,.82) !important;
-  box-shadow: 0 8px 24px rgba(52,42,20,.08);
-  backdrop-filter: blur(5px);
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
-html[data-appearance="tema3"] .theme-tema3-board .field-zone:first-of-type {
-  background-color: rgba(230,238,246,.91) !important;
-}
+html[data-appearance="tema3"] .theme-tema3-board .field-zone:first-of-type,
 html[data-appearance="tema3"] .theme-tema3-board .field-zone:last-of-type {
-  background-color: rgba(241,238,223,.91) !important;
+  background: transparent !important;
+  background-image: none !important;
 }
 html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-800"],
 html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-700"],
@@ -149,8 +159,9 @@ html[data-appearance="tema3"] .theme-tema3-board [class*="border-gold-"] {
   border-color: var(--tema3-border) !important;
 }
 html[data-appearance="tema3"] .theme-tema3-board [data-field-slot]:not([data-field-uid]) {
-  border-color: rgba(213,205,189,.95) !important;
-  background-color: rgba(255,254,250,.62);
+  border-color: rgba(213,205,189,.7) !important;
+  background: transparent !important;
+  background-image: none !important;
 }
 html[data-appearance="tema3"] .theme-tema3-board [data-field-slot][data-playable],
 html[data-appearance="tema3"] .theme-tema3-board [class*="ring-gold-"] {
