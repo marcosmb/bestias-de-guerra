@@ -387,3 +387,20 @@ html[data-appearance="tema3"] .theme-tema3-board button[class*="bg-gold-500"] {
   }
 }
 
+
+
+/* Tema 3: permitir desplazamiento vertical si el menú supera la altura de pantalla. */
+html[data-appearance="tema3"] .theme-tema3-menu {
+  display: block !important;
+  height: 100dvh;
+  min-height: 100dvh !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain;
+  box-sizing: border-box;
+  padding-top: max(18px, env(safe-area-inset-top)) !important;
+  padding-bottom: max(24px, env(safe-area-inset-bottom)) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-menu > div[class*="relative z-10"] {
+  margin: 0 auto !important;
+}
