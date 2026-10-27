@@ -51,7 +51,7 @@ export function CardReferenceScreen({ onBack, appearanceMode, overlay = false }:
   ];
 
   return (
-    <div className={`bg-ink-900 h-[100dvh] min-h-0 text-ink-100 flex flex-col ${(appearanceMode === "tema2" || appearanceMode === "tema4") ? `theme-tema2-cards ${appearanceMode === "tema4" ? "theme-tema4-cards" : ""}` : appearanceMode === "tema3" ? "theme-tema3-cards" : ""} ${overlay ? "theme-tema4-cards-overlay fixed inset-0 z-[60]" : ""}`}>
+    <div className={`${overlay && appearanceMode === "tema4" ? "bg-transparent" : "bg-ink-900"} h-[100dvh] min-h-0 text-ink-100 flex flex-col ${(appearanceMode === "tema2" || appearanceMode === "tema4") ? `theme-tema2-cards ${appearanceMode === "tema4" ? "theme-tema4-cards" : ""}` : appearanceMode === "tema3" ? "theme-tema3-cards" : ""} ${overlay ? "theme-tema4-cards-overlay fixed inset-0 z-[60]" : ""}`}>
       <header className="shrink-0 flex items-center gap-3 px-4 sm:px-6 py-3 border-b border-ink-700 bg-ink-900/95">
         <button type="button" onClick={onBack} className="px-3 py-2 rounded-lg bg-ink-800 border border-ink-600 text-ink-200 font-display font-bold hover:border-gold-400 hover:bg-ink-700 transition-colors flex items-center gap-1.5 btn-press">
           <ArrowLeft size={18} /> Atrás
