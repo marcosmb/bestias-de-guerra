@@ -124,16 +124,16 @@ html[data-appearance="tema3"] .theme-tema3-board::after {
 html[data-appearance="tema3"] .theme-tema3-board .field-zone {
   border: 1px solid rgba(213,205,189,.95) !important;
   border-radius: 14px !important;
-  background-color: rgba(255,254,250,.82) !important;
+  background-color: rgba(255,254,250,.02) !important;
   box-shadow: 0 8px 24px rgba(52,42,20,.08);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 html[data-appearance="tema3"] .theme-tema3-board .field-zone:first-of-type {
-  background-color: rgba(230,238,246,.91) !important;
+  background-color: rgba(230,238,246,.02) !important;
 }
 html[data-appearance="tema3"] .theme-tema3-board .field-zone:last-of-type {
-  background-color: rgba(241,238,223,.91) !important;
+  background-color: rgba(241,238,223,.02) !important;
 }
 html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-800"],
 html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-700"],
@@ -158,7 +158,7 @@ html[data-appearance="tema3"] .theme-tema3-board [class*="border-gold-"] {
 }
 html[data-appearance="tema3"] .theme-tema3-board [data-field-slot]:not([data-field-uid]) {
   border-color: rgba(213,205,189,.95) !important;
-  background-color: rgba(255,254,250,.62) !important;
+  background-color: rgba(255,254,250,.02) !important;
 }
 html[data-appearance="tema3"] .theme-tema3-board [data-field-slot][data-playable],
 html[data-appearance="tema3"] .theme-tema3-board [class*="ring-gold-"] {
