@@ -139,3 +139,13 @@ html[data-appearance="tema4"] .theme-tema4-menu {
 html[data-appearance="tema4"] .theme-tema4-menu > div[class*="relative z-10"] {
   margin: 0 auto !important;
 }
+
+
+/* Mantener las capas JPG fijadas al viewport mientras se desplaza el menú. */
+html[data-appearance="tema4"] .theme-tema4-menu > div[aria-hidden="true"] {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  pointer-events: none !important;
+}
