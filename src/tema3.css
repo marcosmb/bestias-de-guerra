@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Inter:wght@500;600;700;800&display=swap');
+
 /* Tema 3: Luz de Guerra — estilos aislados de presentación. No fija ni sustituye fondos. */
 html[data-appearance="tema3"] {
   color-scheme: light;
@@ -274,7 +276,6 @@ html[data-appearance="tema3"] .theme-tema3-cards button[aria-pressed="true"] {
 
 /* Refinamiento a partir de los mockups HTML de «Luz de Guerra».
    Se adapta a los componentes React existentes: no se sustituyen datos ni fondos. */
-@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Inter:wght@500;600;700;800&display=swap');
 
 html[data-appearance="tema3"] .theme-tema3-menu {
   font-family: Inter, system-ui, sans-serif;
