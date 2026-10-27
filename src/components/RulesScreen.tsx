@@ -22,7 +22,7 @@ export function RulesScreen({ onBack, appearanceMode, overlay = false }: RulesSc
     const temaOriginalRulesCss = '<style>body .toc a:hover,body .toc a.is-active{background:var(--soft)!important;color:var(--gold)!important}body .toc a.is-active{border:1px solid var(--line)!important;box-shadow:inset 0 0 0 1px rgba(0,0,0,.04)!important}</style>';
   const themedRulesHtml = rulesHtml.includes('</head>') ? rulesHtml.replace('</head>', (appearanceMode === 'tema4' ? tema4RulesCss : appearanceMode === 'tema2' ? tema2RulesCss : appearanceMode === 'tema3' ? tema3RulesCss : temaOriginalRulesCss) + '</head>') : rulesHtml;
   return (
-    <div className={`${overlay ? "bg-transparent" : "bg-ink-950"} h-[100dvh] min-h-0 text-ink-100 flex flex-col ${(appearanceMode === "tema2" || appearanceMode === "tema4") ? "theme-tema2-rules" : appearanceMode === "tema3" ? "theme-tema3-rules" : ""} ${overlay ? "theme-tema4-rules-overlay fixed inset-0 z-[60]" : ""}`}>
+    <div className={`${overlay || appearanceMode === "tema3" || appearanceMode === "tema4" ? "bg-transparent" : "bg-ink-950"} h-[100dvh] min-h-0 text-ink-100 flex flex-col ${(appearanceMode === "tema2" || appearanceMode === "tema4") ? "theme-tema2-rules" : appearanceMode === "tema3" ? "theme-tema3-rules" : ""} ${overlay ? "theme-tema4-rules-overlay fixed inset-0 z-[60]" : ""}`}>
       <header className="shrink-0 z-30 border-b border-gold-500/20 bg-ink-950/95 backdrop-blur-md shadow-lg">
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-3 py-3 sm:px-5 lg:px-7">
           <button
@@ -57,7 +57,7 @@ export function RulesScreen({ onBack, appearanceMode, overlay = false }: RulesSc
             <iframe
               title="Reglamento oficial de Bestias de Guerra"
               srcDoc={themedRulesHtml}
-              className={`block h-full w-full border-0 ${overlay ? "bg-transparent" : "bg-white"}`}
+              className={`block h-full w-full border-0 ${overlay || appearanceMode === "tema3" || appearanceMode === "tema4" ? "bg-transparent" : "bg-white"}`}
               loading="eager"
             />
           </div>
