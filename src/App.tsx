@@ -121,7 +121,7 @@ function StartScreen({
           transform: 'scale(1.025)',
         }}
       />
-      <div className={`relative z-10 w-full max-w-md mx-auto ${(appearanceMode === "tema4" || appearanceMode === "tema3") && (showThemePicker || showCardsOverlay || showRulesOverlay) ? "invisible" : ""}`}>
+      <div className={`relative z-10 w-full max-w-md mx-auto ${(appearanceMode === "dark" || appearanceMode === "tema4" || appearanceMode === "tema3") && (showThemePicker || showCardsOverlay || showRulesOverlay) ? "invisible" : ""}`}>
         <div className="mb-6 w-full flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 shrink-0">
             <div className="animate-pulse-glow w-[clamp(4rem,18vw,5rem)] h-[clamp(4rem,18vw,5rem)] shrink-0 rounded-2xl border-2 border-gold-500/40 flex items-center justify-center">
