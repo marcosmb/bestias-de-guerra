@@ -109,7 +109,9 @@ html[data-appearance="tema3"] .theme-picker-tema3 button[class*="bg-gold-300"] {
 /* Tablero: superficies claras y contraste legible, sin cambiar acciones, slots ni fondos seleccionados. */
 html[data-appearance="tema3"] .theme-tema3-board {
   color: var(--tema3-text) !important;
-  background-color: transparent !important;
+  /* Quita los degradados oscuros de .board-bg para dejar visible el JPG del tablero. */
+  background: transparent !important;
+  background-image: none !important;
   background-blend-mode: normal;
 }
 html[data-appearance="tema3"] .theme-tema3-board .field-zone {
