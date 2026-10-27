@@ -144,10 +144,12 @@ export function ThemePicker({
         </div>
 
         <section id="theme-panel" role="tabpanel" aria-labelledby={isMenuTab ? 'theme-tab-menu' : 'theme-tab-board'}>
-          <h3 className="font-display font-bold text-gold-300 mb-3">{title}</h3>
-          <p className={`${appearanceMode === 'dark' ? 'text-white' : 'text-ink-300'} text-xs mb-3`}>
-            Elige una imagen para dejarla fija o selecciona «Fondo rotativo» para alternar automáticamente entre todos los fondos de esta pestaña.
-          </p>
+          <div className="theme-panel-intro">
+            <h3 className="font-display font-bold text-gold-300 mb-3">{title}</h3>
+            <p className={`${appearanceMode === 'dark' ? 'text-white' : 'text-ink-300'} text-xs mb-3`}>
+              Elige una imagen para dejarla fija o selecciona «Fondo rotativo» para alternar automáticamente entre todos los fondos de esta pestaña.
+            </p>
+          </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <button
