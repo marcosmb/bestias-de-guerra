@@ -126,7 +126,7 @@ html[data-appearance="tema3"] .theme-tema3-board::after {
 }
 /* Tema 3: franja de cartas rivales separada de la barra superior de CPU. */
 html[data-appearance="tema3"] .theme-tema3-board .tema3-opponent-hand-strip {
-  background-color: rgba(255,254,250,.12) !important;
+  background-color: rgba(255,254,250,.04) !important;
   background-image: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
