@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { menuBackgrounds, gameBackgrounds } from '@/generated/backgrounds';
-import { X, Palette, Check, Shuffle, Moon, Sunrise } from 'lucide-react';
+import { X, Check, Shuffle, Moon, Sunrise } from 'lucide-react';
 
 export type BackgroundMode = 'fixed' | 'slideshow';
-export type AppearanceMode = 'dark' | 'tema2' | 'tema3' | 'tema4';
+export type AppearanceMode = 'dark' | 'tema3' | 'tema4';
 
 interface ThemePickerProps {
   open: boolean;
@@ -58,7 +58,7 @@ export function ThemePicker({
 
   return (
     <div
-      className={`theme-picker-overlay fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-3 sm:p-5 ${appearanceMode === "tema4" ? "theme-picker-tema2 theme-picker-tema4" : appearanceMode === "tema2" ? "theme-picker-tema2" : appearanceMode === "tema3" ? "theme-picker-tema3" : ""}`}
+      className={`theme-picker-overlay fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-3 sm:p-5 ${appearanceMode === "tema4" ? "theme-picker-tema4" : appearanceMode === "tema3" ? "theme-picker-tema3" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="theme-picker-title"
@@ -89,7 +89,6 @@ export function ThemePicker({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {([
               ['dark', 'Tema original', Moon],
-              ['tema2', 'Tema 2', Palette],
               ['tema3', 'Tema 3: Luz de Guerra', Sunrise],
               ['tema4', 'Tema 4: Copia del original', Moon],
             ] as const).map(([value, label, Icon]) => (
