@@ -89,6 +89,13 @@ tr:last-child td{border-bottom:0}
   // Mantiene resaltada la sección que se está leyendo, tanto al hacer clic
   // en el índice como al desplazarse manualmente por el reglamento.
   document.addEventListener('DOMContentLoaded', () => {
+    // El botón del pie debe desplazarse dentro del reglamento, sin navegar al menú de la aplicación.
+    const backTop = document.querySelector('.backtop[href="#top"]');
+    backTop?.addEventListener('click', (event) => {
+      event.preventDefault();
+      document.getElementById('top')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
     const links = Array.from(document.querySelectorAll('.toc a[href^="#"]'));
     const sections = links
       .map((link) => ({ link, section: document.getElementById(link.getAttribute('href').slice(1)) }))
