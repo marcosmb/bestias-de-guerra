@@ -140,7 +140,7 @@ function StartScreen({
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               type="button"
-              onClick={() => appearanceMode === 'tema4' ? setShowCardsOverlay(true) : onOpenCards()}
+              onClick={() => (appearanceMode === 'tema4' || appearanceMode === 'tema3') ? setShowCardsOverlay(true) : onOpenCards()}
               aria-label="Ver cartas"
               className="group w-[clamp(4rem,18vw,5rem)] h-[clamp(4rem,18vw,5rem)] shrink-0 rounded-2xl border-2 border-gold-500/40 bg-ink-800/70 hover:border-azure-400/70 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-1 text-gold-400 hover:text-gold-300 shadow-lg"
             >
@@ -290,7 +290,7 @@ function StartScreen({
           overlay
         />
       )}
-      {showCardsOverlay && appearanceMode === 'tema4' && (
+      {showCardsOverlay && (
         <CardReferenceScreen
           onBack={() => setShowCardsOverlay(false)}
           appearanceMode={appearanceMode}
