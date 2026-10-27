@@ -23,9 +23,9 @@ html[data-appearance="tema3"] .theme-tema3-menu::before {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: radial-gradient(circle at 12% 18%, rgba(255,255,255,.92), transparent 30%),
+  background: radial-gradient(circle at 12% 18%, rgba(255,255,255,.72), transparent 30%),
               radial-gradient(circle at 88% 78%, rgba(232,198,106,.16), transparent 34%),
-              linear-gradient(145deg, rgba(245,242,233,.94), rgba(255,254,250,.90));
+              linear-gradient(145deg, rgba(245,242,233,.72), rgba(255,254,250,.72));
 }
 html[data-appearance="tema3"] .theme-tema3-menu > div[class*="relative z-10"] {
   isolation: isolate;
@@ -33,7 +33,7 @@ html[data-appearance="tema3"] .theme-tema3-menu > div[class*="relative z-10"] {
   padding: clamp(18px, 4vw, 36px);
   border: 1px solid var(--tema3-border);
   border-radius: 24px;
-  background: rgba(255,254,250,.88);
+  background: rgba(255,254,250,.72);
   box-shadow: 0 24px 60px rgba(52,42,20,.08);
   backdrop-filter: blur(10px);
 }
@@ -49,7 +49,7 @@ html[data-appearance="tema3"] .theme-tema3-menu span {
 }
 html[data-appearance="tema3"] .theme-tema3-menu button {
   color: var(--tema3-text) !important;
-  background-color: var(--tema3-panel) !important;
+  background-color: rgba(255,254,250,.82) !important;
   background-image: none;
   border-color: var(--tema3-border) !important;
   box-shadow: 0 5px 16px rgba(52,42,20,.07);
@@ -80,7 +80,7 @@ html[data-appearance="tema3"] .theme-picker-tema3 .theme-picker-panel {
   z-index: 2;
   border: 1px solid var(--tema3-border) !important;
   border-radius: 20px !important;
-  background: var(--tema3-panel) !important;
+  background: rgba(255,254,250,.82) !important;
   color: var(--tema3-text) !important;
   box-shadow: 0 24px 60px rgba(52,42,20,.16) !important;
 }
@@ -88,13 +88,13 @@ html[data-appearance="tema3"] .theme-picker-tema3 h2,
 html[data-appearance="tema3"] .theme-picker-tema3 h3 { color: var(--tema3-text) !important; }
 html[data-appearance="tema3"] .theme-picker-tema3 p { color: var(--tema3-muted) !important; }
 html[data-appearance="tema3"] .theme-picker-tema3 section {
-  background: #F7F3E9 !important;
+  background: rgba(247,243,233,.82) !important;
   border-color: var(--tema3-border) !important;
 }
 html[data-appearance="tema3"] .theme-picker-tema3 button {
   color: var(--tema3-text) !important;
   border-color: var(--tema3-border) !important;
-  background-color: var(--tema3-panel) !important;
+  background-color: rgba(255,254,250,.82) !important;
 }
 html[data-appearance="tema3"] .theme-picker-tema3 button[aria-pressed="true"] {
   border-color: var(--tema3-gold) !important;
@@ -187,11 +187,11 @@ html[data-appearance="tema3"] .theme-tema3-cards {
 }
 html[data-appearance="tema3"] .theme-tema3-cards header,
 html[data-appearance="tema3"] .theme-tema3-cards > div {
-  background: rgba(255,254,250,.96) !important;
+  background: rgba(255,254,250,.82) !important;
   border-color: var(--tema3-border) !important;
 }
 html[data-appearance="tema3"] .theme-tema3-cards article {
-  background: var(--tema3-panel) !important;
+  background: rgba(255,254,250,.82) !important;
   color: var(--tema3-text) !important;
   border: 1px solid var(--tema3-border) !important;
   border-radius: 14px !important;
@@ -211,12 +211,12 @@ html[data-appearance="tema3"] .theme-tema3-cards h3 { color: var(--tema3-text) !
 html[data-appearance="tema3"] .theme-tema3-cards p,
 html[data-appearance="tema3"] .theme-tema3-cards span { color: var(--tema3-muted); }
 html[data-appearance="tema3"] .theme-tema3-cards button {
-  background: #FFFEFA !important;
+  background: rgba(255,254,250,.82) !important;
   color: var(--tema3-text) !important;
   border-color: var(--tema3-border) !important;
 }
 html[data-appearance="tema3"] .theme-tema3-cards button[aria-pressed="true"] {
-  background: #F8E8B8 !important;
+  background: rgba(248,232,184,.88) !important;
   border-color: var(--tema3-gold) !important;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -266,17 +266,17 @@ html[data-appearance="tema3"] .theme-picker-tema3 .theme-picker-panel {
   overflow-y: auto;
 }
 html[data-appearance="tema3"] .theme-picker-tema3 .theme-picker-panel > section:first-of-type {
-  background: linear-gradient(180deg, #FFFEFA, #F7F3E9) !important;
+  background: linear-gradient(180deg, rgba(255,254,250,.82), rgba(247,243,233,.82)) !important;
 }
 html[data-appearance="tema3"] .theme-picker-tema3 button img {
   filter: saturate(.96);
 }
 html[data-appearance="tema3"] .theme-picker-tema3 button[aria-pressed="true"] {
-  background: linear-gradient(180deg, #FFFEFA, #FFF6D6) !important;
+  background: linear-gradient(180deg, rgba(255,254,250,.88), rgba(255,246,214,.88)) !important;
   border-color: var(--tema3-gold) !important;
 }
 html[data-appearance="tema3"] .theme-tema3-rules header {
-  background: rgba(255,254,250,.96) !important;
+  background: rgba(255,254,250,.82) !important;
   border-color: var(--tema3-border) !important;
 }
 html[data-appearance="tema3"] .theme-tema3-rules header h1 {
@@ -288,7 +288,7 @@ html[data-appearance="tema3"] .theme-tema3-rules header p {
 }
 html[data-appearance="tema3"] .theme-tema3-rules main > div > div {
   border-color: var(--tema3-border) !important;
-  background: var(--tema3-panel) !important;
+  background: rgba(255,254,250,.82) !important;
 }
 html[data-appearance="tema3"] .theme-tema3-cards {
   font-family: Inter, system-ui, sans-serif;
