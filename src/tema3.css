@@ -185,20 +185,24 @@ html[data-appearance="tema3"] .theme-tema3-board [data-lp-player] > div > div {
 
 /* Biblioteca de cartas: mantiene CardView y los datos reales de cada carta. */
 html[data-appearance="tema3"] .theme-tema3-cards {
-  background: var(--tema3-bg) !important;
+  background: transparent !important;
   color: var(--tema3-text) !important;
 }
 html[data-appearance="tema3"] .theme-tema3-cards header,
 html[data-appearance="tema3"] .theme-tema3-cards > div {
-  background: rgba(255,254,250,.82) !important;
+  background: rgba(255,254,250,.50) !important;
   border-color: var(--tema3-border) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 html[data-appearance="tema3"] .theme-tema3-cards article {
-  background: rgba(255,254,250,.82) !important;
+  background: rgba(255,254,250,.50) !important;
   color: var(--tema3-text) !important;
   border: 1px solid var(--tema3-border) !important;
   border-radius: 14px !important;
   box-shadow: 0 8px 24px rgba(52,42,20,.07);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
 }
 @media (hover:hover) {
@@ -214,12 +218,14 @@ html[data-appearance="tema3"] .theme-tema3-cards h3 { color: var(--tema3-text) !
 html[data-appearance="tema3"] .theme-tema3-cards p,
 html[data-appearance="tema3"] .theme-tema3-cards span { color: var(--tema3-muted); }
 html[data-appearance="tema3"] .theme-tema3-cards button {
-  background: rgba(255,254,250,.82) !important;
+  background: rgba(255,254,250,.50) !important;
   color: var(--tema3-text) !important;
   border-color: var(--tema3-border) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 html[data-appearance="tema3"] .theme-tema3-cards button[aria-pressed="true"] {
-  background: rgba(248,232,184,.88) !important;
+  background: rgba(248,232,184,.72) !important;
   border-color: var(--tema3-gold) !important;
 }
 @media (prefers-reduced-motion: reduce) {
