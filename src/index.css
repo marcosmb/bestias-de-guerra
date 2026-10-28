@@ -709,3 +709,8 @@ html[data-appearance="dark"] .theme-picker-panel [role="tab"][aria-selected="fal
   border-color: rgba(255, 255, 255, .14) !important;
   color: #c2cce0 !important;
 }
+
+/* Tablero: al abrir «Temas y fondos» se oculta la interfaz de juego y solo queda visible la imagen JPG de fondo. */
+.board-bg[data-theme-picker-open="true"] > *:not(.board-bg-layer):not(.theme-picker-overlay) {
+  visibility: hidden;
+}
