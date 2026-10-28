@@ -149,3 +149,34 @@ html[data-appearance="tema4"] .theme-tema4-menu > div[aria-hidden="true"] {
   height: 100dvh !important;
   pointer-events: none !important;
 }
+
+
+/* Panel de Temas y fondos: mismo aspecto desde el menú y desde el tablero. */
+html[data-appearance="tema4"] .theme-picker-tema4 { color: #f7f0df !important; }
+html[data-appearance="tema4"] .theme-picker-tema4 p { color: #c2cce0 !important; }
+html[data-appearance="tema4"] .theme-picker-tema4 button {
+  min-height: 44px;
+  border-color: rgba(255,255,255,.15) !important;
+  border-radius: 13px !important;
+  background: linear-gradient(180deg,rgba(42,57,85,.96),rgba(30,44,68,.96)) !important;
+  color: #f7f0df !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  transition: transform .18s ease, filter .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+html[data-appearance="tema4"] .theme-picker-tema4 button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(232,185,79,.6) !important;
+  box-shadow: 0 12px 28px rgba(0,0,0,.35), inset 0 0 0 1px rgba(232,185,79,.10);
+}
+html[data-appearance="tema4"] .theme-picker-tema4 button[class*="bg-gold-400"] {
+  background: linear-gradient(135deg,#ffe29a,#d89a2a 55%,#a66d12) !important;
+  color: #211707 !important;
+  border-color: #ffe6a4 !important;
+  box-shadow: 0 12px 32px rgba(197,138,37,.32), inset 0 1px 0 rgba(255,255,255,.5);
+}
+html[data-appearance="tema4"] .theme-picker-tema4 button svg { filter: drop-shadow(0 2px 5px rgba(0,0,0,.25)); }
+html[data-appearance="tema4"] .theme-picker-tema4 button[aria-pressed="true"],
+html[data-appearance="tema4"] .theme-picker-tema4 button[aria-selected="true"] {
+  border-color: #f4c45e !important;
+  box-shadow: 0 0 0 3px rgba(244,196,94,.13) !important;
+}
