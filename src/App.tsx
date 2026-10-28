@@ -545,51 +545,53 @@ function App() {
     };
 
     return (
-      <div className="bg-ink-900 flex flex-col items-center justify-center px-6 py-8 min-h-[100dvh] relative">
-        <div className="w-full max-w-md">
-          <h2 className="font-display text-2xl font-bold text-gold-300 mb-6 text-center">Jugar Online</h2>
-          <p className="text-ink-300 text-center mb-6">
-            Escribe tu nombre y crea una partida o únete a una existente con un código.
-          </p>
-          <div className="space-y-4">
-            <input
-              type="text"
-              placeholder="Tu nombre"
-              value={onlinePlayerName}
-              onChange={(e) => setOnlinePlayerName(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-ink-800 border border-ink-600 text-ink-100 placeholder-ink-400 focus:border-azure-400 focus:outline-none"
-              maxLength={16}
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={handleCreateRoom}
-                className="px-4 py-3 rounded-lg bg-gradient-to-r from-azure-500 to-azure-600 text-white font-display font-bold hover:from-azure-600 hover:to-azure-700 transition-colors"
-              >
-                <Link2 size={18} className="mr-2" /> Crear partida
-              </button>
-              <button
-                onClick={handleJoinRoom}
-                className="px-4 py-3 rounded-lg bg-ink-800 border border-ink-600 text-ink-300 font-display font-bold hover:border-ink-400 hover:bg-ink-700 transition-colors"
-              >
-                Unirse a partida
-              </button>
+      <div className="bg-ink-900 relative h-[100dvh] overflow-hidden">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="glass-chip absolute top-4 left-4 px-3 py-2 rounded-lg bg-ink-800 border border-ink-600 text-ink-200 font-display font-bold hover:border-ink-400 hover:bg-ink-700 transition-colors flex items-center gap-1.5 z-20"
+        >
+          <ArrowLeft size={18} />
+          Atrás
+        </button>
+        <div className="glass-scroll h-full overflow-y-auto flex flex-col items-center px-4 sm:px-6 py-8">
+          <div className="glass-panel w-full max-w-md px-5 py-7 sm:px-7 sm:py-8 m-auto">
+            <h2 className="font-display text-2xl font-bold text-gold-300 mb-6 text-center">Jugar Online</h2>
+            <p className="text-ink-300 text-center mb-6">
+              Escribe tu nombre y crea una partida o únete a una existente con un código.
+            </p>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Tu nombre"
+                value={onlinePlayerName}
+                onChange={(e) => setOnlinePlayerName(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-ink-800 border border-ink-600 text-ink-100 placeholder-ink-400 focus:border-azure-400 focus:outline-none"
+                maxLength={16}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={handleCreateRoom}
+                  className="px-4 py-3 rounded-lg bg-gradient-to-r from-azure-500 to-azure-600 text-white font-display font-bold hover:from-azure-600 hover:to-azure-700 transition-colors"
+                >
+                  <Link2 size={18} className="mr-2" /> Crear partida
+                </button>
+                <button
+                  onClick={handleJoinRoom}
+                  className="px-4 py-3 rounded-lg bg-ink-800 border border-ink-600 text-ink-300 font-display font-bold hover:border-ink-400 hover:bg-ink-700 transition-colors"
+                >
+                  Unirse a partida
+                </button>
+              </div>
+              <input
+                type="text"
+                placeholder="Código de partida (ej: A1B2C3)"
+                value={onlineRoomId}
+                onChange={(e) => setOnlineRoomId(e.target.value.toUpperCase())}
+                className="w-full px-4 py-3 rounded-lg bg-ink-800 border border-ink-600 text-ink-100 placeholder-ink-400 focus:border-azure-400 focus:outline-none text-center text-lg tracking-widest"
+                maxLength={6}
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Código de partida (ej: A1B2C3)"
-              value={onlineRoomId}
-              onChange={(e) => setOnlineRoomId(e.target.value.toUpperCase())}
-              className="w-full px-4 py-3 rounded-lg bg-ink-800 border border-ink-600 text-ink-100 placeholder-ink-400 focus:border-azure-400 focus:outline-none text-center text-lg tracking-widest"
-              maxLength={6}
-            />
-          <button
-            type="button"
-            onClick={handleBack}
-            className="absolute top-4 left-4 px-3 py-2 rounded-lg bg-ink-800 border border-ink-600 text-ink-200 font-display font-bold hover:border-ink-400 hover:bg-ink-700 transition-colors flex items-center gap-1.5 z-10"
-          >
-            <ArrowLeft size={18} />
-            Atrás
-          </button>
           </div>
         </div>
       </div>

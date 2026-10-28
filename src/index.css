@@ -426,6 +426,65 @@ img {
   -webkit-backdrop-filter: blur(3px);
 }
 
+/* Paneles de "Pasa el dispositivo" y "Jugar online": blanco translúcido para que
+   el texto se lea mejor. Se adapta al ancho de la pantalla (w-full + max-w-md). */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.17);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Botón "Atrás": el mismo cristal blanco translúcido. */
+.glass-chip {
+  background-color: rgba(255, 255, 255, 0.13) !important;
+  border-color: rgba(255, 255, 255, 0.26) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.glass-chip:hover {
+  background-color: rgba(255, 255, 255, 0.20) !important;
+}
+
+/* Estas dos pantallas son siempre oscuras, también en el tema «Papel y Luz»,
+   donde el texto heredado del body es oscuro. Fijamos texto claro para que se
+   lea sobre el panel blanco translúcido. */
+.glass-panel,
+.glass-chip {
+  color: #e8e8f0;
+}
+.glass-panel [class~="text-ink-100"],
+.glass-panel [class~="text-ink-200"],
+.glass-chip [class~="text-ink-100"],
+.glass-chip [class~="text-ink-200"] {
+  color: #e8e8f0 !important;
+}
+.glass-panel [class~="text-ink-300"],
+.glass-panel [class~="text-ink-400"],
+.glass-chip [class~="text-ink-300"],
+.glass-chip [class~="text-ink-400"] {
+  color: #b9c0d4 !important;
+}
+.glass-panel ::placeholder {
+  color: rgba(232, 232, 240, 0.45) !important;
+}
+
+/* El panel nunca se comprime dentro de la columna que hace scroll. */
+.glass-panel {
+  flex: 0 0 auto;
+}
+
+/* En pantallas bajas (móvil en horizontal) el contenido se desplaza y deja
+   hueco para el botón «Atrás», que va fijo arriba a la izquierda. */
+@media (max-height: 560px) {
+  .glass-scroll {
+    padding-top: 72px;
+    padding-bottom: 16px;
+  }
+}
+
 /* Hand card hover effect */
 .hand-card {
   position: relative;
