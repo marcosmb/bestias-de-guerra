@@ -28,7 +28,7 @@ import { CardView, CardBack } from './CardView';
 import { playSound, vibrate, getAudioPreferences, setSoundEnabled, setVolume, initAudio } from '@/game/audio';
 import { getTrap3CountingOrder } from '@/game/trapCounting';
 import { ThemePicker, type AppearanceMode, type BackgroundMode } from '@/components/ThemePicker';
-import { gameBackgrounds } from '@/generated/backgrounds';
+import { menuBackgrounds as gameBackgrounds } from '@/generated/backgrounds';
 
 interface GameBoardProps {
   state: GameState;
