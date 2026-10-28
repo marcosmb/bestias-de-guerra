@@ -1328,6 +1328,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   const uiBase = { fontSize: 'var(--ui-text-base)' } as const;
 
   return (
+    <>
     <div
       className={`board-bg relative isolate flex flex-col w-full overflow-y-auto overflow-x-hidden lg:overflow-x-visible ${appearanceMode === 'tema3' ? 'theme-tema3-board' : appearanceMode === 'tema4' ? 'theme-tema4-board' : ''}`}
       data-theme-picker-open={showThemePicker ? 'true' : undefined}
@@ -1362,20 +1363,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           transform: 'scale(1.025)',
         }}
       />
-      <ThemePicker
-        open={showThemePicker}
-        onClose={() => setShowThemePicker(false)}
-        menuIndex={menuBackgroundIndex}
-        setMenuIndex={setMenuBackgroundIndex}
-        menuMode={menuBackgroundMode}
-        setMenuMode={setMenuBackgroundMode}
-        gameIndex={selectedGameBackgroundIndex}
-        setGameIndex={setGameBackgroundIndex}
-        gameMode={gameBackgroundMode}
-        setGameMode={setGameBackgroundMode}
-        appearanceMode={appearanceMode}
-        setAppearanceMode={setAppearanceMode}
-      />
+
       {/* Turn banner */}
       <TurnBanner playerName={state.players[cp].name} turnCount={state.turnCount} />
 
@@ -2202,5 +2190,21 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       />
 
       </div>
+      {/* Selector montado fuera del tablero para compartir el diseño del menú. */}
+      <ThemePicker
+        open={showThemePicker}
+        onClose={() => setShowThemePicker(false)}
+        menuIndex={menuBackgroundIndex}
+        setMenuIndex={setMenuBackgroundIndex}
+        menuMode={menuBackgroundMode}
+        setMenuMode={setMenuBackgroundMode}
+        gameIndex={selectedGameBackgroundIndex}
+        setGameIndex={setGameBackgroundIndex}
+        gameMode={gameBackgroundMode}
+        setGameMode={setGameBackgroundMode}
+        appearanceMode={appearanceMode}
+        setAppearanceMode={setAppearanceMode}
+      />
+    </>
   );
 }
