@@ -1330,6 +1330,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   return (
     <div
       className={`board-bg relative isolate flex flex-col w-full overflow-y-auto overflow-x-hidden lg:overflow-x-visible ${appearanceMode === 'tema3' ? 'theme-tema3-board' : appearanceMode === 'tema4' ? 'theme-tema4-board' : ''}`}
+      data-theme-picker-open={showThemePicker ? 'true' : undefined}
       style={{
         height: '100dvh',
         paddingTop: 'env(safe-area-inset-top)',
@@ -1345,7 +1346,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
+        className="board-bg-layer pointer-events-none fixed inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
         style={{
           backgroundImage: `url('${gameBackgrounds[gameBackgroundMode === 'fixed' ? selectedGameBackgroundIndex : gameBackgroundIndex]}')`,
           opacity: showNextGameBackground ? 0 : 1,
@@ -1354,7 +1355,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
+        className="board-bg-layer pointer-events-none fixed inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
         style={{
           backgroundImage: `url('${gameBackgrounds[nextGameBackgroundIndex]}')`,
           opacity: gameBackgroundMode === 'slideshow' && showNextGameBackground ? 1 : 0,
