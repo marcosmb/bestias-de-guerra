@@ -657,9 +657,11 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
     // en el bloque agrupado de la línea 445, que aplica la validación de lado
     // exigida por la Regla 5. Aquí no se repiten.
     case 'draw_cards': {
-      // Excepción de la Mágica «Robar dos cartas»: roba las cartas disponibles
-      // aunque la mano supere el límite normal de 9 cartas.
-      const drawCount = Math.min(eff.amount, players[me].deck.length);
+      // La Mágica 10 respeta el máximo de cartas en la mano (Reglas oficiales).
+      // El efecto se resuelve antes de retirar la propia Mágica de la mano, así
+      // que el límite se calcula sobre la mano actual, sin permitir superar 9.
+      const handSpace = Math.max(0, MAX_HAND_SIZE - players[me].hand.length);
+      const drawCount = Math.min(eff.amount, players[me].deck.length, handSpace);
       const drawnCards = players[me].deck.slice(0, drawCount);
       players[me] = {
         ...players[me],
