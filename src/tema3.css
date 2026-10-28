@@ -449,3 +449,19 @@ html[data-appearance="tema3"] .theme-picker-tema3 button[aria-pressed="true"] {
   border-color: var(--tema3-gold) !important;
   box-shadow: 0 0 0 3px rgba(184,137,46,.15);
 }
+
+/* Boton Finalizar del tablero: fondo negro para que el texto rojo se lea bien. */
+html[data-appearance="tema3"] .theme-tema3-board .tema3-exit-btn {
+  background-color: #000 !important;
+  border-color: rgba(248,113,113,.55) !important;
+  color: #f87171 !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board .tema3-exit-btn:hover {
+  background-color: #16161f !important;
+  border-color: rgba(248,113,113,.85) !important;
+  color: #fca5a5 !important;
+}
+/* Boton "Si" de la confirmacion: texto blanco sobre el rojo (el tema lo volvia gris). */
+html[data-appearance="tema3"] .theme-tema3-board .tema3-exit-confirm-yes {
+  color: #fff !important;
+}

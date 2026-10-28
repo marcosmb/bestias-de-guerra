@@ -1394,14 +1394,17 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             </div>
           </div>
           <div className="flex items-center gap-2 flex-none">
-            <span className="text-slate-200 whitespace-nowrap" style={uiXs}>T{state.turnCount + 1}</span>
+            <span className="text-slate-200 whitespace-nowrap" style={uiXs} aria-label={`Turno ${state.turnCount + 1}`}>
+              <span className="hidden sm:inline">Turno {state.turnCount + 1}</span>
+              <span className="sm:hidden">T{state.turnCount + 1}</span>
+            </span>
             {confirmExit ? (
               <div className="flex items-center gap-1" role="group" aria-label="Confirmar finalizar partida">
                 <span className="text-slate-100" style={uiXs}>¿Seguro?</span>
                 <button
                   type="button"
                   onClick={onExit}
-                  className="rounded font-bold bg-red-600 text-white hover:bg-red-500 btn-press"
+                  className="tema3-exit-confirm-yes rounded font-bold bg-red-600 text-white hover:bg-red-500 btn-press"
                   style={{ ...uiXs, padding: '0.3em 0.7em' }}
                 >
                   Sí
@@ -1419,7 +1422,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               <button
                 type="button"
                 onClick={() => setConfirmExit(true)}
-                className="flex items-center gap-1 rounded font-bold whitespace-nowrap border border-red-500/60 text-red-400 hover:bg-red-500/10 btn-press"
+                className="tema3-exit-btn flex items-center gap-1 rounded font-bold whitespace-nowrap border border-red-500/60 text-red-400 hover:bg-red-500/10 btn-press"
                 style={{ ...uiXs, padding: '0.3em 0.6em' }}
               >
                 <LogOut style={{ width: '1em', height: '1em' }} aria-hidden="true" />
