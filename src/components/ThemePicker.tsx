@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { menuBackgrounds, gameBackgrounds } from '@/generated/backgrounds';
+import { menuBackgrounds } from '@/generated/backgrounds';
 import { X, Check, Shuffle, Moon, Sunrise, Palette } from 'lucide-react';
 
 export type BackgroundMode = 'fixed' | 'slideshow';
@@ -20,8 +19,6 @@ interface ThemePickerProps {
   setAppearanceMode: (mode: AppearanceMode) => void;
 }
 
-type ThemeTab = 'menu' | 'board';
-
 export function ThemePicker({
   open,
   onClose,
@@ -36,24 +33,23 @@ export function ThemePicker({
   appearanceMode,
   setAppearanceMode,
 }: ThemePickerProps) {
-  const [activeTab, setActiveTab] = useState<ThemeTab>('menu');
-
   if (!open) return null;
 
-  const isMenuTab = activeTab === 'menu';
-  const title = isMenuTab ? 'Fondo del menú' : 'Fondo del tablero';
-  const backgrounds = isMenuTab ? menuBackgrounds : gameBackgrounds;
-  const count = backgrounds.length;
-  const selectedIndex = isMenuTab ? menuIndex : gameIndex;
-  const mode = isMenuTab ? menuMode : gameMode;
-  const setSelectedIndex = isMenuTab ? setMenuIndex : setGameIndex;
-  const setMode = isMenuTab ? setMenuMode : setGameMode;
-  const imagePath = (index: number) => backgrounds[index] ?? backgrounds[0] ?? '';
+  // Un único catálogo, con el diseño del menú de inicio, compartido por menú y tablero.
+  const count = menuBackgrounds.length;
+  const selectedIndex = menuIndex;
+  const mode = menuMode;
+  const imagePath = (index: number) => menuBackgrounds[index] ?? menuBackgrounds[0] ?? '';
 
-  const chooseRotating = () => setMode('slideshow');
+  const chooseRotating = () => {
+    setMenuMode('slideshow');
+    setGameMode('slideshow');
+  };
   const chooseFixed = (index: number) => {
-    setSelectedIndex(index);
-    setMode('fixed');
+    setMenuIndex(index);
+    setGameIndex(index);
+    setMenuMode('fixed');
+    setGameMode('fixed');
   };
 
   return (
@@ -73,12 +69,7 @@ export function ThemePicker({
             <Palette className="text-gold-300" size={22} />
             <h2 id="theme-picker-title" className="font-display text-xl font-bold text-gold-300">Temas y fondos</h2>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-2 text-ink-200 hover:bg-ink-800 hover:text-white"
-            aria-label="Cerrar temas"
-          >
+          <button type="button" onClick={onClose} className="rounded-lg p-2 text-ink-200 hover:bg-ink-800 hover:text-white" aria-label="Cerrar temas">
             <X size={22} />
           </button>
         </div>
@@ -97,11 +88,7 @@ export function ThemePicker({
                 type="button"
                 onClick={() => setAppearanceMode(value)}
                 aria-pressed={appearanceMode === value}
-                className={`rounded-lg border px-2 py-3 flex flex-col items-center gap-1 text-xs sm:text-sm font-display font-bold transition-colors ${
-                  appearanceMode === value
-                    ? 'border-gold-300 bg-gold-300/20 text-gold-200'
-                    : 'border-ink-600 bg-ink-900 text-ink-200 hover:border-gold-500/60'
-                }`}
+                className={`rounded-lg border px-2 py-3 flex flex-col items-center gap-1 text-xs sm:text-sm font-display font-bold transition-colors ${appearanceMode === value ? 'border-gold-300 bg-gold-300/20 text-gold-200' : 'border-ink-600 bg-ink-900 text-ink-200 hover:border-gold-500/60'}`}
               >
                 <Icon size={19} />
                 {label}
@@ -110,44 +97,11 @@ export function ThemePicker({
           </div>
         </section>
 
-        <div className="grid grid-cols-2 gap-2 mb-5" role="tablist" aria-label="Tipo de fondo">
-          <button
-            id="theme-tab-menu"
-            type="button"
-            role="tab"
-            aria-selected={isMenuTab}
-            aria-controls="theme-panel"
-            onClick={() => setActiveTab('menu')}
-            className={`rounded-xl border px-3 py-3 text-sm sm:text-base font-display font-bold transition-colors ${
-              isMenuTab
-                ? 'border-gold-400 bg-gold-400/15 text-gold-300'
-                : 'border-ink-600 bg-ink-800 text-ink-200 hover:border-gold-500/60'
-            }`}
-          >
-            Fondo del menú
-          </button>
-          <button
-            id="theme-tab-board"
-            type="button"
-            role="tab"
-            aria-selected={!isMenuTab}
-            aria-controls="theme-panel"
-            onClick={() => setActiveTab('board')}
-            className={`rounded-xl border px-3 py-3 text-sm sm:text-base font-display font-bold transition-colors ${
-              !isMenuTab
-                ? 'border-gold-400 bg-gold-400/15 text-gold-300'
-                : 'border-ink-600 bg-ink-800 text-ink-200 hover:border-gold-500/60'
-            }`}
-          >
-            Fondo del tablero
-          </button>
-        </div>
-
-        <section id="theme-panel" role="tabpanel" aria-labelledby={isMenuTab ? 'theme-tab-menu' : 'theme-tab-board'}>
+        <section id="theme-panel" aria-labelledby="theme-background-title">
           <div className="theme-panel-intro">
-            <h3 className="font-display font-bold text-gold-300 mb-3">{title}</h3>
+            <h3 id="theme-background-title" className="font-display font-bold text-gold-300 mb-3">Fondo del juego</h3>
             <p className={`${appearanceMode === 'dark' ? 'text-white' : 'text-ink-300'} text-xs mb-3`}>
-              Elige una imagen para dejarla fija o selecciona «Fondo rotativo» para alternar automáticamente entre todos los fondos de esta pestaña.
+              Elige un fondo para el menú y el tablero, o selecciona «Fondo rotativo» para alternar automáticamente entre todos los fondos.
             </p>
           </div>
 
@@ -155,70 +109,42 @@ export function ThemePicker({
             <button
               type="button"
               onClick={chooseRotating}
-              className={`relative overflow-hidden rounded-xl border-2 aspect-[4/3] bg-ink-800 transition-all ${
-                mode === 'slideshow' ? 'border-gold-300 ring-2 ring-gold-400/50' : 'border-ink-600 hover:border-gold-500/70'
-              }`}
-              aria-label={`Seleccionar fondo rotativo para ${title.toLowerCase()}`}
+              className={`relative overflow-hidden rounded-xl border-2 aspect-[4/3] bg-ink-800 transition-all ${mode === 'slideshow' ? 'border-gold-300 ring-2 ring-gold-400/50' : 'border-ink-600 hover:border-gold-500/70'}`}
+              aria-label="Seleccionar fondo rotativo"
               aria-pressed={mode === 'slideshow'}
               title="Fondo rotativo"
             >
-              <img
-                src={imagePath(0)}
-                alt=""
-                loading="lazy"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
+              <img src={imagePath(0)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
               <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2 p-2">
                 <Shuffle size={28} className="text-gold-300 drop-shadow-lg" />
                 <span className="text-white text-sm font-display font-bold text-center">Fondo rotativo</span>
                 <span className="text-white/90 text-[10px] text-center">Todos los fondos</span>
               </div>
-              {mode === 'slideshow' && (
-                <span className="absolute top-2 right-2 rounded-full bg-gold-300 text-ink-900 p-1">
-                  <Check size={13} />
-                </span>
-              )}
+              {mode === 'slideshow' && <span className="absolute top-2 right-2 rounded-full bg-gold-300 text-ink-900 p-1"><Check size={13} /></span>}
             </button>
 
             {Array.from({ length: count }, (_, index) => {
               const selected = mode === 'fixed' && selectedIndex === index;
               return (
                 <button
-                  key={`${activeTab}-${index}`}
+                  key={index}
                   type="button"
                   onClick={() => chooseFixed(index)}
-                  className={`relative overflow-hidden rounded-xl border-2 aspect-[4/3] bg-ink-800 transition-all ${
-                    selected ? 'border-gold-300 ring-2 ring-gold-400/50' : 'border-ink-600 hover:border-gold-500/70'
-                  }`}
-                  aria-label={`Seleccionar fondo ${index + 1} de ${title.toLowerCase()}`}
+                  className={`relative overflow-hidden rounded-xl border-2 aspect-[4/3] bg-ink-800 transition-all ${selected ? 'border-gold-300 ring-2 ring-gold-400/50' : 'border-ink-600 hover:border-gold-500/70'}`}
+                  aria-label={`Seleccionar fondo ${index + 1}`}
                   aria-pressed={selected}
                   title={`Fondo ${index + 1}`}
                 >
-                  <img
-                    src={imagePath(index)}
-                    alt={`Vista previa del fondo ${index + 1}`}
-                    loading="lazy"
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                  <span className="absolute bottom-0 inset-x-0 bg-black/75 text-white text-xs font-bold py-1.5">
-                    Fondo {index + 1}
-                  </span>
-                  {selected && (
-                    <span className="absolute top-2 right-2 rounded-full bg-gold-300 text-ink-900 p-1">
-                      <Check size={13} />
-                    </span>
-                  )}
+                  <img src={imagePath(index)} alt={`Vista previa del fondo ${index + 1}`} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                  <span className="absolute bottom-0 inset-x-0 bg-black/75 text-white text-xs font-bold py-1.5">Fondo {index + 1}</span>
+                  {selected && <span className="absolute top-2 right-2 rounded-full bg-gold-300 text-ink-900 p-1"><Check size={13} /></span>}
                 </button>
               );
             })}
           </div>
         </section>
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full mt-5 rounded-xl bg-gold-400 text-ink-900 font-display font-bold py-3 hover:bg-gold-300"
-        >
+        <button type="button" onClick={onClose} className="w-full mt-5 rounded-xl bg-gold-400 text-ink-900 font-display font-bold py-3 hover:bg-gold-300">
           Guardar selección
         </button>
       </div>
