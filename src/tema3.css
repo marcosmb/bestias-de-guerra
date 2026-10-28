@@ -417,3 +417,35 @@ html[data-appearance="tema3"] .theme-tema3-menu > div[aria-hidden="true"] {
   height: 100dvh !important;
   pointer-events: none !important;
 }
+
+
+/* Panel de Temas y fondos: mismo aspecto desde el menú y desde el tablero. */
+html[data-appearance="tema3"] .theme-picker-tema3 { color: var(--tema3-text) !important; }
+html[data-appearance="tema3"] .theme-picker-tema3 p,
+html[data-appearance="tema3"] .theme-picker-tema3 span { color: var(--tema3-muted) !important; }
+html[data-appearance="tema3"] .theme-picker-tema3 button {
+  color: var(--tema3-text) !important;
+  background-color: rgba(255,254,250,.50) !important;
+  background-image: none;
+  border-color: var(--tema3-border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 5px 16px rgba(52,42,20,.07);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+html[data-appearance="tema3"] .theme-picker-tema3 button:hover {
+  border-color: var(--tema3-gold) !important;
+  box-shadow: 0 10px 24px rgba(52,42,20,.11);
+}
+html[data-appearance="tema3"] .theme-picker-tema3 button[class*="bg-gold-400"],
+html[data-appearance="tema3"] .theme-picker-tema3 button[class*="from-gold-"] {
+  background: linear-gradient(135deg,var(--tema3-gold-light),var(--tema3-gold)) !important;
+  color: #2B1D0A !important;
+  border-color: #a67c2a !important;
+}
+html[data-appearance="tema3"] .theme-picker-tema3 button svg { color: var(--tema3-gold) !important; }
+html[data-appearance="tema3"] .theme-picker-tema3 button[class*="bg-gold-400"] svg { color: #2B1D0A !important; }
+html[data-appearance="tema3"] .theme-picker-tema3 button[aria-pressed="true"] {
+  background: linear-gradient(180deg, rgba(255,254,250,.72), rgba(255,246,214,.72)) !important;
+  border-color: var(--tema3-gold) !important;
+  box-shadow: 0 0 0 3px rgba(184,137,46,.15);
+}
