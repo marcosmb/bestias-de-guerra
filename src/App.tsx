@@ -102,6 +102,7 @@ function StartScreen({
   }, [backgroundIndex, showNextBackground, menuBackgroundMode]);
 
   return (
+    <>
     <div className={`relative isolate min-h-[100dvh] overflow-hidden bg-ink-900 flex items-center justify-center px-3 sm:px-6 py-6 ${appearanceMode === 'tema4' ? 'theme-tema4-menu' : appearanceMode === 'tema3' ? 'theme-tema3-menu' : ''}`}>
       <div
         aria-hidden="true"
@@ -297,21 +298,23 @@ function StartScreen({
           overlay
         />
       )}
-      <ThemePicker
-        open={showThemePicker}
-        onClose={() => setShowThemePicker(false)}
-        menuIndex={menuBackgroundIndex}
-        setMenuIndex={setMenuBackgroundIndex}
-        menuMode={menuBackgroundMode}
-        setMenuMode={setMenuBackgroundMode}
-        gameIndex={gameBackgroundIndex}
-        setGameIndex={setGameBackgroundIndex}
-        gameMode={gameBackgroundMode}
-        setGameMode={setGameBackgroundMode}
-        appearanceMode={appearanceMode}
-        setAppearanceMode={setAppearanceMode}
-      />
     </div>
+    {/* Selector montado fuera del menú para mantener el mismo diseño en ambos contextos. */}
+    <ThemePicker
+      open={showThemePicker}
+      onClose={() => setShowThemePicker(false)}
+      menuIndex={menuBackgroundIndex}
+      setMenuIndex={setMenuBackgroundIndex}
+      menuMode={menuBackgroundMode}
+      setMenuMode={setMenuBackgroundMode}
+      gameIndex={gameBackgroundIndex}
+      setGameIndex={setGameBackgroundIndex}
+      gameMode={gameBackgroundMode}
+      setGameMode={setGameBackgroundMode}
+      appearanceMode={appearanceMode}
+      setAppearanceMode={setAppearanceMode}
+    />
+    </>
   );
 }
 
