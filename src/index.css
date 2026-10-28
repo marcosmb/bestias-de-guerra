@@ -414,16 +414,23 @@ img {
   border-radius: 8px;
 }
 
-/* Etiquetas "Campo Rival" / "Tu Campo": fondo oscuro solo detrás de las letras
-   para que se lean sobre la imagen de fondo del tablero. */
+/* Etiquetas "Campo Rival" / "Tu Campo": colores invertidos. El fondo toma el
+   color que tenían las letras y las letras toman el color que tenía el fondo,
+   para que se lean sobre la imagen del tablero. */
 .field-tag {
   display: inline-block;
   padding: 1px 8px;
   border-radius: 999px;
-  background: rgba(6, 8, 16, 0.62);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+/* "Campo Rival": antes texto rojo (red-400) sobre fondo oscuro. */
+.field-tag-rival {
+  background: rgb(122 58 59);
+}
+/* "Tu Campo": antes texto azul (azure-400) sobre fondo oscuro. */
+.field-tag-own {
+  background: rgb(42 66 92);
 }
 
 /* Paneles de "Pasa el dispositivo" y "Jugar online": blanco translúcido para que

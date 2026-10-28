@@ -1448,7 +1448,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       {/* Opponent field */}
       <div className="px-1 sm:px-2 py-1 bg-red-950/20 border border-red-900/30 rounded-lg mx-1 flex-none field-zone" data-no-cancel>
         <div className="text-center mb-0.5">
-          <span className="field-tag text-[9px] uppercase tracking-widest text-red-400/60 font-display font-bold">Campo Rival</span>
+          <span className="field-tag field-tag-rival text-[9px] uppercase tracking-widest text-red-400/60 font-display font-bold">Campo Rival</span>
         </div>
         <div className="grid grid-cols-6 place-items-center w-full" style={{ gap: 'var(--field-gap)' }}>
           {opp.field.map((fm, i) => (
@@ -1533,7 +1533,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       {/* Player field */}
       <div className="px-1 sm:px-2 py-1 bg-azure-950/20 border border-azure-900/30 rounded-lg mx-1 flex-none field-zone relative z-10" data-no-cancel>
         <div className="text-center mb-0.5">
-          <span className="field-tag text-[9px] uppercase tracking-widest text-azure-400/60 font-display font-bold">Tu Campo</span>
+          <span className="field-tag field-tag-own text-[9px] uppercase tracking-widest text-azure-400/60 font-display font-bold">Tu Campo</span>
         </div>
         <div className="grid grid-cols-6 place-items-center w-full" style={{ gap: 'var(--field-gap)' }}>
           {me.field.map((fm, i) => (
