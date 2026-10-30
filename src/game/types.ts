@@ -733,27 +733,52 @@ export function isLegalAction(state: GameState, player: 0 | 1, action: Action): 
 function actionsEqual(a: Action, b: Action): boolean {
   if (a.type !== b.type) return false;
   switch (a.type) {
-    case 'SUMMON_MONSTER': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card) && (a as any).position === (b as any).position;
-    case 'SELECT_TRAP_PLACE': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card);
-    case 'PLACE_TRAP_ON_MONSTER': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card) && (a as any).fieldUid === (b as any).fieldUid;
-    case 'SELECT_MAGIC': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card);
+    case 'SUMMON_MONSTER':
+      return b.type === 'SUMMON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.position === b.position;
+    case 'SELECT_TRAP_PLACE':
+      return b.type === 'SELECT_TRAP_PLACE' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
+    case 'PLACE_TRAP_ON_MONSTER':
+      return b.type === 'PLACE_TRAP_ON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid;
+    case 'SELECT_MAGIC':
+      return b.type === 'SELECT_MAGIC' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
     case 'PLACE_MAGIC_ON_MONSTER':
-    case 'MAGIC_TARGET_MONSTER': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card) && (a as any).fieldUid === (b as any).fieldUid;
-    case 'MAGIC_INSTANT': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card);
-    case 'START_ATTACK': return (a as any).attackerUid === (b as any).attackerUid;
-    case 'DECLARE_ATTACK': return (a as any).attackerUid === (b as any).attackerUid && (a as any).defenderUid === (b as any).defenderUid;
-    case 'DIRECT_ATTACK': return (a as any).attackerUid === (b as any).attackerUid;
-    case 'RESOLVE_TRAP': return (a as any).activate === (b as any).activate;
-    case 'CHANGE_POSITION': return (a as any).fieldUid === (b as any).fieldUid;
-    case 'DESTROY_MONSTER': return (a as any).fieldUid === (b as any).fieldUid;
-    case 'ROLL_DICE': return (a as any).roll === (b as any).roll;
-    case 'REVIVE_CHOICE': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card) && (a as any).choice === (b as any).choice && (a as any).position === (b as any).position;
-    case 'START_GAME': case 'CPU_PLAY': case 'CONFIRM_START': case 'CONFIRM_PASS': case 'END_TURN': case 'CANCEL_SELECTION': case 'RESTART':
+    case 'MAGIC_TARGET_MONSTER':
+      return (b.type === 'PLACE_MAGIC_ON_MONSTER' || b.type === 'MAGIC_TARGET_MONSTER')
+        && cardInstanceKey(a.card) === cardInstanceKey(b.card)
+        && a.fieldUid === b.fieldUid;
+    case 'MAGIC_INSTANT':
+      return b.type === 'MAGIC_INSTANT' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
+    case 'START_ATTACK':
+      return b.type === 'START_ATTACK' && a.attackerUid === b.attackerUid;
+    case 'DECLARE_ATTACK':
+      return b.type === 'DECLARE_ATTACK' && a.attackerUid === b.attackerUid && a.defenderUid === b.defenderUid;
+    case 'DIRECT_ATTACK':
+      return b.type === 'DIRECT_ATTACK' && a.attackerUid === b.attackerUid;
+    case 'RESOLVE_TRAP':
+      return b.type === 'RESOLVE_TRAP' && a.activate === b.activate;
+    case 'CHANGE_POSITION':
+      return b.type === 'CHANGE_POSITION' && a.fieldUid === b.fieldUid;
+    case 'DESTROY_MONSTER':
+      return b.type === 'DESTROY_MONSTER' && a.fieldUid === b.fieldUid;
+    case 'ROLL_DICE':
+      return b.type === 'ROLL_DICE' && a.roll === b.roll;
+    case 'REVIVE_CHOICE':
+      return b.type === 'REVIVE_CHOICE'
+        && cardInstanceKey(a.card) === cardInstanceKey(b.card)
+        && a.choice === b.choice
+        && a.position === b.position;
+    case 'START_GAME':
+    case 'CPU_PLAY':
+    case 'CONFIRM_START':
+    case 'CONFIRM_PASS':
+    case 'END_TURN':
+    case 'CANCEL_SELECTION':
+    case 'RESTART':
       return true;
-    default: return false;
+    default:
+      return false;
   }
 }
-
 /**
  * Regla 22 — Un ataque a Monstruo puede elegir cualquier Monstruo rival,
  * tanto en Ataque como en Defensa.
