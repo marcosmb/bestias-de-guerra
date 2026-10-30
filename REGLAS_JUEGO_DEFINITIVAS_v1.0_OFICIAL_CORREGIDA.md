@@ -177,24 +177,26 @@ Cada jugador comienza con:
 
 **7 cartas.**
 
-## 9.2. Mano máxima
+## 9.2. Umbral del robo automático
 
-La mano puede contener como máximo:
+No existe un límite general al número de cartas que un jugador puede tener en la mano.
 
-**9 cartas.**
+El número **9** se utiliza exclusivamente para calcular el robo automático al comienzo del turno.
 
-## 9.3. Robo normal
+## 9.3. Robo automático
 
-Al comienzo de cada turno, el jugador roba **hasta 2 cartas**, sin superar el máximo de 9.
+Al comienzo de cada turno, el jugador roba **hasta 2 cartas**, pero solo las necesarias para llegar a 9 cartas en la mano. Si ya tiene 9 o más, no roba.
 
 Por tanto:
 
-- con 6 cartas → roba 2;
 - con 7 cartas → roba 2;
 - con 8 cartas → roba 1;
-- con 9 cartas → no roba.
+- con 9 cartas → no roba;
+- con más de 9 cartas → no roba.
 
 Si el mazo no dispone de cartas suficientes, solo se roban las cartas disponibles.
+
+Este umbral no limita los robos producidos por efectos de cartas.
 
 ---
 
@@ -780,7 +782,7 @@ El jugador elige una de dos opciones:
 
 La opción elegida debe ser posible.
 
-Para llevarlo a la mano debe existir espacio dentro del máximo de 9 cartas.
+Para llevarlo a la mano no se aplica el umbral del robo automático; debe existir un Monstruo recuperable válido.
 
 Para llevarlo al campo debe existir al menos un espacio libre de Monstruo.
 
@@ -860,17 +862,15 @@ Una carta cuyo efecto indique expresamente una eliminación automática puede el
 
 ## Mágica 10 — Robar 2 cartas
 
-El jugador roba **hasta 2 cartas**, respetando el máximo de 9 cartas en la mano.
+El jugador roba **hasta 2 cartas del mazo**, independientemente del número de cartas que tenga en la mano.
 
-Por ejemplo:
+La restricción de 9 cartas solo se aplica al robo automático del comienzo del turno y no limita este efecto.
 
-- 7 cartas → roba 2 y queda en 9;
-- 8 cartas → roba 1 y queda en 9;
-- 9 cartas → no roba.
+Después de resolver el efecto, la Mágica 10 se retira de la mano.
 
-Después de resolver el efecto:
+Por ejemplo, si el jugador comienza con 9 cartas (incluida la Mágica 10), roba 2 cartas y después se retira la Mágica: termina con 10 cartas en la mano.
 
-**la Mágica se elimina.**
+Si el mazo tiene menos de 2 cartas, roba únicamente las disponibles.
 
 ---
 
