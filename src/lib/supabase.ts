@@ -1,3 +1,4 @@
+import type { GameState } from '../game/types';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -19,7 +20,7 @@ export type OnlineGameState = {
   id: string;
   player1: { id: string; name: string; connected: boolean };
   player2: { id: string | null; name: string | null; connected: boolean };
-  game_state: any; // GameState from the engine
+  game_state: GameState; // GameState from the engine
   current_turn: 'player1' | 'player2';
   status: 'waiting' | 'playing' | 'finished';
   winner: 'player1' | 'player2' | 'draw' | null;
@@ -31,7 +32,7 @@ export type PlayerRole = 'player1' | 'player2' | 'spectator';
 
 export type OnlineAction = {
   type: 'action' | 'sync' | 'join' | 'leave' | 'rematch';
-  payload: any;
+  payload: unknown;
   playerId: string;
   timestamp: number;
 };
