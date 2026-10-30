@@ -42,7 +42,7 @@ El usuario debe:
 |----------------|-------------|-----------|--------|
 | LP inicial = 100 | `lp: 100` | `types.ts` línea 119 | 🔍 Pendiente |
 
-**Decisión del usuario:** El 9 limita exclusivamente el robo automático. Los efectos de cartas, incluida Mágica 10, no aplican ese umbral.
+**Decisión del usuario:** ___________________________________________
 
 ---
 
