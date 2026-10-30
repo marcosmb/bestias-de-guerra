@@ -42,7 +42,7 @@ El usuario debe:
 |----------------|-------------|-----------|--------|
 | LP inicial = 100 | `lp: 100` | `types.ts` línea 119 | 🔍 Pendiente |
 
-**Decisión del usuario:** ___________________________________________
+**Decisión del usuario:** El 9 limita exclusivamente el robo automático. Los efectos de cartas, incluida Mágica 10, no aplican ese umbral.
 
 ---
 
@@ -60,7 +60,7 @@ El usuario debe:
 
 | Documento dice | Código hace | Ubicación | Estado |
 |----------------|-------------|-----------|--------|
-| Máximo 9 cartas | `MAX_HAND_SIZE = 9` | `types.ts` línea 128 | 🔍 Pendiente |
+| El 9 solo limita el robo automático; no existe máximo general de mano | `MAX_HAND_SIZE = 9` y cálculo específico en `END_TURN` | `types.ts` / `useGame.ts` | ✅ Confirmada |
 
 **Decisión del usuario:** ___________________________________________
 
@@ -126,7 +126,7 @@ El usuario debe:
 
 | Documento dice | Código hace | Ubicación | Estado |
 |----------------|-------------|-----------|--------|
-| 2 cartas | `drawCards(players[nextPlayer], 2)` | `useGame.ts` línea 641 | 🔍 Pendiente |
+| Hasta 2 cartas, sin superar 9 en mano | Cálculo específico de espacio hasta 9 en `END_TURN` | `useGame.ts` | ✅ Confirmada |
 
 **Decisión del usuario:** ___________________________________________
 
