@@ -664,9 +664,9 @@ export function legalActions(state: GameState, player: 0 | 1): Action[] {
         break;
       }
       case 'revive-choice': {
-        const canGoToHand = true; // No existe límite general de cartas en mano; el 9 solo limita el robo automático.
+        // No existe límite general de cartas en mano; el 9 solo limita el robo automático.
         const canGoToField = state.players[player].field.some((f) => f === null);
-        if (canGoToHand) completing.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'hand' });
+        completing.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'hand' });
         if (canGoToField) {
           completing.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'field', position: 'attack' });
           completing.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'field', position: 'defense' });
