@@ -213,8 +213,9 @@ export function createPlayer(index: 0 | 1, name: string, deck: Card[]): PlayerSt
 
 export const MAX_HAND_SIZE = 9;
 
+/** Robo por efecto o preparación: no aplica el umbral del robo automático. */
 export function drawCards(player: PlayerState, n: number): PlayerState {
-  const count = Math.max(0, Math.min(n, player.deck.length, MAX_HAND_SIZE - player.hand.length));
+  const count = Math.max(0, Math.min(n, player.deck.length));
   const drawn = player.deck.slice(0, count);
   const remaining = player.deck.slice(count);
   return {
@@ -381,18 +382,16 @@ export function canActivateMagic(player: PlayerState, state: GameState, magic: M
 
   switch (magic.effect.kind) {
     case 'steal_hand_card': {
-      // Mágica 2: única condición oficial → el rival debe tener cartas.
-      // Se permiten duplicados: la carta robada conserva a su propietario.
-      return player.hand.length < MAX_HAND_SIZE && opp.hand.length > 0;
+      // Mágica 2: única condición → el rival debe tener cartas.
+      // El umbral de 9 solo se aplica al robo automático de inicio de turno.
+      return opp.hand.length > 0;
     }
     case 'revive_monster': {
       // Mágica 5: recuperar del cementerio PROPIO sin crear una segunda copia
       // propia. (Cementerio → Campo solo exige un espacio libre.)
       const propios = player.graveyard.filter((c) => c.type === 'monster');
       if (propios.length === 0) return false;
-      const canGoToHand =
-        player.hand.length < MAX_HAND_SIZE &&
-        propios.some((c) => !hasOwnCopy(player.hand, c));
+      const canGoToHand = propios.some((c) => !hasOwnCopy(player.hand, c));
       const canGoToField = hasEmptySlot(player);
       return canGoToHand || canGoToField;
     }
@@ -446,15 +445,15 @@ export function hasLegalAttack(player: PlayerState, state: GameState): boolean {
 }
 
 /**
- * Decisión del creador — `deck.length > 0 && hand.length < MAX_HAND_SIZE`.
+ * Regla de robo automático — `deck.length > 0 && hand.length < MAX_HAND_SIZE`.
  *
  * El robo es AUTOMÁTICO al comienzo del turno (Regla 15), por lo que NO es una
  * acción legal (no cuenta para el test A). Lo que demuestra es el test B: que
  * la partida PUEDE CONTINUAR, porque ese jugador recibirá cartas nuevas en su
  * siguiente turno (Regla 9.3).
  *
- * El tope de 9 cartas es lo que hace que un mazo no vacío pueda quedar
- * neutralizado: con la mano a 9/9 la Regla 9.3 dice «no roba».
+ * No existe un máximo general de cartas en mano. El umbral de 9 solo decide
+ * si se reciben cartas en el robo automático de inicio de turno.
  */
 export function canReceiveNewCards(player: PlayerState): boolean {
   return player.deck.length > 0 && player.hand.length < MAX_HAND_SIZE;
