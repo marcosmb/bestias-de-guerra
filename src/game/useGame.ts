@@ -26,7 +26,6 @@ import {
   type PlayerState,
   type Position,
   type SelectionMode,
-  MAX_HAND_SIZE,
   canAttack,
   createPlayer,
   detachFieldMonster,
@@ -471,10 +470,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
       // que puede haber dos Kraken, uno de cada jugador.
       // La carta robada CONSERVA su propietario (Regla 6).
       const oppHand = players[opp].hand;
-      if (players[me].hand.length >= MAX_HAND_SIZE) {
-        resolves = false;
-        log.push(`${card.name}: Tu mano está llena (máximo ${MAX_HAND_SIZE} cartas).`);
-      } else if (oppHand.length === 0) {
+      if (oppHand.length === 0) {
         resolves = false;
         log.push(`${card.name}: El rival no tiene cartas en su mano.`);
       } else {
@@ -573,7 +569,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
       // duplicados: si la copia que hay en la mano es del RIVAL (Mágica 2), sí
       // se puede recuperar la propia.
       const toHand = monsters.filter((c) => !hasOwnCopy(players[me].hand, c));
-      const canReviveToHand = players[me].hand.length < MAX_HAND_SIZE && toHand.length > 0;
+      const canReviveToHand = toHand.length > 0;
       const canReviveToField = hasEmptySlot(players[me]);
       if (!canReviveToHand && !canReviveToField) {
         resolves = false;
@@ -657,11 +653,10 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
     // en el bloque agrupado de la línea 445, que aplica la validación de lado
     // exigida por la Regla 5. Aquí no se repiten.
     case 'draw_cards': {
-      // La Mágica 10 respeta el máximo de cartas en la mano (Reglas oficiales).
-      // El efecto se resuelve antes de retirar la propia Mágica de la mano, así
-      // que el límite se calcula sobre la mano actual, sin permitir superar 9.
-      const handSpace = Math.max(0, MAX_HAND_SIZE - players[me].hand.length);
-      const drawCount = Math.min(eff.amount, players[me].deck.length, handSpace);
+      // Mágica 10: roba hasta la cantidad indicada, sin aplicar el umbral
+      // de 9 cartas que solo corresponde al robo automático de inicio de turno.
+      // La propia Mágica se retira de la mano en el bloque común posterior.
+      const drawCount = Math.min(eff.amount, players[me].deck.length);
       const drawnCards = players[me].deck.slice(0, drawCount);
       players[me] = {
         ...players[me],
@@ -1300,7 +1295,13 @@ export function reducer(state: GameState, action: Action): GameState {
         };
       }
       // Draw 2 for next player
-      players[nextPlayer] = drawCards(players[nextPlayer], 2);
+      // Robo automático de inicio de turno: hasta 2, sin superar 9 cartas.
+      const automaticDrawCount = Math.min(
+        2,
+        players[nextPlayer].deck.length,
+        Math.max(0, 9 - players[nextPlayer].hand.length),
+      );
+      players[nextPlayer] = drawCards(players[nextPlayer], automaticDrawCount);
       players[nextPlayer] = { ...players[nextPlayer], cardsPlayedThisTurn: 0 };
       const newTurn = state.turnCount + 1;
       let newState: GameState = {
@@ -1551,7 +1552,6 @@ export function reducer(state: GameState, action: Action): GameState {
       const sorted = [...candidates].sort((a, b) => b.atk - a.atk);
       const revived = sorted[0];
       if (action.choice === 'hand') {
-        if (players[me].hand.length >= MAX_HAND_SIZE) return state;
         players[me] = {
           ...players[me],
           hand: [...players[me].hand, revived],
