@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   createPlayer,
   drawCards,
-  MAX_HAND_SIZE,
   shuffleDeck,
   hasEmptySlot,
   getFirstEmptySlot,
@@ -23,30 +22,11 @@ describe('Reglas generales', () => {
       expect(playerWithHand.hand.length).toBe(7);
     });
 
-    it('máximo 9 cartas en mano', () => {
+    it('drawCards no aplica un límite general al tamaño de la mano', () => {
       const deck = shuffleDeck(buildDeck());
       const player = createPlayer(0, 'Test', deck);
       const playerWithHand = drawCards(player, 10);
-      expect(playerWithHand.hand.length).toBe(MAX_HAND_SIZE);
-      expect(MAX_HAND_SIZE).toBe(9);
-    });
-
-    it('robo de hasta 2 cartas al comienzo del turno', () => {
-      const deck = shuffleDeck(buildDeck());
-      let player = createPlayer(0, 'Test', deck);
-      player = drawCards(player, 7);
-      const handBefore = player.hand.length;
-      player = drawCards(player, 2);
-      expect(player.hand.length).toBe(Math.min(handBefore + 2, MAX_HAND_SIZE));
-    });
-
-    it('no roba más del máximo de 9', () => {
-      const deck = shuffleDeck(buildDeck());
-      let player = createPlayer(0, 'Test', deck);
-      player = drawCards(player, 9);
-      const handBefore = player.hand.length;
-      player = drawCards(player, 2);
-      expect(player.hand.length).toBe(handBefore);
+      expect(playerWithHand.hand.length).toBe(10);
     });
   });
 
