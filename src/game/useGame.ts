@@ -1750,21 +1750,18 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
       }
     } else {
       removeFieldMonster(players, cp, attackerUid);
-      if (hasReflect) {
-        players[opp] = applyDamage(players[opp], result.attackerDamage);
-      } else {
-        players[cp] = applyDamage(players[cp], result.attackerDamage);
-      }
+      // El daño del atacante siempre lo recibe su propietario. La Trampa 4
+      // solo redirige el daño que recibiría el propietario del Monstruo asociado
+      // cuando ese Monstruo es eliminado.
+      players[cp] = applyDamage(players[cp], result.attackerDamage);
       if (defender.trap) players[opp] = updateFieldMonster(players[opp], defenderUid, (fm) => ({ ...fm, trap: null }));
     }
   } else {
     players[cp] = updateFieldMonster(players[cp], attackerUid, (fm) => ({ ...fm, hasAttacked: true }));
     if (result.attackerDamage > 0) {
-      if (hasReflect) {
-        players[opp] = applyDamage(players[opp], result.attackerDamage);
-      } else {
-        players[cp] = applyDamage(players[cp], result.attackerDamage);
-      }
+      // El rebote del atacante nunca lo redirige la Trampa 4: su propietario
+      // recibe el daño mientras el Monstruo asociado a la Trampa siga vivo.
+      players[cp] = applyDamage(players[cp], result.attackerDamage);
     }
     if (defender.trap) players[opp] = updateFieldMonster(players[opp], defenderUid, (fm) => ({ ...fm, trap: null }));
   }
@@ -1775,12 +1772,20 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
       if (!ownerWins) {
         // Gana el rival — el monstruo es eliminado
         removeFieldMonster(players, opp, defenderUid);
-        players[opp] = applyDamage(players[opp], result.defenderDamage);
+        if (hasReflect && result.defenderDamage > 0) {
+          players[cp] = applyDamage(players[cp], result.defenderDamage);
+        } else {
+          players[opp] = applyDamage(players[opp], result.defenderDamage);
+        }
       }
       // Si gana el propietario, el monstruo sobrevive y no hay daño
     } else {
       removeFieldMonster(players, opp, defenderUid);
-      players[opp] = applyDamage(players[opp], result.defenderDamage);
+      if (hasReflect && result.defenderDamage > 0) {
+        players[cp] = applyDamage(players[cp], result.defenderDamage);
+      } else {
+        players[opp] = applyDamage(players[opp], result.defenderDamage);
+      }
     }
   }
 
