@@ -56,7 +56,7 @@ El usuario debe:
 
 ---
 
-### 3.3 Máximo de cartas en mano
+### 3.3 Umbral del robo automático
 
 | Documento dice | Código hace | Ubicación | Estado |
 |----------------|-------------|-----------|--------|
