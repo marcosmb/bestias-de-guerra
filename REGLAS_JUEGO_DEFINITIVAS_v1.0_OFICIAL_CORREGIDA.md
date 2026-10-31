@@ -1,6 +1,6 @@
 # GUÍA COMPLETA DEL JUEGO DE CARTAS
 
-## REGLAMENTO OFICIAL DEL JUEGO — VERSIÓN 1.0
+## REGLAMENTO OFICIAL DEL JUEGO — VERSIÓN 1.1
 
 > **DOCUMENTO PROTEGIDO — REGLAS OFICIALES DEL JUEGO**
 >
@@ -773,25 +773,37 @@ Por ejemplo:
 
 ## Mágica 5 — Recuperar Monstruo
 
-Permite recuperar un Monstruo del cementerio.
+Permite recuperar un Monstruo del **cementerio propio**. No permite recuperar Monstruos del cementerio del adversario.
 
-El jugador elige una de dos opciones:
+**Condición obligatoria:** el jugador debe tener al menos un Monstruo propio en su cementerio.
+
+Si no tiene ningún Monstruo propio en el cementerio:
+
+- la Mágica no puede activarse;
+- no se consume ni se retira de la mano;
+- no gasta una de las 3 cartas permitidas por turno;
+- el juego debe mostrar el mensaje: **«No puedes utilizar la Mágica 5 porque no tienes ningún Monstruo en tu cementerio».**
+
+Si existe al menos un Monstruo propio elegible, el jugador elige una de estas dos opciones:
 
 - **Cementerio → Mano**
 - **Cementerio → Campo**
 
-La opción elegida debe ser posible.
+Una vez elegido el destino, el juego recupera automáticamente el Monstruo elegible con el **mayor ATQ**. El jugador no elige qué Monstruo concreto recuperar.
 
-Para llevarlo a la mano no se aplica el umbral del robo automático; debe existir un Monstruo recuperable válido.
+La opción elegida debe ser posible:
 
-Para llevarlo al campo debe existir al menos un espacio libre de Monstruo.
+- Para llevarlo a la mano debe existir espacio dentro del máximo de 9 cartas y el Monstruo debe cumplir la restricción de no tener ya otra copia propia en la mano.
+- Para llevarlo al campo debe existir al menos un espacio libre de Monstruo.
 
-Si ninguna de las dos opciones es posible, **la Mágica no puede utilizarse**.
+Si ninguna de las dos opciones es posible, **la Mágica no puede utilizarse** y no se consume.
 
-Si el Monstruo vuelve al campo, el jugador puede elegir:
+Si el Monstruo vuelve al campo, el jugador puede elegir su posición, respetando las reglas generales:
 
-- Ataque boca arriba y vertical;
+- Ataque boca arriba y vertical, salvo durante el primer turno del jugador que comienza la partida;
 - Defensa boca abajo y horizontal.
+
+Durante ese primer turno, el Monstruo recuperado mediante la Mágica 5 debe colocarse en Defensa.
 
 ---
 
@@ -975,7 +987,9 @@ Cuando se cambie una regla:
 
 # 35. ESTADO DEL REGLAMENTO
 
-**Versión:** 1.0 — **reglamento oficial para la versión jugable actual.**
+**Versión:** 1.1 — **reglamento oficial para la versión jugable actual.**
+
+**Cambios de la versión 1.1:** se concreta la Mágica 5: solo utiliza Monstruos del cementerio propio; si no hay ninguno no se activa ni se consume y muestra un aviso; si hay opciones válidas, el jugador elige el destino y el juego recupera automáticamente el Monstruo elegible con mayor ATQ; durante el primer turno solo puede volver al campo en Defensa.
 
 Esta versión consolida las reglas decididas por el creador y elimina las contradicciones principales entre los documentos anteriores.
 
