@@ -194,6 +194,11 @@ function removeCardFromHand(player: PlayerState, card: Card): PlayerState {
   return { ...player, hand: [...player.hand.slice(0, idx), ...player.hand.slice(idx + 1)] };
 }
 
+/** Devuelve siempre el Monstruo de mayor ATQ; en empate conserva el primero del cementerio. */
+function highestAtkMonster(monsters: MonsterCard[]): MonsterCard {
+  return [...monsters].sort((a, b) => b.atk - a.atk)[0];
+}
+
 function findFieldMonster(player: PlayerState, uid: string): FieldMonster | null {
   return player.field.find((f) => f?.uid === uid) ?? null;
 }
@@ -582,8 +587,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
       // Si solo hay una opción posible, ejecutarla directamente
       if (canReviveToHand && !canReviveToField) {
         // Solo se puede revivir a la mano
-        const sorted = [...toHand].sort((a, b) => b.atk - a.atk);
-        const revived = sorted[0];
+        const revived = highestAtkMonster(toHand);
         players[me] = {
           ...players[me],
           hand: [...players[me].hand, revived],
@@ -592,8 +596,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
         log.push(`${card.name}: ${revived.name} recuperado del cementerio a la mano.`);
       } else if (!canReviveToHand && canReviveToField) {
         // Solo se puede revivir al campo
-        const sorted = [...monsters].sort((a, b) => b.atk - a.atk);
-        const revived = sorted[0];
+        const revived = highestAtkMonster(monsters);
         const slot = getFirstEmptySlot(players[me]);
         const fm: FieldMonster = {
           uid: genUid(),
@@ -1536,8 +1539,7 @@ export function reducer(state: GameState, action: Action): GameState {
           ? monsters.filter((c) => !hasOwnCopy(players[me].hand, c))
           : monsters;
       if (candidates.length === 0) return state;
-      const sorted = [...candidates].sort((a, b) => b.atk - a.atk);
-      const revived = sorted[0];
+      const revived = highestAtkMonster(candidates);
       if (action.choice === 'hand') {
         if (players[me].hand.length >= MAX_HAND_SIZE) return state;
         players[me] = {
