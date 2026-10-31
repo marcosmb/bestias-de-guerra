@@ -777,7 +777,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         return 'El rival no tiene cartas en la mano.';
       case 'revive_monster': {
         const ownGraveMonsters = me.graveyard.filter((c) => c.type === 'monster');
-        if (ownGraveMonsters.length === 0) return 'No tienes Monstruos en el cementerio.';
+        if (ownGraveMonsters.length === 0) return 'No puedes utilizar la Mágica 5 porque no tienes ningún Monstruo en tu cementerio.';
         const canGoToHand =
           me.hand.length < MAX_HAND_SIZE &&
           ownGraveMonsters.some((c) => !hasOwnCopy(me.hand, c));
