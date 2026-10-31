@@ -595,3 +595,47 @@ describe('REGRESIÓN · Mágica 5 valida la carta que abrió la elección', () =
     expect(after.players[0].cardsPlayedThisTurn).toBe(0);
   });
 });
+
+
+describe('REGRESIÓN · Mágica 5 sigue las reglas confirmadas por el creador', () => {
+  it('sin Monstruos propios en el cementerio no consume la Mágica ni la cuota', () => {
+    const m = magic(5);
+    const estado = scene({ me: { hand: [m], graveyard: [] } });
+    const despues = reducer(estado, { type: 'SELECT_MAGIC', card: m });
+
+    expect(despues.players[0].hand).toContain(m);
+    expect(despues.players[0].cardsPlayedThisTurn).toBe(0);
+    expect(despues.selection.kind).toBe('none');
+    expect(despues.log.join(' ')).toContain('No hay Monstruos en el cementerio');
+  });
+
+  it('al recuperar al campo selecciona automáticamente el Monstruo de mayor ATQ', () => {
+    const m = magic(5);
+    const bajo = monster(3);
+    const alto = monster(12);
+    const estado = scene({ me: { hand: [m], graveyard: [bajo, alto] } });
+    const abierta = reducer(estado, { type: 'SELECT_MAGIC', card: m });
+    expect(abierta.selection.kind).toBe('revive-choice');
+
+    const despues = reducer(abierta, { type: 'REVIVE_CHOICE', card: m, choice: 'field', position: 'attack' });
+    expect(despues.players[0].field[0]?.card.atk).toBe(12);
+    expect(despues.players[0].graveyard).toContain(bajo);
+    expect(despues.players[0].graveyard).not.toContain(alto);
+    expect(despues.players[0].hand).not.toContain(m);
+  });
+
+  it('durante el primer turno la recuperación al campo queda obligatoriamente en Defensa', () => {
+    const m = magic(5);
+    const difunto = monster(9);
+    const estado = scene({ turnCount: 0, me: { hand: [m], graveyard: [difunto] } });
+    const abierta = reducer(estado, { type: 'SELECT_MAGIC', card: m });
+    expect(abierta.selection.kind).toBe('revive-choice');
+
+    const ataque = reducer(abierta, { type: 'REVIVE_CHOICE', card: m, choice: 'field', position: 'attack' });
+    expect(ataque).toBe(abierta);
+
+    const defensa = reducer(abierta, { type: 'REVIVE_CHOICE', card: m, choice: 'field', position: 'defense' });
+    expect(defensa.players[0].field[0]?.position).toBe('defense');
+    expect(defensa.players[0].field[0]?.faceDown).toBe(true);
+  });
+});
