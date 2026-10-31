@@ -619,7 +619,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
         };
         players[me] = {
           ...players[me],
-          graveyard: players[me].graveyard.filter((c) => c.id !== revived.id),
+          graveyard: players[me].graveyard.filter((c) => c.instanceId !== revived.instanceId),
           field: players[me].field.map((f, i) => (i === slot ? fm : f)) as (FieldMonster | null)[],
         };
         log.push(`${card.name}: ${revived.name} revivido del cementerio al campo.`);
@@ -1545,7 +1545,7 @@ export function reducer(state: GameState, action: Action): GameState {
         players[me] = {
           ...players[me],
           hand: [...players[me].hand, revived],
-          graveyard: players[me].graveyard.filter((c) => c.id !== revived.id),
+          graveyard: players[me].graveyard.filter((c) => c.instanceId !== revived.instanceId),
         };
         log.push(`${action.card.name}: ${revived.name} recuperado del cementerio a la mano.`);
       } else {
@@ -1575,7 +1575,7 @@ export function reducer(state: GameState, action: Action): GameState {
         };
         players[me] = {
           ...players[me],
-          graveyard: players[me].graveyard.filter((c) => c.id !== revived.id),
+          graveyard: players[me].graveyard.filter((c) => c.instanceId !== revived.instanceId),
           field: players[me].field.map((f, i) => (i === slot ? fm : f)) as (FieldMonster | null)[],
         };
         log.push(`${action.card.name}: ${revived.name} revivido del cementerio al campo en posición ${position === 'attack' ? 'Ataque' : 'Defensa'}.`);
