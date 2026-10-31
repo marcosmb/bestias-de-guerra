@@ -199,6 +199,13 @@ function highestAtkMonster(monsters: MonsterCard[]): MonsterCard {
   return [...monsters].sort((a, b) => b.atk - a.atk)[0];
 }
 
+/** Retira una sola copia física del cementerio, usando instanceId y fallback seguro para fixtures antiguos. */
+function removeCardFromGraveyard(graveyard: Card[], card: Card): Card[] {
+  const index = indexOfCardInstance(graveyard, card);
+  if (index < 0) return graveyard;
+  return [...graveyard.slice(0, index), ...graveyard.slice(index + 1)];
+}
+
 function findFieldMonster(player: PlayerState, uid: string): FieldMonster | null {
   return player.field.find((f) => f?.uid === uid) ?? null;
 }
@@ -591,7 +598,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
         players[me] = {
           ...players[me],
           hand: [...players[me].hand, revived],
-          graveyard: players[me].graveyard.filter((c) => c.instanceId !== revived.instanceId),
+          graveyard: removeCardFromGraveyard(players[me].graveyard, revived),
         };
         log.push(`${card.name}: ${revived.name} recuperado del cementerio a la mano.`);
       } else if (!canReviveToHand && canReviveToField) {
@@ -619,7 +626,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
         };
         players[me] = {
           ...players[me],
-          graveyard: players[me].graveyard.filter((c) => c.instanceId !== revived.instanceId),
+          graveyard: removeCardFromGraveyard(players[me].graveyard, revived),
           field: players[me].field.map((f, i) => (i === slot ? fm : f)) as (FieldMonster | null)[],
         };
         log.push(`${card.name}: ${revived.name} revivido del cementerio al campo.`);
@@ -1545,7 +1552,7 @@ export function reducer(state: GameState, action: Action): GameState {
         players[me] = {
           ...players[me],
           hand: [...players[me].hand, revived],
-          graveyard: players[me].graveyard.filter((c) => c.instanceId !== revived.instanceId),
+          graveyard: removeCardFromGraveyard(players[me].graveyard, revived),
         };
         log.push(`${action.card.name}: ${revived.name} recuperado del cementerio a la mano.`);
       } else {
@@ -1575,7 +1582,7 @@ export function reducer(state: GameState, action: Action): GameState {
         };
         players[me] = {
           ...players[me],
-          graveyard: players[me].graveyard.filter((c) => c.instanceId !== revived.instanceId),
+          graveyard: removeCardFromGraveyard(players[me].graveyard, revived),
           field: players[me].field.map((f, i) => (i === slot ? fm : f)) as (FieldMonster | null)[],
         };
         log.push(`${action.card.name}: ${revived.name} revivido del cementerio al campo en posición ${position === 'attack' ? 'Ataque' : 'Defensa'}.`);
