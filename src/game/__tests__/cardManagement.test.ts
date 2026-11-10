@@ -435,6 +435,37 @@ describe('Gestión de cartas — una Mágica ilegal no se consume', () => {
     expect(handIds(state, 0)).not.toContain('m10');
     expect(state.players[0].cardsPlayedThisTurn).toBe(1);
   });
+
+  it('Mágica 10 roba 2 cartas por encima de 9 y se elimina sin descartar ninguna', () => {
+    const draw = magic('m10', { kind: 'draw_cards', amount: 2 });
+    const startingHand = [
+      draw,
+      ...Array.from({ length: 8 }, (_, i) => monster(`hand-${i}`, i + 1)),
+    ];
+    const drawn = [
+      monster('deck-draw-1', 3),
+      monster('deck-draw-2', 4),
+      monster('deck-remains', 5),
+    ];
+    let state = setHand(baseState(), 0, startingHand);
+    state = {
+      ...state,
+      players: [
+        { ...state.players[0], deck: drawn },
+        state.players[1],
+      ],
+    };
+
+    state = run(state, { type: 'SELECT_MAGIC', card: draw });
+
+    expect(state.players[0].hand).toHaveLength(10);
+    expect(handIds(state, 0)).not.toContain('m10');
+    expect(handIds(state, 0)).toContain('deck-draw-1');
+    expect(handIds(state, 0)).toContain('deck-draw-2');
+    expect(handIds(state, 0)).not.toContain('deck-remains');
+    expect(state.players[0].deck.map((card) => card.id)).toEqual(['deck-remains']);
+    expect(state.players[0].cardsPlayedThisTurn).toBe(1);
+  });
 });
 
 describe('Sanidad — datos de cartas', () => {
