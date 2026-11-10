@@ -942,15 +942,15 @@ Una carta cuyo efecto indique expresamente una eliminación automática puede el
 
 ## Mágica 10 — Robar 2 cartas
 
-El jugador roba **hasta 2 cartas del mazo**, independientemente del número de cartas que tenga en la mano.
+El jugador roba **2 cartas del mazo**, siempre que haya al menos 2 cartas disponibles. Si el mazo contiene solo 1 carta, roba esa única carta; si está vacío, no roba ninguna.
 
-La restricción de 9 cartas solo se aplica al robo automático del comienzo del turno y no limita este efecto.
+Este efecto **ignora por completo el umbral de 9 cartas** del robo automático de inicio de turno. Puede aumentar la mano por encima de 9 cartas y no obliga a descartar ninguna carta para volver a ese umbral.
 
-Después de resolver el efecto, la Mágica 10 se retira de la mano.
+Después de resolver el robo, la Mágica 10 se elimina de la mano y queda consumida.
 
-Por ejemplo, si el jugador comienza con 9 cartas (incluida la Mágica 10), roba 2 cartas y después se retira la Mágica: termina con 10 cartas en la mano.
+Por ejemplo, si el jugador tiene 9 cartas en la mano, incluida la Mágica 10, y quedan al menos 2 cartas en su mazo, roba 2 y después elimina la Mágica 10: termina con **10 cartas en la mano**. Conserva las 10; no descarta ninguna.
 
-Si el mazo tiene menos de 2 cartas, roba únicamente las disponibles.
+El umbral de 9 cartas no es un máximo general de mano: únicamente limita el robo automático al comienzo del turno. La Mágica 10 no está sujeta a ese umbral.
 
 ---
 
