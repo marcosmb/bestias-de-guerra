@@ -640,6 +640,30 @@ describe('REGRESIÓN · Mágica 5 sigue las reglas confirmadas por el creador', 
   });
 });
 
+
+describe('REGRESIÓN · Mágica 5 respeta el máximo de 9 cartas al recuperar a la mano', () => {
+  it('rechaza una elección de mano si el jugador ya tiene 9 cartas', () => {
+    const m = magic(5);
+    const difunto = monster(12);
+    const hand = [m, ...Array.from({ length: 8 }, (_, index) => monster(index + 1))];
+    const estado = scene({
+      me: { hand, graveyard: [difunto] },
+      selection: { kind: 'revive-choice', card: m },
+    });
+
+    const despues = reducer(estado, {
+      type: 'REVIVE_CHOICE',
+      card: m,
+      choice: 'hand',
+    });
+
+    expect(despues).toBe(estado);
+    expect(despues.players[0].hand).toHaveLength(9);
+    expect(despues.players[0].graveyard).toContain(difunto);
+    expect(despues.players[0].cardsPlayedThisTurn).toBe(0);
+  });
+});
+
 describe('REGRESIÓN · las Trampas asociadas sobreviven al combate si sobrevive su Monstruo', () => {
   it.each([1, 12])('conserva la Trampa %i tras un empate y no la envía al cementerio', (trapNumber) => {
     const passiveTrap = trap(trapNumber);
