@@ -410,40 +410,12 @@ describe('Trampa 9 — countdown and activation', () => {
 
 // --- Trampa 7 (swap_attacker) ---
 
-describe('Trampa 7 — move without duplicating', () => {
+describe('Trampa 7 — intercambia el atacante y el Monstruo defensor', () => {
   const trap7 = getTrapByEffect('swap_attacker');
   const m5 = getMonsterWithAtk(5);
   const m3 = getMonsterWithAtk(3);
 
-  it('moves attacker to defender field without graveyard duplication', () => {
-    let state = makeState({ turnCount: 1, currentPlayer: 0 });
-    const attacker = monster(m5);
-    const defender = monster(m3, { trap: trap7 });
-    state = setField(state, 0, [attacker]);
-    state = setField(state, 1, [defender]);
-    // Start attack — defender is in attack position, so selection is attack-or-direct
-    state = dispatch(state, { type: 'START_ATTACK', attackerUid: attacker.uid });
-    expect(state.selection.kind).toBe('attack-or-direct');
-    // Declare attack on the defender with trap
-    state = dispatch(state, { type: 'DECLARE_ATTACK', attackerUid: attacker.uid, defenderUid: defender.uid });
-    expect(state.phase).toBe('trap-response');
-    // Activate the trap
-    state = dispatch(state, { type: 'RESOLVE_TRAP', activate: true });
-    // Attacker should be on defender's field (player 1)
-    const onDefenderField = state.players[1].field.find((f) => f?.card.id === m5.id);
-    expect(onDefenderField).toBeDefined();
-    // Attacker should NOT be on attacker's field (player 0)
-    const onAttackerField = state.players[0].field.find((f) => f?.card.id === m5.id);
-    expect(onAttackerField).toBeUndefined();
-    // Attacker should NOT be in attacker's graveyard
-    const inGraveyard = state.players[0].graveyard.some((c) => c.id === m5.id);
-    expect(inGraveyard).toBe(false);
-    // Defender's graveyard should also not have the attacker
-    const inDefGraveyard = state.players[1].graveyard.some((c) => c.id === m5.id);
-    expect(inDefGraveyard).toBe(false);
-  });
-
-  it('controlledBy is set on the moved monster', () => {
+  it('intercambia ambos Monstruos entre los campos sin destruirlos', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const attacker = monster(m5);
     const defender = monster(m3, { trap: trap7 });
@@ -454,25 +426,35 @@ describe('Trampa 7 — move without duplicating', () => {
       { type: 'DECLARE_ATTACK', attackerUid: attacker.uid, defenderUid: defender.uid },
       { type: 'RESOLVE_TRAP', activate: true },
     ]);
-    const moved = state.players[1].field.find((f) => f?.card.id === m5.id);
-    expect(moved?.controlledBy).toBe(1);
+
+    const attackerNow = state.players[1].field.find((f) => f?.uid === attacker.uid);
+    const defenderNow = state.players[0].field.find((f) => f?.uid === defender.uid);
+    expect(attackerNow).toBeDefined();
+    expect(defenderNow).toBeDefined();
+    expect(attackerNow?.controlledBy).toBe(1);
+    expect(defenderNow?.controlledBy).toBe(0);
+    expect(attackerNow?.position).toBe(attacker.position);
+    expect(defenderNow?.position).toBe(defender.position);
+    expect(defenderNow?.trap).toBeNull();
+    expect(state.players[0].graveyard.some((c) => c.id === m5.id || c.id === m3.id)).toBe(false);
+    expect(state.players[1].graveyard.some((c) => c.id === m5.id || c.id === m3.id)).toBe(false);
   });
 
-  it('no space on defender field — trap does not activate', () => {
+  it('mantiene las cartas asociadas al Monstruo que las llevaba, excepto la Trampa 7 consumida', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const attacker = monster(m5);
     const defender = monster(m3, { trap: trap7 });
-    // Fill defender's field completely
     state = setField(state, 0, [attacker]);
-    state = setField(state, 1, [defender, monster(m5), monster(m5), monster(m5), monster(m5), monster(m5)]);
+    state = setField(state, 1, [defender]);
     state = dispatchMany(state, [
       { type: 'START_ATTACK', attackerUid: attacker.uid },
       { type: 'DECLARE_ATTACK', attackerUid: attacker.uid, defenderUid: defender.uid },
       { type: 'RESOLVE_TRAP', activate: true },
     ]);
-    // Attacker should still be on player 0's field
-    const onAttackerField = state.players[0].field.find((f) => f?.card.id === m5.id);
-    expect(onAttackerField).toBeDefined();
+    const defenderAfterSwap = state.players[0].field.find((f) => f?.uid === defender.uid);
+    expect(defenderAfterSwap?.card.id).toBe(m3.id);
+    expect(defenderAfterSwap?.trap).toBeNull();
+    expect(state.players[1].graveyard.some((c) => c.id === trap7.id)).toBe(true);
   });
 });
 
