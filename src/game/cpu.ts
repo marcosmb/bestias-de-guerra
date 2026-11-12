@@ -385,8 +385,9 @@ function chooseInstantMagic(state: GameState, legal: Action[]): Action | null {
         const difuntos = cpu.graveyard.filter((c) => c.type === 'monster');
         if (difuntos.length === 0) break;
         const alCampo = trapTargets(state).length < 6;
-        const aLaMano =
-          cpu.hand.length < MAX_HAND_SIZE && difuntos.some((c) => !hasOwnCopy(cpu.hand, c));
+        // La Mágica 5 se consume y el Monstruo recuperado ocupa su lugar;
+        // no aumenta la mano ni está sujeta al umbral de 9 cartas.
+        const aLaMano = difuntos.some((c) => !hasOwnCopy(cpu.hand, c));
         if (alCampo || aLaMano) return seleccion;
         break;
       }
