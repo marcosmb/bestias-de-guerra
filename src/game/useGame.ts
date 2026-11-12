@@ -1143,14 +1143,14 @@ export function reducer(state: GameState, action: Action): GameState {
       const opp = (cp === 0 ? 1 : 0) as 0 | 1;
       const oppField = state.players[opp].field;
       const hasOppMonsters = oppField.some((f) => f !== null);
-      
+
       if (!hasOppMonsters) {
         // Regla 22.3: El rival no tiene Monstruos — ataque directo
         return executeDirectAttack(state, action.attackerUid);
       }
-      
+
       const hasOppDefense = oppField.some((f) => f !== null && f.position === 'defense');
-      
+
       if (attacker.magic?.effect.kind === 'direct_attack') {
          return { ...state, selection: { kind: 'attack-or-direct', attackerUid: action.attackerUid } };
        }
@@ -1159,7 +1159,7 @@ export function reducer(state: GameState, action: Action): GameState {
         // Regla 22.1: obligado a atacar a un Monstruo en Defensa
         return { ...state, selection: { kind: 'attack', attackerUid: action.attackerUid } };
       }
-      
+
       // Regla 22.2: sin Monstruos en Defensa pero sí en Ataque → puede atacar o hacer directo
       return { ...state, selection: { kind: 'attack-or-direct', attackerUid: action.attackerUid } };
     }
@@ -1751,11 +1751,11 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
         // Gana el rival — el monstruo es eliminado
         removeFieldMonster(players, cp, attackerUid);
         players[cp] = applyDamage(players[cp], result.attackerDamage);
-        
+
       } else {
         // Gana el propietario — el monstruo sobrevive
         players[cp] = updateFieldMonster(players[cp], attackerUid, (fm) => ({ ...fm, hasAttacked: true }));
-        
+
       }
     } else {
       removeFieldMonster(players, cp, attackerUid);
@@ -1763,7 +1763,7 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
       // solo redirige el daño que recibiría el propietario del Monstruo asociado
       // cuando ese Monstruo es eliminado.
       players[cp] = applyDamage(players[cp], result.attackerDamage);
-      
+
     }
   } else {
     players[cp] = updateFieldMonster(players[cp], attackerUid, (fm) => ({ ...fm, hasAttacked: true }));
@@ -1772,7 +1772,7 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
       // recibe el daño mientras el Monstruo asociado a la Trampa siga vivo.
       players[cp] = applyDamage(players[cp], result.attackerDamage);
     }
-    
+
   }
 
   if (result.defenderDestroyed) {
