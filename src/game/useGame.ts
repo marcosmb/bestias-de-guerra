@@ -582,7 +582,11 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
       // duplicados: si la copia que hay en la mano es del RIVAL (Mágica 2), sí
       // se puede recuperar la propia.
       const toHand = monsters.filter((c) => !hasOwnCopy(players[me].hand, c));
-      const canReviveToHand = players[me].hand.length < MAX_HAND_SIZE && toHand.length > 0;
+      // Mágica 5 sustituye la carta utilizada por el Monstruo recuperado:
+      // primero entra el Monstruo y después se retira la Mágica de la mano.
+      // Por tanto, la cantidad final de cartas no aumenta y no se aplica
+      // ningún límite de mano, aunque ya se tengan 9 cartas o más.
+      const canReviveToHand = toHand.length > 0;
       const canReviveToField = hasEmptySlot(players[me]);
       if (!canReviveToHand && !canReviveToField) {
         resolves = false;
@@ -1552,10 +1556,9 @@ export function reducer(state: GameState, action: Action): GameState {
       const monsters = players[me].graveyard.filter((c) => c.type === 'monster') as MonsterCard[];
       if (monsters.length === 0) return state;
       const log: string[] = [];
-      // Ir a la mano exige hueco y que la carta NO esté ya representada por otra
-      // copia PROPIA (decisión del creador). No es una prohibición general de
-      // duplicados: la copia del rival en la mano no lo impide.
-      if (action.choice === 'hand' && players[me].hand.length >= MAX_HAND_SIZE) return state;
+      // La Mágica 5 se sustituye por el Monstruo recuperado: no se exige
+      // espacio libre en la mano, independientemente de cuántas cartas tenga.
+      // Se mantiene la restricción de no recuperar otra copia propia ya presente.
       const candidates =
         action.choice === 'hand'
           ? monsters.filter((c) => !hasOwnCopy(players[me].hand, c))
