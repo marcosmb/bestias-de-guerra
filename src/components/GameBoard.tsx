@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import type { Card, MonsterCard, TrapCard, MagicCard } from '@/game/cardData';
 import type { Action, GameState, FieldMonster, PlayerState } from '@/game/types';
-import { canActivateMagic, canAttack, hasOwnCopy, magicRequiredSide, cardInstanceKey, MAX_HAND_SIZE, MAX_CARDS_PER_TURN, getEffectiveAtk, getEffectiveDef } from '@/game/types';
+import { canActivateMagic, canAttack, hasOwnCopy, magicRequiredSide, cardInstanceKey, MAX_CARDS_PER_TURN, getEffectiveAtk, getEffectiveDef } from '@/game/types';
 import { legalActions, sameAction } from '@/game/legalActions';
 import { CardView, CardBack } from './CardView';
 import { playSound, vibrate, getAudioPreferences, setSoundEnabled, setVolume, initAudio } from '@/game/audio';
@@ -836,16 +836,13 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
 
     switch (card.effect.kind) {
       case 'steal_hand_card':
-        if (me.hand.length >= MAX_HAND_SIZE) return 'Tu mano está llena.';
         return 'El rival no tiene cartas en la mano.';
       case 'revive_monster': {
         const ownGraveMonsters = me.graveyard.filter((c) => c.type === 'monster');
         if (ownGraveMonsters.length === 0) return 'No puedes utilizar la Mágica 5 porque no tienes ningún Monstruo en tu cementerio.';
-        const canGoToHand =
-          me.hand.length < MAX_HAND_SIZE &&
-          ownGraveMonsters.some((c) => !hasOwnCopy(me.hand, c));
+        const canGoToHand = ownGraveMonsters.some((c) => !hasOwnCopy(me.hand, c));
         const canGoToField = me.field.some((fm) => fm === null);
-        if (!canGoToHand && !canGoToField) return 'No tienes espacio en la mano ni en el campo.';
+        if (!canGoToHand && !canGoToField) return 'No tienes ningún Monstruo recuperable: ya tienes las copias propias en la mano y no hay espacio en el campo.';
         return 'Ya tienes esas cartas en tu mano.';
       }
       case 'direct_attack':
@@ -1383,7 +1380,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             </div>
             {/* Hand */}
             <div className="flex items-center gap-1">
-              <span className="text-slate-200" style={uiXs}>Mano {opp.hand.length}/{MAX_HAND_SIZE}</span>
+              <span className="text-slate-200" style={uiXs} title="El robo automático al inicio del turno solo se realiza si tienes menos de 9 cartas.">Mano {opp.hand.length}</span>
             </div>
             {/* Graveyard */}
             <div className="flex items-center gap-1">
@@ -1763,8 +1760,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             </div>
             {/* Hand */}
             <div className="flex items-center gap-1">
-              <span className={`text-slate-200 ${me.hand.length >= MAX_HAND_SIZE ? 'text-crimson-400 font-semibold' : ''}`} style={uiXs}>
-                Mano {me.hand.length}/{MAX_HAND_SIZE}
+              <span className="text-slate-200" style={uiXs} title="El robo automático al inicio del turno solo se realiza si tienes menos de 9 cartas.">
+                Mano {me.hand.length}
               </span>
             </div>
             {/* Graveyard */}
@@ -1787,8 +1784,11 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         <div className="flex items-center justify-between px-2 py-0.5 bg-ink-800/60 border-b border-ink-700/50">
           <div className="flex items-center gap-1">
             <span className="text-[9px] uppercase tracking-widest text-slate-200 font-display font-bold">Mano</span>
-            <span className={`font-display font-bold ${me.hand.length >= MAX_HAND_SIZE ? 'text-crimson-400' : 'text-gold-300'}`} style={uiXs}>
-              {me.hand.length} / {MAX_HAND_SIZE}
+            <span className="font-display font-bold text-gold-300" style={uiXs}>
+              {me.hand.length}
+            </span>
+            <span className="text-[8px] text-slate-300" title="Si tienes 9 cartas o más, no recibes el robo automático al comienzo del turno.">
+              Robo automático hasta 9
             </span>
           </div>
           <div className="flex items-center gap-2">
