@@ -641,26 +641,30 @@ describe('REGRESIÓN · Mágica 5 sigue las reglas confirmadas por el creador', 
 });
 
 
-describe('REGRESIÓN · Mágica 5 respeta el máximo de 9 cartas al recuperar a la mano', () => {
-  it('rechaza una elección de mano si el jugador ya tiene 9 cartas', () => {
+describe('REGRESIÓN · Mágica 5 sustituye su carta sin aplicar límite de mano', () => {
+  it.each([9, 11])('recupera a la mano con %i cartas y mantiene la misma cantidad', (handSize) => {
     const m = magic(5);
     const difunto = monster(12);
-    const hand = [m, ...Array.from({ length: 8 }, (_, index) => monster(index + 1))];
+    const hand = [m, ...Array.from({ length: handSize - 1 }, (_, index) => monster(index + 1))];
     const estado = scene({
       me: { hand, graveyard: [difunto] },
-      selection: { kind: 'revive-choice', card: m },
     });
 
-    const despues = reducer(estado, {
+    const abierta = reducer(estado, { type: 'SELECT_MAGIC', card: m });
+    expect(abierta.selection.kind).toBe('revive-choice');
+
+    const despues = reducer(abierta, {
       type: 'REVIVE_CHOICE',
       card: m,
       choice: 'hand',
     });
 
-    expect(despues).toBe(estado);
-    expect(despues.players[0].hand).toHaveLength(9);
-    expect(despues.players[0].graveyard).toContain(difunto);
-    expect(despues.players[0].cardsPlayedThisTurn).toBe(0);
+    expect(despues.players[0].hand).toHaveLength(handSize);
+    expect(despues.players[0].hand).not.toContain(m);
+    expect(despues.players[0].hand).toContain(difunto);
+    expect(despues.players[0].graveyard).not.toContain(difunto);
+    expect(despues.players[0].cardsPlayedThisTurn).toBe(1);
+    expect(despues.selection.kind).toBe('none');
   });
 });
 
