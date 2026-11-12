@@ -583,13 +583,8 @@ export function legalActions(state: GameState, player: 0 | 1): Action[] {
     }
     return [];
   }
-  if (state.phase === 'trap-response') {
-    if (!state.pendingTrap || state.pendingTrap.defenderPlayer !== player) return [];
-    return [
-      { type: 'RESOLVE_TRAP', activate: true },
-      { type: 'RESOLVE_TRAP', activate: false },
-    ];
-  }
+  // La fase trap-response solo se usa internamente durante la resolución automática.
+  if (state.phase === 'trap-response') return [];
   if (state.phase !== 'playing' || player !== state.currentPlayer) return [];
 
   // --- Selecciones pendientes ---
