@@ -639,3 +639,56 @@ describe('REGRESIÓN · Mágica 5 sigue las reglas confirmadas por el creador', 
     expect(defensa.players[0].field[0]?.faceDown).toBe(true);
   });
 });
+
+describe('REGRESIÓN · las Trampas asociadas sobreviven al combate si sobrevive su Monstruo', () => {
+  it.each([1, 12])('conserva la Trampa %i tras un empate y no la envía al cementerio', (trapNumber) => {
+    const passiveTrap = trap(trapNumber);
+    const attacker = fieldMonster(monster(8), { uid: 'attacker' });
+    const defender = fieldMonster(monster(8), {
+      uid: 'defender',
+      position: 'defense',
+      trap: passiveTrap,
+    });
+    const state = scene({
+      me: { field: [attacker, ...blankField().slice(1)] },
+      opp: { field: [defender, ...blankField().slice(1)] },
+    });
+
+    const selecting = reducer(state, { type: 'START_ATTACK', attackerUid: attacker.uid });
+    const afterCombat = reducer(selecting, {
+      type: 'DECLARE_ATTACK',
+      attackerUid: attacker.uid,
+      defenderUid: defender.uid,
+    });
+
+    expect(afterCombat.phase).toBe('playing');
+    expect(afterCombat.players[1].field[0]?.uid).toBe('defender');
+    expect(afterCombat.players[1].field[0]?.trap?.id).toBe(passiveTrap.id);
+    expect(afterCombat.players[1].graveyard.map((card) => card.id)).not.toContain(passiveTrap.id);
+  });
+
+  it('envía la Trampa al cementerio de su propietario cuando el Monstruo defensor es destruido', () => {
+    const passiveTrap = trap(1);
+    const attacker = fieldMonster(monster(10), { uid: 'attacker' });
+    const defender = fieldMonster(monster(5), {
+      uid: 'defender',
+      position: 'defense',
+      trap: passiveTrap,
+    });
+    const state = scene({
+      me: { field: [attacker, ...blankField().slice(1)] },
+      opp: { field: [defender, ...blankField().slice(1)] },
+    });
+
+    const selecting = reducer(state, { type: 'START_ATTACK', attackerUid: attacker.uid });
+    const afterCombat = reducer(selecting, {
+      type: 'DECLARE_ATTACK',
+      attackerUid: attacker.uid,
+      defenderUid: defender.uid,
+    });
+
+    expect(afterCombat.players[1].field[0]).toBeNull();
+    expect(afterCombat.players[1].graveyard.map((card) => card.id)).toContain(passiveTrap.id);
+  });
+});
+
