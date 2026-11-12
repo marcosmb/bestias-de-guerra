@@ -374,9 +374,9 @@ function chooseInstantMagic(state: GameState, legal: Action[]): Action | null {
         break;
       }
       case 'draw_cards': {
-        // Robar solo aporta si no está al límite de mano.
-        if (cpu.hand.length < MAX_HAND_SIZE) return seleccion;
-        break;
+        // Los efectos de robo de cartas pueden superar el umbral de 9;
+        // ese umbral solo limita el robo automático al inicio del turno.
+        return seleccion;
       }
       case 'revive_monster': {
         // La Mágica 5 solo se usa si hay un Monstruo en el cementerio Y hay
@@ -407,7 +407,8 @@ function chooseInstantMagic(state: GameState, legal: Action[]): Action | null {
       case 'steal_hand_card': {
         // Solo si hay alguna carta del rival que la CPU no tenga ya en la mano.
         const puedeRobarNuevo = human.hand.some((c) => !cpu.hand.some((h) => h.id === c.id));
-        if (puedeRobarNuevo && cpu.hand.length < MAX_HAND_SIZE) return seleccion;
+        // Robar mediante una Mágica no está sujeto al umbral de robo automático.
+        if (puedeRobarNuevo) return seleccion;
         break;
       }
       case 'hand_swap':
