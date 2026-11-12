@@ -55,29 +55,32 @@ import {
  * ser una habilidad permanente (6 de octubre) y se añadieron/corrigieron
  * elecciones obligatorias al inicio del turno (6–9 de octubre).
  *
- * Referencia actual, capturada por GitHub Actions tras corregir el doble
- * incremento de cuota de la Mágica 1 y rechazar objetivos de Trampa 2/9 durante
- * la fase local `pass`:
- *   · motor / arnés ...... `3eb373bb`
- *   · CPU de producto .... `65c84f65`
+Referencia anterior: motor / arnés `3eb373bb`, CPU `65c84f65`.
  *
- * En esta ejecución, las 60 partidas del arnés y las 45 partidas contra la CPU
- * terminaron. No apareció `QUOTA_EXCEEDED` ni una nueva clase de hallazgo:
- * el arnés conserva solo `CARD_LOST`, y la CPU conserva `CARD_LOST` y el
- * `CPU_REJECTED` ya documentado (propuestas durante fases en las que la CPU no
- * tiene la decisión). Estas huellas reemplazan la referencia obsoleta para
- * reflejar el comportamiento validado, no para suprimir los hallazgos de cuota.
+ * Nueva referencia capturada tras corregir la pérdida indebida de trampas en
+ * combate. Al conservar una Trampa cuando su Monstruo sobrevive, cambian de
+ * forma legítima las decisiones y trazas de las simulaciones:
+ *   · motor / arnés ...... `a8ff6b16`
+ *   · CPU de producto .... `f92e5bfb`
+ *
+ * Las 60 partidas del arnés y las 45 partidas contra la CPU terminan. No aparece
+ * ninguna clase nueva de hallazgo ni `QUOTA_EXCEEDED`: el arnés conserva solo
+ * `CARD_LOST`, y la CPU conserva `CARD_LOST` y el `CPU_REJECTED` ya
+ * documentado. La CPU pasa de 48 a 52 rechazos inocuos en las simulaciones,
+ * debido a las nuevas secuencias de juego con Trampas persistentes. Se actualiza
+ * la referencia porque el cambio de comportamiento es intencionado y revisado,
+ * no para ocultar fallos.
  */
 const ENGINE_BASELINE = {
   // Ver la trazabilidad en el comentario de bloque, justo encima.
-  harness: '3eb373bb',
+  harness: 'a8ff6b16',
   // `cpu` SÍ ha cambiado, y era lo previsto: `cpu.ts` ahora consume
   // `legalActions()`, con lo que se han corregido tres cosas concretas:
   //   · la Trampa 9 ya no elige un objetivo del rival (que el reducer rechazaba
   //     y hacía repetir la jugada hasta agotar la red de seguridad);
   //   · la Mágica 5 ya no se propone en bucle con la elección de destino abierta;
   //   · responde a la fase de dados, que antes no conocía.
-  cpu: '65c84f65',
+  cpu: 'f92e5bfb',
 } as Record<'harness' | 'cpu', string>;
 
 /**
@@ -114,12 +117,12 @@ const KNOWN_DEFECTS: Record<'harness' | 'cpu', FindingCode[]> = {
 /**
  * Cuántas veces propone la CPU de producto una jugada que el reducer rechaza.
  *
- * El valor 47 era de la referencia del 3 de octubre; tras los cambios de reglas
- * posteriores y la corrección del consumo doble de Mágica 1, la simulación
- * determinista actual da 48. Sigue siendo la clase ya documentada
- * `CPU_REJECTED`: no hay ninguna clase nueva ni partidas atascadas.
+ * La referencia anterior era 48. Tras conservar las Trampas asociadas durante
+ * el combate, las simulaciones deterministas dan 52 rechazos inocuos: cambian
+ * las secuencias de juego, pero sigue siendo la misma clase ya documentada
+ * `CPU_REJECTED`, sin clases nuevas ni partidas atascadas.
  */
-const CPU_REJECTIONS_BASELINE = 48;
+const CPU_REJECTIONS_BASELINE = 52;
 
 const SEED_BASE = 1;
 const HARNESS_GAMES = 60;
