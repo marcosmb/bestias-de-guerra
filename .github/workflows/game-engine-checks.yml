@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - fix/engine-stability
+      - fusion-de-ramas
   pull_request:
     branches:
       - master
