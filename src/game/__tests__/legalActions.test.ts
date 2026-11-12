@@ -558,18 +558,18 @@ describe('legalActions · Regla 5 (lado exigido por la Mágica)', () => {
 // ============================================================================
 
 describe('legalActions · Mágica 2 (robar de la mano del rival)', () => {
-  it('necesita que el rival tenga cartas y que mi mano no esté llena', () => {
+  it('solo necesita que el rival tenga cartas, aunque mi mano ya tenga 9', () => {
     const conAmbas = scene({ me: { hand: [magic(2)] }, opp: { hand: [monster(4)] } });
     expect(find(conAmbas, 0, 'SELECT_MAGIC')).toHaveLength(1);
 
     const rivalVacio = scene({ me: { hand: [magic(2)] } });
     expect(find(rivalVacio, 0, 'SELECT_MAGIC')).toHaveLength(0);
 
-    const manoLlena = scene({
+    const manoConNueve = scene({
       me: { hand: [magic(2), ...Array.from({ length: MAX_HAND_SIZE - 1 }, (_, i) => monster(i + 1))] },
       opp: { hand: [monster(4)] },
     });
-    expect(find(manoLlena, 0, 'SELECT_MAGIC')).toHaveLength(0);
+    expect(find(manoConNueve, 0, 'SELECT_MAGIC')).toHaveLength(1);
   });
 
   it('se ofrece aunque el rival tenga una carta que yo ya tenga: son copias distintas', () => {
