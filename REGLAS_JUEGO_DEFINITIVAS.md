@@ -687,23 +687,21 @@ La Trampa 6 es de **un solo uso**.
 
 ---
 
-## Trampa 7 — Cambiar atacante
+## Trampa 7 — Intercambio de Monstruos
 
-Cuando un Monstruo rival te ataca:
+Cuando un Monstruo del adversario te ataca y se activa esta Trampa:
 
-- el Monstruo atacante pasa directamente a tu campo;
-- queda bajo tu control;
-- no se intercambia por uno de tus Monstruos.
+- el Monstruo atacante se intercambia con el Monstruo tuyo que ha recibido el ataque;
+- el Monstruo atacante pasa a ocupar la casilla que ocupaba tu Monstruo;
+- tu Monstruo pasa a ocupar la casilla que ocupaba el atacante;
+- ambos Monstruos pasan al campo del jugador contrario y quedan bajo el control de ese jugador;
+- ninguno de los dos Monstruos es destruido ni enviado al cementerio por este efecto.
 
-Debe existir un espacio libre en tu campo.
+Cada Monstruo conserva su posición (Ataque o Defensa) y las cartas asociadas que lleve. La propiedad original de todas las cartas se mantiene aunque cambien de controlador.
 
-Si no existe un espacio libre, **la Trampa no puede activarse**.
+No hace falta disponer de un espacio libre: los dos Monstruos intercambian sus casillas.
 
-El Monstruo mantiene su posición al pasar a tu campo.
-
-Sus cartas asociadas conservan la propiedad de sus propietarios originales.
-
-La Trampa 7 no establece una duración temporal concreta de control; el Monstruo permanece bajo el nuevo control hasta que una regla o efecto posterior modifique esa situación.
+La Trampa 7 se consume después de activarse y pasa al cementerio de su propietario.
 
 ---
 
