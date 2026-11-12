@@ -103,6 +103,8 @@ Una Trampa que ya estaba colocada en el campo y se activa por su condición **no
 
 Cada Trampa tiene el efecto y las condiciones definidos en este reglamento.
 
+**Activación automática:** cuando se cumple la condición de una Trampa colocada, esta se activa y su efecto se resuelve directamente, sin preguntar a su propietario si desea activarla. Si el efecto requiere elegir un objetivo u opción, el juego solicita esa elección al jugador indicado por la regla de esa Trampa.
+
 ---
 
 # 5. MÁGICAS
@@ -669,7 +671,7 @@ La Trampa 4 permanece colocada hasta que el Monstruo asociado sea eliminado.
 Cuando un Monstruo rival te ataca:
 
 - se niega el ataque;
-- el propietario de la Trampa elige una Trampa o Mágica rival colocada en el campo;
+- el atacante (rival del propietario de la Trampa) elige una Trampa o Mágica del defensor colocada en el campo;
 - esa carta es destruida.
 
 ---
