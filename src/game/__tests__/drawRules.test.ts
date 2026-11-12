@@ -29,7 +29,7 @@ describe('Reglas de robo', () => {
     let player = createPlayer(0, 'Jugador 1', buildDeck());
     const magic = player.deck.find((card) => card.id === 'm10' && card.type === 'magic');
     expect(magic).toBeDefined();
-    if (!magic) throw new Error('No se encontró Mágica 10');
+    if (!magic || magic.type !== 'magic') throw new Error('No se encontró Mágica 10');
 
     const fillers = player.deck.filter((card) => card.instanceId !== magic.instanceId).slice(0, 8);
     const handInstances = new Set([...fillers, magic].map((card) => card.instanceId));
