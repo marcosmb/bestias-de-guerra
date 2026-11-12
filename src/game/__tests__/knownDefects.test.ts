@@ -376,6 +376,34 @@ describe('DEFECTO 2 · una Mágica utilizada desaparece del juego', () => {
   });
 });
 
+describe('REGRESIÓN · la CPU usa Mágica 2 aunque pueda robar un duplicado', () => {
+  it('selecciona Mágica 2 si el rival tiene cartas, aunque todas sean copias que la CPU ya posee', () => {
+    const m2 = magic(2);
+    const duplicada = monster(3);
+    const estado = scene({
+      currentPlayer: 1,
+      me: { hand: [duplicada] },
+      opp: { hand: [m2, duplicada] },
+    });
+
+    const accion = nextCpuAction(estado);
+    expect(accion.type).toBe('SELECT_MAGIC');
+    if (accion.type !== 'SELECT_MAGIC') throw new Error('la CPU no seleccionó Mágica 2');
+    expect(accion.card).toBe(m2);
+  });
+
+  it('no selecciona Mágica 2 si el rival tiene la mano vacía', () => {
+    const m2 = magic(2);
+    const estado = scene({
+      currentPlayer: 1,
+      me: { hand: [] },
+      opp: { hand: [m2] },
+    });
+
+    expect(nextCpuAction(estado).type).not.toBe('SELECT_MAGIC');
+  });
+});
+
 describe('ARREGLO F1 · la CPU se atascaba con la Mágica 5 (recuperar del cementerio)', () => {
   // ANTES DE F1 (comportamiento documentado, ya retirado):
   //   La Mágica 5 puede pedir al jugador que elija destino (mano o campo). Esa
