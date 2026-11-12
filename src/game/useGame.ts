@@ -42,6 +42,7 @@ import {
   ownerOf,
   hasOwnCopy,
   MAX_CARDS_PER_TURN,
+  MAX_HAND_SIZE,
   placeFieldMonster,
   resolveCombat,
   shuffleDeck,
@@ -581,7 +582,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
       // duplicados: si la copia que hay en la mano es del RIVAL (Mágica 2), sí
       // se puede recuperar la propia.
       const toHand = monsters.filter((c) => !hasOwnCopy(players[me].hand, c));
-      const canReviveToHand = toHand.length > 0;
+      const canReviveToHand = players[me].hand.length < MAX_HAND_SIZE && toHand.length > 0;
       const canReviveToField = hasEmptySlot(players[me]);
       if (!canReviveToHand && !canReviveToField) {
         resolves = false;
@@ -1554,6 +1555,7 @@ export function reducer(state: GameState, action: Action): GameState {
       // Ir a la mano exige hueco y que la carta NO esté ya representada por otra
       // copia PROPIA (decisión del creador). No es una prohibición general de
       // duplicados: la copia del rival en la mano no lo impide.
+      if (action.choice === 'hand' && players[me].hand.length >= MAX_HAND_SIZE) return state;
       const candidates =
         action.choice === 'hand'
           ? monsters.filter((c) => !hasOwnCopy(players[me].hand, c))
