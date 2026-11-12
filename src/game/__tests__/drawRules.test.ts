@@ -27,7 +27,7 @@ describe('Reglas de robo', () => {
 
   it('Mágica 10 roba 2 aunque la mano tenga 9 cartas antes de jugarla', () => {
     let player = createPlayer(0, 'Jugador 1', buildDeck());
-    const magic = player.deck.find((card) => card.id === 'm10');
+    const magic = player.deck.find((card) => card.id === 'm10' && card.type === 'magic');
     expect(magic).toBeDefined();
     if (!magic) throw new Error('No se encontró Mágica 10');
 
