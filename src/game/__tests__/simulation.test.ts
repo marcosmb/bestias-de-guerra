@@ -55,7 +55,7 @@ import {
  * ser una habilidad permanente (6 de octubre) y se añadieron/corrigieron
  * elecciones obligatorias al inicio del turno (6–9 de octubre).
  *
-Referencia anterior: motor / arnés `3eb373bb`, CPU `65c84f65`.
+ * Referencia anterior: motor / arnés `3eb373bb`, CPU `65c84f65`.
  *
  * Nueva referencia capturada tras corregir la pérdida indebida de trampas en
  * combate. Al conservar una Trampa cuando su Monstruo sobrevive, cambian de
