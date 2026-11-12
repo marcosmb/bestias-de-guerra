@@ -334,7 +334,7 @@ function applyTrapEffect(
       skipCombat = true;
       const hasTarget = players[attackerPlayer].field.some((f) => f !== null && (f.trap || f.magic));
       if (hasTarget) {
-        // El propietario de Trampa 5 debe elegir qué carta asociada destruir.
+        // Trampa 5: el atacante (rival del propietario de la Trampa) elige qué carta asociada destruir.
         // La selección queda pendiente para que no se destruya arbitrariamente la primera.
         return {
           state: {
@@ -1190,7 +1190,9 @@ export function reducer(state: GameState, action: Action): GameState {
       // Solo las Trampas con respuesta al ataque abren esta fase.
       // En particular, la Trampa 2 se activa al comienzo del turno de su propietario.
       if (defender.trap && trapTriggersOnAttack(defender.trap)) {
-        return {
+        // Las Trampas colocadas se activan automáticamente al cumplirse su condición.
+        // Se reutiliza el resolvedor existente sin mostrar una fase de confirmación.
+        const pendingState: GameState = {
           ...state,
           phase: 'trap-response',
           pendingTrap: {
@@ -1204,6 +1206,7 @@ export function reducer(state: GameState, action: Action): GameState {
             defenderPosition: defender.position,
           },
         };
+        return reducer(pendingState, { type: 'RESOLVE_TRAP', activate: true });
       }
       return executeCombat(state, action.attackerUid, action.defenderUid);
     }
