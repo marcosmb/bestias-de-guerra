@@ -179,7 +179,7 @@ Cada jugador comienza con:
 
 ## 9.2. Umbral del robo automático
 
-No existe un límite general al número de cartas que un jugador puede tener en la mano.
+No existe un límite general al número de cartas que un jugador puede tener en la mano. Tener 10 o más cartas es válido y no obliga a descartar ninguna.
 
 El número **9** se utiliza exclusivamente para calcular el robo automático al comienzo del turno.
 
