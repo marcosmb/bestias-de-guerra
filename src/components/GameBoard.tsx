@@ -1264,8 +1264,29 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     setTrapCountAnimation({ roll, sequence, step: 0 });
   };
 
-  const trapPrompt = state.phase === 'trap-response' && state.pendingTrap;
+  const trapPrompt = false; // Las trampas se activan automáticamente; no hay confirmación manual.
   const dicePrompt = state.phase === 'dice-roll' && state.pendingDice;
+  const autoDiceKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!dicePrompt || state.diceResult !== null) {
+      if (!dicePrompt) autoDiceKeyRef.current = null;
+      return;
+    }
+    const key = `${dicePrompt.reason}:${state.turnCount}:${state.log.length}`;
+    if (autoDiceKeyRef.current === key) return;
+    autoDiceKeyRef.current = key;
+    const isTrap3 =
+      state.pendingTrap?.trap.effect.kind === 'dice_count_field' ||
+      dicePrompt.reason.includes('Dado y conteo');
+    if (isTrap3) {
+      startTrap3CountAnimation();
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      dispatch({ type: 'ROLL_DICE', roll: Math.floor(Math.random() * 6) + 1 });
+    }, 450);
+    return () => window.clearTimeout(timer);
+  }, [dicePrompt, state.diceResult, state.pendingTrap, state.turnCount, state.log.length, dispatch]);
 
   // La etiqueta identifica al propietario original de la carta, no al atacante.
   // En partidas online usamos el nombre real; en local/CPU distinguimos propio y rival.
@@ -1570,38 +1591,6 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         </div>
       </div>
 
-      {/* Trap response modal */}
-      {trapPrompt && (
-        <div className={`fixed inset-0 ${trapCountAnimation ? 'bg-black/35' : 'bg-black/70'} flex items-center justify-center z-50 px-4 animate-backdrop-fade`} data-no-cancel>
-          <div className="bg-ink-700 rounded-2xl border-2 border-crimson-500/50 p-5 max-w-xs w-full shadow-glow-crimson animate-scale-in">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-10 h-10 rounded-full bg-crimson-500/20 flex items-center justify-center">
-                <AlertTriangle size={20} className="text-crimson-400" />
-              </div>
-              <h3 className="font-display font-bold text-crimson-300" style={uiBase}>{trapHeader}</h3>
-            </div>
-            <p className="text-white mb-1 font-semibold" style={uiSm}>{state.pendingTrap!.trap.name}</p>
-            <p className="text-slate-100 mb-4" style={uiXs}>{state.pendingTrap!.trap.description}</p>
-            <p className="text-slate-200 mb-4" style={uiXs}>
-              {state.pendingTrap!.attackerPlayer === viewer
-                ? `Tu ${state.pendingTrap!.attackerCard.name} ataca al ${state.pendingTrap!.defenderCard.name} del rival.`
-                : `${state.pendingTrap!.attackerCard.name} del rival ataca a tu ${state.pendingTrap!.defenderCard.name}.`}
-            </p>
-            <button
-              onClick={() => {
-                playSound('activate-trap');
-                vibrate(40);
-                dispatch({ type: 'RESOLVE_TRAP', activate: true });
-              }}
-              className="w-full rounded-lg bg-gradient-to-r from-gold-500 to-gold-400 text-white font-display font-bold hover:from-gold-400 hover:to-gold-300 btn-press flex items-center justify-center gap-1.5"
-              style={{ ...uiSm, padding: '0.7em 0' }}
-            >
-              <Zap size={16} /> Aceptar
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Dice roll modal */}
       {dicePrompt && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4 animate-backdrop-fade" data-no-cancel>
@@ -1649,24 +1638,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                 </div>
               </>
             ) : (
-              <button
-                onClick={() => {
-                  const isTrap3 =
-                    state.pendingTrap?.trap.effect.kind === 'dice_count_field' ||
-                    state.pendingDice?.reason.includes('Dado y conteo') === true;
-
-                  if (isTrap3) {
-                    startTrap3CountAnimation();
-                  } else {
-                    const roll = Math.floor(Math.random() * 6) + 1;
-                    dispatch({ type: 'ROLL_DICE', roll });
-                  }
-                }}
-                className="rounded-xl bg-gradient-to-r from-gold-500 to-gold-400 text-ink-900 font-display font-bold hover:from-gold-400 hover:to-gold-300 shadow-glow btn-press flex items-center gap-2 mx-auto"
-                style={{ ...uiSm, padding: '0.6em 1.5em' }}
-              >
-                <Dices size={20} /> Tirar
-              </button>
+              <p className="text-gold-200 font-semibold" style={uiSm}>
+                El efecto se está resolviendo automáticamente…
+              </p>
             )}
           </div>
         </div>
