@@ -357,21 +357,32 @@ function applyTrapEffect(
     case 'dice_4plus_destroy':
       return { state: { ...state, phase: 'dice-roll', pendingDice: { reason: trap.name, onRoll: (roll: number) => ({ type: 'ROLL_DICE', roll }) } }, negateAttack: true, destroyAttacker: false, skipCombat: true };
     case 'swap_attacker': {
-      // Trampa 7: El atacante pasa directamente al campo del defensor (sin intercambio)
+      // Trampa 7: intercambia el Monstruo atacante por el Monstruo que recibió el ataque.
+      // Cada uno ocupa la casilla del otro; ambos conservan sus cartas asociadas y posición.
       if (attacker && defender) {
-        // Verificar que hay espacio libre en el campo del defensor
-        if (!hasEmptySlot(players[defenderPlayer])) {
-          log.push(`¡${trap.name}! No hay espacio libre en tu campo. La Trampa no puede activarse.`);
-          break;
+        const attackerSlot = players[attackerPlayer].field.findIndex((f) => f?.uid === attackerUid);
+        const defenderSlot = players[defenderPlayer].field.findIndex((f) => f?.uid === defenderUid);
+        if (attackerSlot >= 0 && defenderSlot >= 0) {
+          const attackerAfterSwap: FieldMonster = { ...attacker, controlledBy: defenderPlayer };
+          const defenderAfterSwap: FieldMonster = { ...defender, controlledBy: attackerPlayer };
+          players[attackerPlayer] = {
+            ...players[attackerPlayer],
+            field: players[attackerPlayer].field.map((f, i) => i === attackerSlot ? null : f),
+          };
+          players[defenderPlayer] = {
+            ...players[defenderPlayer],
+            field: players[defenderPlayer].field.map((f, i) => i === defenderSlot ? null : f),
+          };
+          players[attackerPlayer] = {
+            ...players[attackerPlayer],
+            field: players[attackerPlayer].field.map((f, i) => i === attackerSlot ? defenderAfterSwap : f),
+          };
+          players[defenderPlayer] = {
+            ...players[defenderPlayer],
+            field: players[defenderPlayer].field.map((f, i) => i === defenderSlot ? attackerAfterSwap : f),
+          };
+          log.push(`¡${trap.name}! ${attacker.card.name} y ${defender.card.name} intercambian sus campos.`);
         }
-        // Mover el atacante al campo del defensor SIN enviarlo al cementerio
-        const movedAttacker: FieldMonster = {
-          ...attacker,
-          controlledBy: defenderPlayer,
-        };
-        players[defenderPlayer] = placeFieldMonster(players[defenderPlayer], movedAttacker);
-        players[attackerPlayer] = detachFieldMonster(players[attackerPlayer], attackerUid);
-        log.push(`¡${trap.name}! ${attacker.card.name} pasa a tu campo.`);
       }
       negateAttack = true;
       skipCombat = true;
