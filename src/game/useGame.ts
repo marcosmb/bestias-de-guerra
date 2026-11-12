@@ -1230,8 +1230,9 @@ export function reducer(state: GameState, action: Action): GameState {
         // rama especializada que preserva el contexto necesario para la tirada.
         if (newState.phase !== 'dice-roll') {
           const players = [...newState.players] as [PlayerState, PlayerState];
-          if (findFieldMonster(players[pt.defenderPlayer], pt.defenderUid)) {
-            consumeAttachedTrap(players, pt.defenderPlayer, pt.defenderUid);
+          const trapBearer = players.findIndex((player) => findFieldMonster(player, pt.defenderUid));
+          if (trapBearer >= 0) {
+            consumeAttachedTrap(players, trapBearer as 0 | 1, pt.defenderUid);
             newState = { ...newState, players };
           }
         }
