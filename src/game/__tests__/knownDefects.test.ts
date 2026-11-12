@@ -185,9 +185,8 @@ describe('REGRESIÓN · Trampa 5 conserva la elección y envía las cartas al ce
       attackerUid: atacante.uid,
       defenderUid: 'defensor',
     });
-    expect(trasAtacar.phase).toBe('trap-response');
-
-    const respuesta = reducer(trasAtacar, { type: 'RESOLVE_TRAP', activate: true });
+    // La Trampa 5 se activa automáticamente al declarar el ataque.
+    const respuesta = trasAtacar;
     expect(respuesta.phase).toBe('playing');
     expect(respuesta.selection.kind).toBe('choose-destroy-associated-card');
     expect(respuesta.pendingTrap).toBeNull();
@@ -225,8 +224,7 @@ describe('ARREGLO · las Trampas 3 y 6 ya no dejan el dado colgado', () => {
       opp: { field: [fieldMonster(monster(4), { uid: 'defensor', trap: trampaDelDefensor }), ...blankField().slice(1)] },
     });
     const atacando = reducer(estado, { type: 'DECLARE_ATTACK', attackerUid: 'atacante', defenderUid: 'defensor' });
-    expect(atacando.phase).toBe('trap-response');
-    return reducer(atacando, { type: 'RESOLVE_TRAP', activate: true });
+    return atacando;
   }
 
   it('la Trampa 3 pide el dado y el juego puede continuar', () => {
@@ -285,7 +283,7 @@ describe('ARREGLO · las Trampas 3 y 6 ya no dejan el dado colgado', () => {
       opp: { field: [fieldMonster(m, { uid: 'atacante' }), ...blankField().slice(1)] },
     });
     const atacando = reducer(escena, { type: 'DECLARE_ATTACK', attackerUid: 'atacante', defenderUid: 'defensor' });
-    const conDado = reducer(atacando, { type: 'RESOLVE_TRAP', activate: true });
+    const conDado = atacando;
     expect(conDado.phase).toBe('dice-roll');
 
     const accion = nextCpuAction(conDado);
@@ -585,7 +583,7 @@ describe('ARREGLO · una acción normal ya no cancela una selección pendiente',
   it('las fases de Trampa y de dados siguen funcionando con una selección abierta', () => {
     // La guarda no debe tocar las fases en las que decide otro jugador.
     const conSeleccion = scene({
-      phase: 'trap-response',
+      phase: 'playing',
       currentPlayer: 0,
       selection: { kind: 'attack', attackerUid: 'a' },
       me: { field: [fieldMonster(monster(8), { uid: 'a' }), ...blankField().slice(1)] },
@@ -601,7 +599,8 @@ describe('ARREGLO · una acción normal ya no cancela una selección pendiente',
         defenderPosition: 'attack',
       },
     });
-    expect(changedTheGame(conSeleccion, reducer(conSeleccion, { type: 'RESOLVE_TRAP', activate: false }))).toBe(true);
+    // La confirmación manual de activación ya no forma parte del flujo normal.
+    expect(reducer(conSeleccion, { type: 'RESOLVE_TRAP', activate: false })).toBe(conSeleccion);
   });
 });
 
