@@ -320,7 +320,7 @@ describe('Gestión de cartas — Mágica 2 y duplicados legítimos', () => {
     expect(duplicateIds(state.players[0].hand)).toEqual([]);
   });
 
-  it('no se consume la Mágica si la mano está llena', () => {
+  it('Mágica 2 puede superar 9 cartas porque no existe un máximo general de mano', () => {
     const steal = magic('m2', { kind: 'steal_hand_card' });
     const full = Array.from({ length: 9 }, (_, i) => monster(`h-${i}`, i + 1));
     let state = setHand(baseState(), 0, [...full, steal]);
@@ -328,8 +328,10 @@ describe('Gestión de cartas — Mágica 2 y duplicados legítimos', () => {
 
     state = run(state, { type: 'SELECT_MAGIC', card: steal });
 
-    expect(handIds(state, 0)).toContain('m2'); // sigue en la mano
-    expect(state.players[0].cardsPlayedThisTurn).toBe(0);
+    expect(handIds(state, 0)).not.toContain('m2'); // la Mágica se consume
+    expect(state.players[0].hand).toHaveLength(10); // 9 cartas previas + 1 robada
+    expect(handIds(state, 0)).toContain('m-bastos-9');
+    expect(state.players[0].cardsPlayedThisTurn).toBe(1);
   });
 
   it('no se consume la Mágica si el rival no tiene cartas en la mano', () => {
