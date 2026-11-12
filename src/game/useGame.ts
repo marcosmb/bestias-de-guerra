@@ -345,6 +345,11 @@ function applyTrapEffect(
               trapUid: defenderUid,
               player: attackerPlayer,
             },
+            log: addLog(
+              state,
+              trap.name + '! Ataque negado. El atacante elige qué Trampa o Mágica del defensor será destruida.',
+              defenderPlayer,
+            ),
           },
           negateAttack,
           destroyAttacker,
