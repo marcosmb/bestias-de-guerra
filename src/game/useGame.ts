@@ -1751,11 +1751,11 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
         // Gana el rival — el monstruo es eliminado
         removeFieldMonster(players, cp, attackerUid);
         players[cp] = applyDamage(players[cp], result.attackerDamage);
-        if (defender.trap) players[opp] = updateFieldMonster(players[opp], defenderUid, (fm) => ({ ...fm, trap: null }));
+        
       } else {
         // Gana el propietario — el monstruo sobrevive
         players[cp] = updateFieldMonster(players[cp], attackerUid, (fm) => ({ ...fm, hasAttacked: true }));
-        if (defender.trap) players[opp] = updateFieldMonster(players[opp], defenderUid, (fm) => ({ ...fm, trap: null }));
+        
       }
     } else {
       removeFieldMonster(players, cp, attackerUid);
@@ -1763,7 +1763,7 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
       // solo redirige el daño que recibiría el propietario del Monstruo asociado
       // cuando ese Monstruo es eliminado.
       players[cp] = applyDamage(players[cp], result.attackerDamage);
-      if (defender.trap) players[opp] = updateFieldMonster(players[opp], defenderUid, (fm) => ({ ...fm, trap: null }));
+      
     }
   } else {
     players[cp] = updateFieldMonster(players[cp], attackerUid, (fm) => ({ ...fm, hasAttacked: true }));
@@ -1772,7 +1772,7 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
       // recibe el daño mientras el Monstruo asociado a la Trampa siga vivo.
       players[cp] = applyDamage(players[cp], result.attackerDamage);
     }
-    if (defender.trap) players[opp] = updateFieldMonster(players[opp], defenderUid, (fm) => ({ ...fm, trap: null }));
+    
   }
 
   if (result.defenderDestroyed) {
