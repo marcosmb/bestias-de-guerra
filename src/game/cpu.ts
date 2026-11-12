@@ -405,10 +405,9 @@ function chooseInstantMagic(state: GameState, legal: Action[]): Action | null {
         break;
       }
       case 'steal_hand_card': {
-        // Solo si hay alguna carta del rival que la CPU no tenga ya en la mano.
-        const puedeRobarNuevo = human.hand.some((c) => !cpu.hand.some((h) => h.id === c.id));
-        // Robar mediante una Mágica no está sujeto al umbral de robo automático.
-        if (puedeRobarNuevo) return seleccion;
+        // Mágica 2: roba una carta aleatoria si el rival tiene alguna en la mano.
+        // Puede salir una carta que la CPU ya tenga; los duplicados también se roban.
+        if (human.hand.length > 0) return seleccion;
         break;
       }
       case 'hand_swap':
