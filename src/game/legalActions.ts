@@ -425,18 +425,8 @@ export function legalActions(state: GameState, player: 0 | 1): Action[] {
     return player === state.currentPlayer ? [{ type: 'CONFIRM_PASS' }] : [];
   }
 
-  // Regla 19: el defensor decide si activa su Trampa.
-  //
-  // DEFICIENCIA DOCUMENTADA (F3): el reducer no comprueba QUIÉN resuelve la
-  // Trampa, así que en la aplicación cualquiera puede pulsar los botones. Aquí
-  // se le atribuye la decisión a quien realmente la tiene: el defensor.
-  if (state.phase === 'trap-response') {
-    if (!state.pendingTrap || state.pendingTrap.defenderPlayer !== player) return [];
-    return [
-      { type: 'RESOLVE_TRAP', activate: true },
-      { type: 'RESOLVE_TRAP', activate: false },
-    ];
-  }
+  // La fase trap-response solo se usa internamente durante la resolución automática.
+  if (state.phase === 'trap-response') return [];
 
   // Dado pendiente (Trampas 3 y 6, Mágica 11, protección por dado).
   //
