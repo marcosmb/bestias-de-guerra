@@ -162,7 +162,7 @@ function StartScreen({
       <h1 className="font-display text-3xl sm:text-4xl font-black text-gold-300 mb-2 text-center" style={{ fontSize: 'clamp(1.5rem, 5vw, 2.5rem)' }}>Bestias de Guerra</h1>
       <p className="text-sm text-slate-100 text-center mb-1">Juego de cartas con baraja española</p>
       <p className="text-xs text-slate-200 text-center mb-6 max-w-xs mx-auto">
-        2 jugadores · 48 cartas cada uno · 100 PV · 6 espacios · máx. 9 cartas en mano
+        2 jugadores · 48 cartas cada uno · 100 PV · 6 espacios · robo automático hasta 9 cartas
       </p>
       <div className="w-full max-w-md mx-auto mb-5">
         <p className="text-[10px] uppercase tracking-widest text-slate-200 mb-2">Modo de juego</p>
