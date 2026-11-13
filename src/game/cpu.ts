@@ -379,15 +379,12 @@ function chooseInstantMagic(state: GameState, legal: Action[]): Action | null {
         return seleccion;
       }
       case 'revive_monster': {
-        // La Mágica 5 solo se usa si hay un Monstruo en el cementerio Y hay
-        // salida real: hueco en el campo, o hueco en la mano con alguna carta
-        // que aún no sea una copia propia (la del RIVAL no lo impide, Mágica 2).
+        // La Mágica 5 respeta el máximo específico de 9 cartas para recuperarla a mano.
         const difuntos = cpu.graveyard.filter((c) => c.type === 'monster');
         if (difuntos.length === 0) break;
-        const alCampo = trapTargets(state).length < 6;
-        // La Mágica 5 se consume y el Monstruo recuperado ocupa su lugar;
-        // no aumenta la mano ni está sujeta al umbral de 9 cartas.
-        const aLaMano = difuntos.some((c) => !hasOwnCopy(cpu.hand, c));
+        const alCampo = cpu.field.some((slot) => slot === null);
+        const aLaMano = cpu.hand.length <= MAX_HAND_SIZE &&
+          difuntos.some((c) => !hasOwnCopy(cpu.hand, c));
         if (alCampo || aLaMano) return seleccion;
         break;
       }

@@ -391,7 +391,7 @@ export function canActivateMagic(player: PlayerState, state: GameState, magic: M
       // propia. (Cementerio → Campo solo exige un espacio libre.)
       const propios = player.graveyard.filter((c) => c.type === 'monster');
       if (propios.length === 0) return false;
-      const canGoToHand = propios.some((c) => !hasOwnCopy(player.hand, c));
+      const canGoToHand = player.hand.length <= MAX_HAND_SIZE && propios.some((c) => !hasOwnCopy(player.hand, c));
       const canGoToField = hasEmptySlot(player);
       return canGoToHand || canGoToField;
     }

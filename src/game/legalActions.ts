@@ -287,7 +287,7 @@ function selectionActions(state: GameState, player: 0 | 1, me: PlayerState, opp:
       // la mano por OTRA COPIA PROPIA (la del rival no lo impide: Mágica 2).
       const alCementerio = me.graveyard.filter((c) => c.type === 'monster');
       const aLaManoPosible =
-        alCementerio.some((c) => !hasOwnCopy(me.hand, c));
+        me.hand.length <= MAX_HAND_SIZE && alCementerio.some((c) => !hasOwnCopy(me.hand, c));
       if (aLaManoPosible) {
         out.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'hand' });
       }

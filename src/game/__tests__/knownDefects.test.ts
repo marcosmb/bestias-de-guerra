@@ -668,30 +668,36 @@ describe('REGRESIÓN · Mágica 5 sigue las reglas confirmadas por el creador', 
 });
 
 
-describe('REGRESIÓN · Mágica 5 sustituye su carta sin aplicar límite de mano', () => {
-  it.each([9, 11])('recupera a la mano con %i cartas y mantiene la misma cantidad', (handSize) => {
+describe('REGRESIÓN · Mágica 5 respeta su máximo específico de 9 cartas', () => {
+  it('recupera a la mano con 9 cartas y mantiene la misma cantidad', () => {
     const m = magic(5);
     const difunto = monster(12);
-    const hand = [m, ...Array.from({ length: handSize - 1 }, (_, index) => monster(index + 1))];
-    const estado = scene({
-      me: { hand, graveyard: [difunto] },
-    });
-
+    const hand = [m, ...Array.from({ length: 8 }, (_, index) => monster(index + 1))];
+    const estado = scene({ me: { hand, graveyard: [difunto] } });
     const abierta = reducer(estado, { type: 'SELECT_MAGIC', card: m });
     expect(abierta.selection.kind).toBe('revive-choice');
-
-    const despues = reducer(abierta, {
-      type: 'REVIVE_CHOICE',
-      card: m,
-      choice: 'hand',
-    });
-
-    expect(despues.players[0].hand).toHaveLength(handSize);
+    const despues = reducer(abierta, { type: 'REVIVE_CHOICE', card: m, choice: 'hand' });
+    expect(despues.players[0].hand).toHaveLength(9);
     expect(despues.players[0].hand).not.toContain(m);
     expect(despues.players[0].hand).toContain(difunto);
     expect(despues.players[0].graveyard).not.toContain(difunto);
     expect(despues.players[0].cardsPlayedThisTurn).toBe(1);
     expect(despues.selection.kind).toBe('none');
+  });
+
+  it('no permite recuperarla a la mano si ya supera el máximo de 9', () => {
+    const m = magic(5);
+    const difunto = monster(12);
+    const hand = [m, ...Array.from({ length: 9 }, (_, index) => monster(index + 1))];
+    const field = Array.from({ length: 6 }, (_, index) => fieldMonster(monster(index + 1), { uid: `full-${index}` }));
+    const estado = scene({ me: { hand, graveyard: [difunto], field } });
+    const despues = reducer(estado, { type: 'SELECT_MAGIC', card: m });
+    expect(despues.players[0].hand).toContain(m);
+    expect(despues.players[0].graveyard).toContain(difunto);
+    expect(despues.players[0].cardsPlayedThisTurn).toBe(0);
+    expect(despues.selection.kind).toBe('none');
+    const forzada = { ...estado, selection: { kind: 'revive-choice' as const, card: m } };
+    expect(reducer(forzada, { type: 'REVIVE_CHOICE', card: m, choice: 'hand' })).toBe(forzada);
   });
 });
 
