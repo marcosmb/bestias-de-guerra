@@ -44,15 +44,15 @@ import {
  *
  * Valores observados en CI tras corregir Trampas 4, 5, 7, 9, 10, 11 y 12,
  * y aplicar el límite específico de la Mágica 5:
- *   · motor / arnés ...... `50be4a57`
- *   · CPU de producto .... `94df8b20`
+ *   · motor / arnés ...... `6c27abfb`
+ *   · CPU de producto .... `87dde524`
  *
  * Se actualizan las referencias porque corresponden al flujo actual del motor,
  * no para ocultar un fallo funcional.
  */
 const ENGINE_BASELINE = {
-  harness: '50be4a57',
-  cpu: '94df8b20',
+  harness: '6c27abfb',
+  cpu: '87dde524',
 } as Record<'harness' | 'cpu', string>;
 
 /**
