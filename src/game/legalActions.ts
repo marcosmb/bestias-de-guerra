@@ -254,8 +254,10 @@ function selectionActions(state: GameState, player: 0 | 1, me: PlayerState, opp:
     }
 
     case 'choose-destroy-target': {
-      // Trampa 9: el propietario elige cualquier Monstruo del adversario.
-      return monstersOf(opp).map((fm) => ({ type: 'DESTROY_MONSTER', fieldUid: fm.uid }));
+      // Trampa 9: el reglamento permite elegir cualquier Monstruo de ambos campos.
+      return state.players.flatMap((player) =>
+        monstersOf(player).map((fm) => ({ type: 'DESTROY_MONSTER' as const, fieldUid: fm.uid })),
+      );
     }
     
     case 'choose-destroy-associated-card': {

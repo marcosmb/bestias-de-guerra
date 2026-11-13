@@ -454,8 +454,8 @@ describe('ARREGLO F1 · la CPU se atascaba con la Mágica 5 (recuperar del cemen
   });
 });
 
-describe('REGRESIÓN · Trampa 9 elige un Monstruo rival', () => {
-  it('destruye el objetivo del rival y consume la Trampa 9', () => {
+describe('REGRESIÓN · Trampa 9 permite elegir cualquier Monstruo del campo', () => {
+  it('puede destruir su propio Monstruo portador y consumir la Trampa 9', () => {
     const trampa9 = trap(9);
     const conSeleccion = scene({
       selection: { kind: 'choose-destroy-target', trapUid: 'mio' },
@@ -465,11 +465,9 @@ describe('REGRESIÓN · Trampa 9 elige un Monstruo rival', () => {
       opp: { field: [fieldMonster(monster(12), { uid: 'rival' }), null, null, null, null, null] },
     });
 
-    expect(reducer(conSeleccion, { type: 'DESTROY_MONSTER', fieldUid: 'mio' })).toBe(conSeleccion);
-    const resuelto = reducer(conSeleccion, { type: 'DESTROY_MONSTER', fieldUid: 'rival' });
+    const resuelto = reducer(conSeleccion, { type: 'DESTROY_MONSTER', fieldUid: 'mio' });
     expect(resuelto).not.toBe(conSeleccion);
-    expect(resuelto.players[1].field[0]).toBeNull();
-    expect(resuelto.players[0].field[0]?.trap).toBeNull();
+    expect(resuelto.players[0].field[0]).toBeNull();
     expect(resuelto.players[0].graveyard.map((c) => c.id)).toContain('t9');
     expect(resuelto.selection.kind).toBe('none');
   });

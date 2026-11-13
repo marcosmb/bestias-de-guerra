@@ -1315,7 +1315,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           ? 'Elige un monstruo rival para colocar la mágica'
           : 'Elige uno de tus monstruos para colocar la mágica';
       case 'direct-attack': return 'Elige tu monstruo para atacar directamente';
-      case 'choose-destroy-target': return 'Jugador 1: Tres turnos: ¡elige un Monstruo rival para destruir!';
+      case 'choose-destroy-target': return 'Trampa 9: ¡elige cualquier Monstruo del campo para destruir!';
       case 'choose-destroy-associated-card': return 'Trampa 5: elige qué Trampa o Mágica asociada destruir';
       case 'choose-trap-2-own':
         return sel.selectedUids.length === 0

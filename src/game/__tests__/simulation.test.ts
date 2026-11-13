@@ -42,17 +42,17 @@ import {
  * independiente y la CPU no intenta actuar durante esa fase. Por eso cambian
  * las huellas deterministas y desaparece el rechazo inocuo CPU_REJECTED.
  *
- * Valores observados en CI tras corregir Trampas 4, 7, 10, 11 y 12,
+ * Valores observados en CI tras corregir Trampas 4, 7, 9, 10, 11 y 12,
  * y aplicar el límite específico de la Mágica 5:
- *   · motor / arnés ...... `62d65082`
- *   · CPU de producto .... `13dac4ec`
+ *   · motor / arnés ...... `f8df1c65`
+ *   · CPU de producto .... `d61625f8`
  *
  * Se actualizan las referencias porque corresponden al flujo actual del motor,
  * no para ocultar un fallo funcional.
  */
 const ENGINE_BASELINE = {
-  harness: '62d65082',
-  cpu: '13dac4ec',
+  harness: 'f8df1c65',
+  cpu: 'd61625f8',
 } as Record<'harness' | 'cpu', string>;
 
 /**

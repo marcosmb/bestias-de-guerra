@@ -433,24 +433,33 @@ describe('Trampa 9 — countdown and activation', () => {
     expect(state.selection.kind).toBe('choose-destroy-target');
   });
 
-  it('allows destroying any monster on the field', () => {
+  it('permite destruir un Monstruo del rival', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const myFm = monster(m3, { trap: trap9 });
     const targetFm = monster(m5, { uid: 'trap9-rival-target' });
     state = setField(state, 0, [myFm]);
     state = setField(state, 1, [targetFm]);
-    // Fast-forward through 3 countdowns
-    for (let i = 0; i < 6; i++) {
-      state = dispatch(state, { type: 'END_TURN' });
-    }
+    for (let i = 0; i < 6; i++) state = dispatch(state, { type: 'END_TURN' });
     expect(state.selection.kind).toBe('choose-destroy-target');
-    // Destroy the target monster
     state = dispatch(state, { type: 'DESTROY_MONSTER', fieldUid: targetFm.uid });
     expect(state.players[1].field.find((f) => f?.uid === targetFm.uid)).toBeFalsy();
     expect(state.selection.kind).toBe('none');
-    // Trap should be removed from the monster that had it
-    const trapHolder = state.players[0].field.find((f) => f?.uid === myFm.uid);
-    expect(trapHolder?.trap).toBeNull();
+    expect(state.players[0].field.find((f) => f?.uid === myFm.uid)?.trap).toBeNull();
+  });
+
+  it('permite destruir un Monstruo propio, porque la regla dice cualquier Monstruo del campo', () => {
+    let state = makeState({ turnCount: 1, currentPlayer: 0 });
+    const myFm = monster(m3, { trap: trap9 });
+    const ownTarget = monster(m5, { uid: 'trap9-own-target' });
+    state = setField(state, 0, [myFm, ownTarget]);
+    state = setField(state, 1, []);
+    for (let i = 0; i < 6; i++) state = dispatch(state, { type: 'END_TURN' });
+    expect(state.selection.kind).toBe('choose-destroy-target');
+    state = dispatch(state, { type: 'DESTROY_MONSTER', fieldUid: ownTarget.uid });
+    expect(state.players[0].field.find((f) => f?.uid === ownTarget.uid)).toBeUndefined();
+    expect(state.players[0].field.find((f) => f?.uid === myFm.uid)?.trap).toBeNull();
+    expect(state.players[0].graveyard.some((card) => card.id === trap9.id)).toBe(true);
+    expect(state.selection.kind).toBe('none');
   });
 
   it('monster destroyed before 3 turns — trap has no target', () => {
