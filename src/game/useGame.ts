@@ -248,13 +248,17 @@ function consumeAttachedTrap(
   players: [PlayerState, PlayerState],
   playerIdx: 0 | 1,
   uid: string,
+  ownerFallback: 0 | 1 = playerIdx,
 ): void {
   const player = players[playerIdx];
   const fm = findFieldMonster(player, uid);
   if (!fm?.trap) return;
 
   const trap = fm.trap;
-  const owner = ownerOf(trap) ?? playerIdx;
+  // Si una Trampa 7 intercambia los controladores, el Monstruo que la llevaba
+  // ya puede estar en el campo contrario. Su propietario sigue siendo quien
+  // la colocó, no quien controla al Monstruo después del intercambio.
+  const owner = ownerOf(trap) ?? ownerFallback;
   players[owner] = {
     ...players[owner],
     graveyard: [...players[owner].graveyard, trap],
@@ -1240,7 +1244,7 @@ export function reducer(state: GameState, action: Action): GameState {
           const players = [...newState.players] as [PlayerState, PlayerState];
           const trapBearer = players.findIndex((player) => findFieldMonster(player, pt.defenderUid));
           if (trapBearer >= 0) {
-            consumeAttachedTrap(players, trapBearer as 0 | 1, pt.defenderUid);
+            consumeAttachedTrap(players, trapBearer as 0 | 1, pt.defenderUid, pt.defenderPlayer);
             newState = { ...newState, players };
           }
         }
