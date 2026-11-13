@@ -645,13 +645,13 @@ describe('legalActions · fases especiales', () => {
     expect(new Set(types)).toEqual(new Set(['PLACE_TRAP_ON_MONSTER', 'CANCEL_SELECTION']));
   });
 
-  it('Trampa 9: se elige un Monstruo rival para destruir', () => {
+  it('Trampa 9: se puede elegir cualquier Monstruo de ambos campos', () => {
     const state = scene({
       selection: { kind: 'choose-destroy-target', trapUid: 'mio' },
       me: { field: [fieldMonster(monster(2), { uid: 'mio' }), fieldMonster(monster(3), { uid: 'mio2' }), ...blank().slice(2)] },
       opp: { field: [fieldMonster(monster(12), { uid: 'rival' }), ...blank().slice(1)] },
     });
-    expect(find(state, 0, 'DESTROY_MONSTER').map((a) => (a as { fieldUid: string }).fieldUid)).toEqual(['rival']);
+    expect(find(state, 0, 'DESTROY_MONSTER').map((a) => (a as { fieldUid: string }).fieldUid)).toEqual(['mio', 'mio2', 'rival']);
   });
 
   it('fase de paso de dispositivo: solo confirmar', () => {
