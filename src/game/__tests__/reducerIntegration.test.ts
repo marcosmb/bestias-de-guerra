@@ -81,6 +81,57 @@ describe('Trampa 12 — daño solo al comienzo del turno de su propietario', () 
   });
 });
 
+describe('Trampas 2 y 9 — activación según el propietario original', () => {
+  it('Trampa 2 se activa en el turno de su propietario aunque el portador esté en el campo rival', () => {
+    let state = makeState({ turnCount: 1, currentPlayer: 1 });
+    const trap2 = { ...getTrapByEffect('destroy_2_self_1_opp'), owner: 0 as const };
+    const ownA = monster(getMonsterWithAtk(3), { uid: 'trap2-owner-a' });
+    const ownB = monster(getMonsterWithAtk(4), { uid: 'trap2-owner-b' });
+    const rivalTarget = monster(getMonsterWithAtk(9), { uid: 'trap2-owner-rival-target' });
+    const carrier = monster(getMonsterWithAtk(8), { uid: 'trap2-owner-carrier', trap: trap2 });
+    state = setField(state, 0, [ownA, ownB]);
+    state = setField(state, 1, [rivalTarget, carrier]);
+
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.currentPlayer).toBe(0);
+    expect(state.selection.kind).toBe('choose-trap-2-own');
+    if (state.selection.kind !== 'choose-trap-2-own') throw new Error('La Trampa 2 debería activarse');
+    expect(state.selection.trapPlayer).toBe(1);
+
+    state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownA.uid });
+    state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownB.uid });
+
+    expect(state.players[0].field.find((fm) => fm?.uid === ownA.uid)).toBeUndefined();
+    expect(state.players[0].field.find((fm) => fm?.uid === ownB.uid)).toBeUndefined();
+    expect(state.players[1].field.find((fm) => fm?.uid === rivalTarget.uid)).toBeUndefined();
+    expect(state.players[1].field.find((fm) => fm?.uid === carrier.uid)?.trap).toBeNull();
+    expect(state.players[0].graveyard.some((card) => card.id === trap2.id)).toBe(true);
+  });
+
+  it('Trampa 9 cuenta los turnos de su propietario aunque el portador esté en el campo rival', () => {
+    let state = makeState({ turnCount: 1, currentPlayer: 1 });
+    const trap9 = { ...getTrapByEffect('three_turns_kill'), owner: 0 as const };
+    const carrier = monster(getMonsterWithAtk(5), { uid: 'trap9-owner-carrier', trap: trap9 });
+    const ownTarget = monster(getMonsterWithAtk(7), { uid: 'trap9-owner-target' });
+    state = setField(state, 0, [ownTarget]);
+    state = setField(state, 1, [carrier]);
+
+    for (let i = 0; i < 5; i++) state = dispatch(state, { type: 'END_TURN' });
+
+    expect(state.currentPlayer).toBe(0);
+    expect(state.selection.kind).toBe('choose-destroy-target');
+    if (state.selection.kind !== 'choose-destroy-target') throw new Error('La Trampa 9 debería activarse');
+    expect(state.selection.trapPlayer).toBe(1);
+
+    state = dispatch(state, { type: 'DESTROY_MONSTER', fieldUid: ownTarget.uid });
+
+    expect(state.players[0].field.find((fm) => fm?.uid === ownTarget.uid)).toBeUndefined();
+    expect(state.players[1].field.find((fm) => fm?.uid === carrier.uid)?.trap).toBeNull();
+    expect(state.players[0].graveyard.some((card) => card.id === trap9.id)).toBe(true);
+    expect(state.selection.kind).toBe('none');
+  });
+});
+
 describe('Reducer integration — COMBATE', () => {
   it('ATQ igual a ATQ destruye ambos Monstruos en la partida real', () => {
     let state = makeState();
