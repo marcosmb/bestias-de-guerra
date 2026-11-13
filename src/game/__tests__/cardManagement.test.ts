@@ -179,8 +179,10 @@ describe('Regla 19 — summonedThisTurn', () => {
 
     state = run(state, { type: 'START_ATTACK', attackerUid: rivalUid });
     state = run(state, { type: 'DECLARE_ATTACK', attackerUid: rivalUid, defenderUid: 'mine' });
-    expect(state.phase).toBe('trap-response');
-    state = run(state, { type: 'RESOLVE_TRAP', activate: true });
+    // La Trampa 7 se resuelve automáticamente al declarar el ataque:
+    // trap-response es una fase interna y no requiere una acción manual.
+    expect(state.phase).toBe('playing');
+    expect(state.pendingTrap).toBeNull();
 
     // El atacante pasó al campo del Jugador 0.
     expect(state.players[0].field.some((f) => f?.uid === rivalUid)).toBe(true);
