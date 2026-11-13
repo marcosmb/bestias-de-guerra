@@ -1,3 +1,19 @@
+describe('Trampa 1 — curación sin límite máximo de puntos de vida', () => {
+  it('permite superar 999 LP al comenzar el turno del propietario', () => {
+    let state = makeState({ turnCount: 1, currentPlayer: 1 });
+    const trap1 = getTrapByEffect('heal_per_turn');
+    const carrier = monster(getMonsterWithAtk(5), { trap: trap1 });
+    state = setField(state, 0, [carrier]);
+    state = setLp(state, 0, 999);
+
+    state = dispatch(state, { type: 'END_TURN' });
+
+    expect(state.currentPlayer).toBe(0);
+    expect(state.players[0].lp).toBe(1004);
+    expect(state.players[0].field.find((f) => f?.uid === carrier.uid)?.trapRevealed).toBe(true);
+  });
+});
+
 describe('Trampa 11 — destruye al atacante al finalizar su segundo turno', () => {
   it('cuenta al final de los turnos de quien controla el Monstruo', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
@@ -553,7 +569,7 @@ describe('Trampa 10 — control and return', () => {
     expect(moved).toBeDefined();
     expect(moved?.controlledBy).toBe(1);
     expect(moved?.pendingEffect).toBe('control');
-    expect(moved?.pendingTurns).toBe(3);
+    expect(moved?.pendingTurns).toBe(2);
     // Attacker should NOT be on original field
     const onOriginal = state.players[0].field.find((f) => f?.card.id === m5.id);
     expect(onOriginal).toBeUndefined();
@@ -572,22 +588,22 @@ describe('Trampa 10 — control and return', () => {
       { type: 'DECLARE_ATTACK', attackerUid: attacker.uid, defenderUid: defender.uid },
       { type: 'RESOLVE_TRAP', activate: true },
     ]);
-    // Primer turno completo del propietario: 3→2.
+    // Termina el turno del atacante: todavía no consume el turno del controlador.
     state = dispatch(state, { type: 'END_TURN' });
     expect(state.players[1].field.find((f) => f?.card.id === m5.id)?.pendingTurns).toBe(2);
-    // Turno del rival: no consume duración.
-    state = dispatch(state, { type: 'END_TURN' });
-    // Segundo turno completo del propietario: 2→1.
+    // Final del primer turno completo del controlador: 2→1.
     state = dispatch(state, { type: 'END_TURN' });
     expect(state.players[1].field.find((f) => f?.card.id === m5.id)?.pendingTurns).toBe(1);
-    // El segundo turno del propietario se juega entero.
+    // Termina el turno del rival: no consume duración.
     state = dispatch(state, { type: 'END_TURN' });
     expect(state.players[1].field.find((f) => f?.card.id === m5.id)?.pendingTurns).toBe(1);
-    // Al comenzar su tercer turno, el control ya ha durado dos turnos completos.
+    // Final del segundo turno completo del controlador: vuelve al propietario.
     state = dispatch(state, { type: 'END_TURN' });
+    const onP0 = state.players[0].field.find((f) => f?.card.id === m5.id);
     const onP1 = state.players[1].field.find((f) => f?.card.id === m5.id);
-    expect(onP1?.pendingEffect).toBeNull();
-    expect(onP1?.controlledBy).toBeNull();
+    expect(onP0?.pendingEffect).toBeNull();
+    expect(onP0?.controlledBy).toBeNull();
+    expect(onP1).toBeUndefined();
   });
 
   it('no space on defender field — trap does not activate', () => {
