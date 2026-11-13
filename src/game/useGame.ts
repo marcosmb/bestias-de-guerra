@@ -344,14 +344,18 @@ function applyTrapEffect(
           state: {
             ...state,
             players,
+            currentPlayer: defenderPlayer,
             selection: {
               kind: 'choose-destroy-associated-card',
               trapUid: defenderUid,
-              player: attackerPlayer,
+              // player identifica al propietario de la Trampa (quien elige).
+              player: defenderPlayer,
+              // returnPlayer identifica el campo objetivo y el turno que se reanuda.
+              returnPlayer: attackerPlayer,
             },
             log: addLog(
               state,
-              trap.name + '! Ataque negado. El atacante elige qué Trampa o Mágica del defensor será destruida.',
+              trap.name + '! Ataque negado. El propietario de la Trampa elige qué carta asociada rival destruir.',
               defenderPlayer,
             ),
           },
@@ -1259,8 +1263,8 @@ export function reducer(state: GameState, action: Action): GameState {
               newState = { ...newState, players };
             }
           }
-          // La Trampa 5 abre una elección para el atacante: conservarla es
-          // obligatorio; borrar aquí selection hacía imposible elegir su objetivo.
+          // La Trampa 5 abre una elección para su propietario. El turno pasa
+          // temporalmente a ese jugador y vuelve al atacante tras resolverla.
           const pendingSelection = newState.selection.kind === 'choose-destroy-associated-card'
             ? newState.selection
             : { kind: 'none' as const };
@@ -1547,8 +1551,11 @@ export function reducer(state: GameState, action: Action): GameState {
       return continueTurnStartSelection(resolvedState);
     }
     case 'DESTROY_ASSOCIATED_CARD': {
-      if (state.selection.kind !== 'choose-destroy-associated-card') return state;
-      const owner = state.selection.player;
+      if (
+        state.selection.kind !== 'choose-destroy-associated-card' ||
+        state.currentPlayer !== state.selection.player
+      ) return state;
+      const owner = state.selection.returnPlayer;
       const carrier = findFieldMonster(state.players[owner], action.fieldUid);
       if (!carrier) return state;
       const card = action.cardType === 'trap' ? carrier.trap : carrier.magic;
@@ -1571,6 +1578,7 @@ export function reducer(state: GameState, action: Action): GameState {
         ...state,
         players,
         phase: 'playing',
+        currentPlayer: state.selection.returnPlayer,
         selection: { kind: 'none' },
         log: addLog(
           state,
@@ -1653,7 +1661,7 @@ export function reducer(state: GameState, action: Action): GameState {
       return checkStalemateEnd(newState);
     }
     case 'CANCEL_SELECTION': {
-      if (state.turnStartSelectionActive) return state;
+      if (state.turnStartSelectionActive || state.selection.kind === 'choose-destroy-associated-card') return state;
       return { ...state, selection: { kind: 'none' } };
     }
     case 'RESTART': {

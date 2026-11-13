@@ -610,6 +610,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   const [selectedHandCard, setSelectedHandCard] = useState<string | null>(null);
   const selectedCardPanelRef = useRef<HTMLDivElement>(null);
   const [selectedFieldUid, setSelectedFieldUid] = useState<string | null>(null);
+  const [pendingTrap5Choice, setPendingTrap5Choice] = useState<string | null>(null);
   const [summonedUids, setSummonedUids] = useState<Set<string>>(new Set());
   const [lastCombat, setLastCombat] = useState<{ damage: number; player: 0 | 1 } | null>(null);
   const [zoomCard, setZoomCard] = useState<{
@@ -1136,8 +1137,12 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       }
       dispatch(action);
     } else if (sel.kind === 'choose-destroy-associated-card') {
-      const target = opp.field.find((fm) => fm?.uid === uid) ?? me.field.find((fm) => fm?.uid === uid);
+      const target = opp.field.find((fm) => fm?.uid === uid) ?? null;
       if (!target) return;
+      if (target.trap && target.magic) {
+        setPendingTrap5Choice(uid);
+        return;
+      }
       const cardType: 'trap' | 'magic' | null = target.trap ? 'trap' : target.magic ? 'magic' : null;
       if (!cardType) return;
       const action = { type: 'DESTROY_ASSOCIATED_CARD' as const, fieldUid: uid, cardType };
@@ -1206,7 +1211,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     return legal.some(
       (a) =>
         (a.type === 'DECLARE_ATTACK' && a.defenderUid === fm.uid) ||
-        ((a.type === 'PLACE_MAGIC_ON_MONSTER' || a.type === 'MAGIC_TARGET_MONSTER') && a.fieldUid === fm.uid),
+        ((a.type === 'PLACE_MAGIC_ON_MONSTER' || a.type === 'MAGIC_TARGET_MONSTER') && a.fieldUid === fm.uid) ||
+        (a.type === 'DESTROY_ASSOCIATED_CARD' && a.fieldUid === fm.uid),
     );
   };
 
@@ -1316,7 +1322,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           : 'Elige uno de tus monstruos para colocar la mágica';
       case 'direct-attack': return 'Elige tu monstruo para atacar directamente';
       case 'choose-destroy-target': return 'Trampa 9: ¡elige cualquier Monstruo del campo para destruir!';
-      case 'choose-destroy-associated-card': return 'Trampa 5: elige qué Trampa o Mágica asociada destruir';
+      case 'choose-destroy-associated-card': return 'Trampa 5: elige una Trampa o Mágica del campo rival para destruir';
       case 'choose-trap-2-own':
         return sel.selectedUids.length === 0
           ? 'Trampa: elige los 2 Monstruos propios que quieres destruir'
@@ -2139,6 +2145,27 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                 </div>
               ))}
               {state.log.length === 0 && <p className="text-slate-200" style={uiXs}>Sin eventos todavía</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingTrap5Choice && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 px-4" data-no-cancel>
+          <div className="w-full max-w-sm rounded-2xl border border-gold-500/50 bg-ink-800 p-5 shadow-2xl">
+            <h3 className="mb-2 text-center font-display text-lg font-bold text-gold-300">Trampa 5</h3>
+            <p className="mb-4 text-center text-sm text-slate-200">El Monstruo elegido tiene una Trampa y una Mágica asociadas. ¿Cuál quieres destruir?</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button className="rounded-lg bg-crimson-700 px-3 py-3 font-display font-bold text-white hover:bg-crimson-600" onClick={() => {
+                const action = { type: 'DESTROY_ASSOCIATED_CARD' as const, fieldUid: pendingTrap5Choice, cardType: 'trap' as const };
+                if (isLegal(action)) dispatch(action);
+                setPendingTrap5Choice(null);
+              }}>Destruir Trampa</button>
+              <button className="rounded-lg bg-azure-700 px-3 py-3 font-display font-bold text-white hover:bg-azure-600" onClick={() => {
+                const action = { type: 'DESTROY_ASSOCIATED_CARD' as const, fieldUid: pendingTrap5Choice, cardType: 'magic' as const };
+                if (isLegal(action)) dispatch(action);
+                setPendingTrap5Choice(null);
+              }}>Destruir Mágica</button>
             </div>
           </div>
         </div>

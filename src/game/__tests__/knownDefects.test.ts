@@ -188,7 +188,12 @@ describe('REGRESIÓN · Trampa 5 conserva la elección y envía las cartas al ce
     // La Trampa 5 se activa automáticamente al declarar el ataque.
     const respuesta = trasAtacar;
     expect(respuesta.phase).toBe('playing');
+    expect(respuesta.currentPlayer).toBe(1); // el propietario de la Trampa elige
     expect(respuesta.selection.kind).toBe('choose-destroy-associated-card');
+    if (respuesta.selection.kind !== 'choose-destroy-associated-card') throw new Error('Selección de Trampa 5 no abierta');
+    expect(respuesta.selection.player).toBe(1); // el propietario de la Trampa es quien elige
+    expect(respuesta.selection.returnPlayer).toBe(0); // el turno y campo objetivo del atacante
+    expect(reducer(respuesta, { type: 'CANCEL_SELECTION' })).toBe(respuesta);
     expect(respuesta.pendingTrap).toBeNull();
     expect(respuesta.players[0].graveyard.map((c) => c.id)).not.toContain('t1');
     expect(respuesta.players[1].graveyard.map((c) => c.id)).toContain('t5');
@@ -199,6 +204,7 @@ describe('REGRESIÓN · Trampa 5 conserva la elección y envía las cartas al ce
       cardType: 'trap',
     });
     expect(resuelto.selection.kind).toBe('none');
+    expect(resuelto.currentPlayer).toBe(0); // vuelve el turno al atacante
     expect(resuelto.players[0].field[0]?.trap).toBeNull();
     expect(resuelto.players[0].graveyard.map((c) => c.id)).toContain('t1');
     expect(resuelto.players[1].graveyard.map((c) => c.id)).toContain('t5');
