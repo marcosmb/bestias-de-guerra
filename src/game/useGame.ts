@@ -274,7 +274,7 @@ function applyDamage(player: PlayerState, dmg: number): PlayerState {
 }
 
 function applyHeal(player: PlayerState, heal: number): PlayerState {
-  return { ...player, lp: Math.min(999, player.lp + heal) };
+  return { ...player, lp: player.lp + heal };
 }
 
 // Trampas que sí responden a la declaración de un ataque.
@@ -408,7 +408,7 @@ function applyTrapEffect(
         const movedAttacker: FieldMonster = {
           ...attacker,
           pendingEffect: 'control',
-          pendingTurns: 3,
+          pendingTurns: 2,
           controlledBy: defenderPlayer,
           // El ataque que activó la Trampa fue realizado por el jugador anterior.
           // Al cambiar de control, este Monstruo no ha atacado todavía para su nuevo controlador.
@@ -844,6 +844,23 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
     };
   }
 
+  // Trampa 1: cura al propietario original, aunque el Monstruo portador esté
+  // temporalmente bajo el control del rival.
+  for (const controllerIdx of [0, 1] as const) {
+    for (const fm of players[controllerIdx].field) {
+      if (!fm?.trap || fm.trap.effect.kind !== 'heal_per_turn') continue;
+      const trapOwner = ownerOf(fm.trap) ?? controllerIdx;
+      if (trapOwner !== playerIdx) continue;
+      const amount = fm.trap.effect.amount;
+      players[trapOwner] = applyHeal(players[trapOwner], amount);
+      players[controllerIdx] = updateFieldMonster(players[controllerIdx], fm.uid, (current) => ({
+        ...current,
+        trapRevealed: true,
+      }));
+      log.push(fm.trap.name + ': recuperas +' + amount + ' PV por su efecto continuo.');
+    }
+  }
+
   // Guardamos UIDs y volvemos a localizar cada Monstruo antes de procesarlo.
   // Así un efecto previo que lo destruya impide ejecutar efectos de un portador
   // que ya no sigue en el campo.
@@ -854,18 +871,6 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
   for (const uid of turnStartUids) {
     let fm = findFieldMonster(players[playerIdx], uid);
     if (!fm) continue;
-
-    // Trampa 1: +5 PV al comienzo del turno. Se revela y se anuncia
-    // el nombre de la Trampa para que ambos jugadores sepan qué carta lo causa.
-    if (fm.trap?.effect.kind === 'heal_per_turn') {
-      const amount = fm.trap.effect.amount;
-      players[playerIdx] = applyHeal(players[playerIdx], amount);
-      players[playerIdx] = updateFieldMonster(players[playerIdx], uid, (current) => ({
-        ...current,
-        trapRevealed: true,
-      }));
-      log.push(fm.trap.name + ': recuperas +' + amount + ' PV por su efecto continuo.');
-    }
 
     fm = findFieldMonster(players[playerIdx], uid);
     if (!fm) continue;
@@ -907,25 +912,8 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
     fm = findFieldMonster(players[playerIdx], uid);
     if (!fm) continue;
 
-    // pendingTurns es también el contador de la Trampa 9. No lo decrementamos
-    // dos veces si un Monstruo lleva ese efecto y una condición pendiente.
-    // Trampa 10 mide turnos completos del propietario del efecto y se resuelve
-    // al inicio de su tercer turno (tras completar dos). La Trampa 11 se cuenta
-    // al final de los turnos del controlador y se resuelve en END_TURN.
-    if (fm.pendingEffect === 'control' && fm.pendingTurns > 0) {
-      const newTurns = fm.pendingTurns - 1;
-      if (newTurns === 0) {
-        players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({
-          ...f,
-          pendingEffect: null,
-          pendingTurns: 0,
-          controlledBy: null,
-        }));
-        log.push(fm.card.name + ' recupera el control.');
-      } else {
-        players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({ ...f, pendingTurns: newTurns }));
-      }
-    }
+    // pendingTurns de las Trampas 10 y 11 se procesa al finalizar el turno
+    // del jugador que controla actualmente al Monstruo (END_TURN).
   }
 
   let nextState: GameState = {
@@ -1309,21 +1297,62 @@ export function reducer(state: GameState, action: Action): GameState {
       // el segundo turno contado, no al inicio de un turno posterior.
       const endingPlayer = state.currentPlayer;
       const markedUids = players[endingPlayer].field
-        .filter((fm): fm is FieldMonster => fm !== null && fm.pendingEffect === 'death' && fm.pendingTurns > 0)
+        .filter((fm): fm is FieldMonster => fm !== null &&
+          ((fm.pendingEffect === 'death' && fm.pendingTurns > 0) ||
+            (fm.pendingEffect === 'control' && fm.pendingTurns >= 0)))
         .map((fm) => fm.uid);
       const endTurnLog: string[] = [];
       for (const uid of markedUids) {
         const marked = findFieldMonster(players[endingPlayer], uid);
         if (!marked) continue;
-        const remaining = marked.pendingTurns - 1;
-        if (remaining <= 0) {
-          removeFieldMonster(players, endingPlayer, uid);
-          endTurnLog.push(marked.card.name + ' es destruido al finalizar el segundo turno.');
-        } else {
+        const remaining = Math.max(0, marked.pendingTurns - 1);
+
+        if (marked.pendingEffect === 'death') {
+          if (remaining === 0) {
+            removeFieldMonster(players, endingPlayer, uid);
+            endTurnLog.push(marked.card.name + ' es destruido al finalizar el segundo turno.');
+          } else {
+            players[endingPlayer] = updateFieldMonster(players[endingPlayer], uid, (fm) => ({
+              ...fm,
+              pendingTurns: remaining,
+            }));
+          }
+          continue;
+        }
+
+        // Trampa 10: cuenta al final de cada turno del jugador que controla
+        // temporalmente al Monstruo. Tras dos turnos, vuelve a su propietario.
+        const originalOwner = ownerOf(marked.card) ?? (endingPlayer === 0 ? 1 : 0);
+        if (remaining > 0) {
           players[endingPlayer] = updateFieldMonster(players[endingPlayer], uid, (fm) => ({
             ...fm,
             pendingTurns: remaining,
           }));
+        } else if (originalOwner === endingPlayer) {
+          players[endingPlayer] = updateFieldMonster(players[endingPlayer], uid, (fm) => ({
+            ...fm,
+            pendingEffect: null,
+            pendingTurns: 0,
+            controlledBy: null,
+          }));
+          endTurnLog.push(marked.card.name + ' recupera el control.');
+        } else if (hasEmptySlot(players[originalOwner])) {
+          players[endingPlayer] = detachFieldMonster(players[endingPlayer], uid);
+          players[originalOwner] = placeFieldMonster(players[originalOwner], {
+            ...marked,
+            pendingEffect: null,
+            pendingTurns: 0,
+            controlledBy: null,
+            hasAttacked: false,
+            hasChangedPosition: false,
+          });
+          endTurnLog.push(marked.card.name + ' vuelve al campo de su propietario original.');
+        } else {
+          players[endingPlayer] = updateFieldMonster(players[endingPlayer], uid, (fm) => ({
+            ...fm,
+            pendingTurns: 0,
+          }));
+          endTurnLog.push(marked.card.name + ' no puede volver todavía: el campo de su propietario está lleno.');
         }
       }
 
