@@ -863,8 +863,8 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
     }
   }
 
-  // Trampa 2 y Trampa 9 se resuelven en el turno de su propietario original.
-  // Se inspeccionan ambos campos porque el portador puede haber cambiado de controlador.
+  // Trampa 2 y Trampa 9 se resuelven en el turno de su propietario original,
+  // incluso cuando el Monstruo portador se encuentra en el campo contrario.
   const turnStartCarriers = ([0, 1] as const).flatMap((controllerIdx) =>
     players[controllerIdx].field
       .filter((fm): fm is FieldMonster => fm !== null && fm.trap !== null &&
