@@ -344,14 +344,18 @@ function applyTrapEffect(
           state: {
             ...state,
             players,
+            currentPlayer: defenderPlayer,
             selection: {
               kind: 'choose-destroy-associated-card',
               trapUid: defenderUid,
+              // player identifica el campo objetivo (el del atacante).
               player: attackerPlayer,
+              // Tras la elección, el turno vuelve al jugador que declaró el ataque.
+              returnPlayer: attackerPlayer,
             },
             log: addLog(
               state,
-              trap.name + '! Ataque negado. El atacante elige qué Trampa o Mágica del defensor será destruida.',
+              trap.name + '! Ataque negado. El propietario de la Trampa elige qué carta asociada rival destruir.',
               defenderPlayer,
             ),
           },
@@ -1259,8 +1263,8 @@ export function reducer(state: GameState, action: Action): GameState {
               newState = { ...newState, players };
             }
           }
-          // La Trampa 5 abre una elección para el atacante: conservarla es
-          // obligatorio; borrar aquí selection hacía imposible elegir su objetivo.
+          // La Trampa 5 abre una elección para su propietario. El turno pasa
+          // temporalmente a ese jugador y vuelve al atacante tras resolverla.
           const pendingSelection = newState.selection.kind === 'choose-destroy-associated-card'
             ? newState.selection
             : { kind: 'none' as const };
@@ -1571,6 +1575,7 @@ export function reducer(state: GameState, action: Action): GameState {
         ...state,
         players,
         phase: 'playing',
+        currentPlayer: state.selection.returnPlayer,
         selection: { kind: 'none' },
         log: addLog(
           state,
@@ -1653,7 +1658,7 @@ export function reducer(state: GameState, action: Action): GameState {
       return checkStalemateEnd(newState);
     }
     case 'CANCEL_SELECTION': {
-      if (state.turnStartSelectionActive) return state;
+      if (state.turnStartSelectionActive || state.selection.kind === 'choose-destroy-associated-card') return state;
       return { ...state, selection: { kind: 'none' } };
     }
     case 'RESTART': {

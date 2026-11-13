@@ -50,7 +50,7 @@ export type SelectionMode =
   | { kind: 'direct-attack'; attackerUid: string }
   | { kind: 'attack-or-direct'; attackerUid: string }
   | { kind: 'choose-destroy-target'; trapUid: string }
-  | { kind: 'choose-destroy-associated-card'; trapUid: string; player: 0 | 1; targetUid?: string }
+  | { kind: 'choose-destroy-associated-card'; trapUid: string; player: 0 | 1; returnPlayer: 0 | 1; targetUid?: string }
   | { kind: 'choose-trap-2-own'; trapUid: string; selectedUids: string[] }
   | { kind: 'revive-choice'; card: MagicCard };
 
