@@ -1,3 +1,70 @@
+describe('Trampa 11 — destruye al atacante al finalizar su segundo turno', () => {
+  it('cuenta al final de los turnos de quien controla el Monstruo', () => {
+    let state = makeState({ turnCount: 1, currentPlayer: 0 });
+    const trap11 = getTrapByEffect('death_after_two_turns');
+    const attacker = monster(getMonsterWithAtk(8));
+    const defender = monster(getMonsterWithAtk(3), { trap: trap11 });
+    state = setField(state, 0, [attacker]);
+    state = setField(state, 1, [defender]);
+
+    state = dispatch(state, { type: 'START_ATTACK', attackerUid: attacker.uid });
+    state = dispatch(state, { type: 'DECLARE_ATTACK', attackerUid: attacker.uid, defenderUid: defender.uid });
+    expect(state.players[0].field.find((f) => f?.uid === attacker.uid)?.pendingTurns).toBe(2);
+
+    // Final del primer turno del controlador.
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.players[0].field.find((f) => f?.uid === attacker.uid)?.pendingTurns).toBe(1);
+
+    // El turno del rival no consume el contador.
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.players[0].field.find((f) => f?.uid === attacker.uid)?.pendingTurns).toBe(1);
+
+    // Final del segundo turno del controlador: el Monstruo es destruido.
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.players[0].field.find((f) => f?.uid === attacker.uid)).toBeUndefined();
+    expect(state.players[0].graveyard.some((card) => card.id === attacker.card.id)).toBe(true);
+  });
+});
+
+describe('Trampa 4 — refleja el daño al morir el Monstruo atacante', () => {
+  it('redirige al rival el daño que recibiría el propietario del atacante', () => {
+    let state = makeState({ turnCount: 1, currentPlayer: 0 });
+    const reflect = getTrapByEffect('reflect_damage');
+    const attacker = monster(getMonsterWithAtk(3), { trap: reflect });
+    const defender = monster(getMonsterWithAtk(8));
+    state = setField(state, 0, [attacker]);
+    state = setField(state, 1, [defender]);
+    state = dispatch(state, { type: 'START_ATTACK', attackerUid: attacker.uid });
+    state = dispatch(state, { type: 'DECLARE_ATTACK', attackerUid: attacker.uid, defenderUid: defender.uid });
+
+    expect(state.players[0].field.find((f) => f?.uid === attacker.uid)).toBeUndefined();
+    expect(state.players[0].lp).toBe(100);
+    expect(state.players[1].lp).toBe(95);
+    expect(state.players[0].graveyard.some((card) => card.id === reflect.id)).toBe(true);
+  });
+});
+
+describe('Trampa 12 — daño solo al comienzo del turno de su propietario', () => {
+  it('no daña al rival en el turno contrario y aplica 5 LP en el turno del propietario', () => {
+    let state = makeState({ turnCount: 1, currentPlayer: 0 });
+    const trap12 = getTrapByEffect('damage_per_turn');
+    const carrier = monster(getMonsterWithAtk(5), { trap: trap12 });
+    state = setField(state, 0, [carrier]);
+    state = setLp(state, 1, 100);
+
+    // Empieza el turno del rival: la Trampa 12 no debe activarse.
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.currentPlayer).toBe(1);
+    expect(state.players[1].lp).toBe(100);
+
+    // Empieza el turno de su propietario: el rival pierde 5 LP.
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.currentPlayer).toBe(0);
+    expect(state.players[1].lp).toBe(95);
+    expect(state.players[0].field.find((f) => f?.uid === carrier.uid)?.trapRevealed).toBe(true);
+  });
+});
+
 describe('Reducer integration — COMBATE', () => {
   it('ATQ igual a ATQ destruye ambos Monstruos en la partida real', () => {
     let state = makeState();
@@ -410,51 +477,47 @@ describe('Trampa 9 — countdown and activation', () => {
 
 // --- Trampa 7 (swap_attacker) ---
 
-describe('Trampa 7 — intercambia el atacante y el Monstruo defensor', () => {
+describe('Trampa 7 — el atacante pasa al campo del defensor', () => {
   const trap7 = getTrapByEffect('swap_attacker');
   const m5 = getMonsterWithAtk(5);
   const m3 = getMonsterWithAtk(3);
 
-  it('intercambia ambos Monstruos entre los campos sin destruirlos', () => {
+  it('mueve solo al atacante y deja al defensor en su campo', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const attacker = monster(m5);
     const defender = monster(m3, { trap: trap7 });
     state = setField(state, 0, [attacker]);
     state = setField(state, 1, [defender]);
-    state = dispatchMany(state, [
-      { type: 'START_ATTACK', attackerUid: attacker.uid },
-      { type: 'DECLARE_ATTACK', attackerUid: attacker.uid, defenderUid: defender.uid },
-      { type: 'RESOLVE_TRAP', activate: true },
-    ]);
+    state = dispatch(state, { type: 'START_ATTACK', attackerUid: attacker.uid });
+    state = dispatch(state, { type: 'DECLARE_ATTACK', attackerUid: attacker.uid, defenderUid: defender.uid });
 
     const attackerNow = state.players[1].field.find((f) => f?.uid === attacker.uid);
-    const defenderNow = state.players[0].field.find((f) => f?.uid === defender.uid);
+    const defenderNow = state.players[1].field.find((f) => f?.uid === defender.uid);
     expect(attackerNow).toBeDefined();
     expect(defenderNow).toBeDefined();
+    expect(state.players[0].field.find((f) => f?.uid === attacker.uid)).toBeUndefined();
     expect(attackerNow?.controlledBy).toBe(1);
-    expect(defenderNow?.controlledBy).toBe(0);
     expect(attackerNow?.position).toBe(attacker.position);
     expect(defenderNow?.position).toBe(defender.position);
     expect(defenderNow?.trap).toBeNull();
+    expect(state.players[1].graveyard.some((c) => c.id === trap7.id)).toBe(true);
     expect(state.players[0].graveyard.some((c) => c.id === m5.id || c.id === m3.id)).toBe(false);
     expect(state.players[1].graveyard.some((c) => c.id === m5.id || c.id === m3.id)).toBe(false);
   });
 
-  it('mantiene las cartas asociadas al Monstruo que las llevaba, excepto la Trampa 7 consumida', () => {
+  it('si el campo está lleno, la Trampa no se activa y el combate sigue', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
-    const attacker = monster(m5);
-    const defender = monster(m3, { trap: trap7 });
+    const attacker = monster(m3);
+    const defender = monster(m5, { trap: trap7 });
+    const others = getDistinctMonsterCards(5).map((card, i) => monster(card, { uid: `occupied-${i}` }));
     state = setField(state, 0, [attacker]);
-    state = setField(state, 1, [defender]);
-    state = dispatchMany(state, [
-      { type: 'START_ATTACK', attackerUid: attacker.uid },
-      { type: 'DECLARE_ATTACK', attackerUid: attacker.uid, defenderUid: defender.uid },
-      { type: 'RESOLVE_TRAP', activate: true },
-    ]);
-    const defenderAfterSwap = state.players[0].field.find((f) => f?.uid === defender.uid);
-    expect(defenderAfterSwap?.card.id).toBe(m3.id);
-    expect(defenderAfterSwap?.trap).toBeNull();
-    expect(state.players[1].graveyard.some((c) => c.id === trap7.id)).toBe(true);
+    state = setField(state, 1, [defender, ...others]);
+    state = dispatch(state, { type: 'START_ATTACK', attackerUid: attacker.uid });
+    state = dispatch(state, { type: 'DECLARE_ATTACK', attackerUid: attacker.uid, defenderUid: defender.uid });
+
+    expect(state.players[0].field.find((f) => f?.uid === attacker.uid)).toBeUndefined();
+    expect(state.players[1].field.find((f) => f?.uid === defender.uid)?.trap?.id).toBe(trap7.id);
+    expect(state.players[1].graveyard.some((c) => c.id === trap7.id)).toBe(false);
   });
 });
 
@@ -481,7 +544,7 @@ describe('Trampa 10 — control and return', () => {
     expect(moved).toBeDefined();
     expect(moved?.controlledBy).toBe(1);
     expect(moved?.pendingEffect).toBe('control');
-    expect(moved?.pendingTurns).toBe(2);
+    expect(moved?.pendingTurns).toBe(3);
     // Attacker should NOT be on original field
     const onOriginal = state.players[0].field.find((f) => f?.card.id === m5.id);
     expect(onOriginal).toBeUndefined();
@@ -500,13 +563,18 @@ describe('Trampa 10 — control and return', () => {
       { type: 'DECLARE_ATTACK', attackerUid: attacker.uid, defenderUid: defender.uid },
       { type: 'RESOLVE_TRAP', activate: true },
     ]);
-    // Turn 1 (player 0) ends → player 1 turn: applyTurnStartEffects(1) → pendingTurns 2→1
+    // Primer turno completo del propietario: 3→2.
     state = dispatch(state, { type: 'END_TURN' });
-    const moved1 = state.players[1].field.find((f) => f?.card.id === m5.id);
-    expect(moved1?.pendingTurns).toBe(1);
-    // Turn 2 (player 1) ends → player 0 turn: applyTurnStartEffects(0) → no effect on p1's monster
+    expect(state.players[1].field.find((f) => f?.card.id === m5.id)?.pendingTurns).toBe(2);
+    // Turno del rival: no consume duración.
     state = dispatch(state, { type: 'END_TURN' });
-    // Turn 3 (player 0) ends → player 1 turn: applyTurnStartEffects(1) → pendingTurns 1→0, control expires
+    // Segundo turno completo del propietario: 2→1.
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.players[1].field.find((f) => f?.card.id === m5.id)?.pendingTurns).toBe(1);
+    // El segundo turno del propietario se juega entero.
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.players[1].field.find((f) => f?.card.id === m5.id)?.pendingTurns).toBe(1);
+    // Al comenzar su tercer turno, el control ya ha durado dos turnos completos.
     state = dispatch(state, { type: 'END_TURN' });
     const onP1 = state.players[1].field.find((f) => f?.card.id === m5.id);
     expect(onP1?.pendingEffect).toBeNull();

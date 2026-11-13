@@ -366,35 +366,17 @@ function applyTrapEffect(
     case 'dice_4plus_destroy':
       return { state: { ...state, phase: 'dice-roll', pendingDice: { reason: trap.name, onRoll: (roll: number) => ({ type: 'ROLL_DICE', roll }) } }, negateAttack: true, destroyAttacker: false, skipCombat: true };
     case 'swap_attacker': {
-      // Trampa 7: intercambia el Monstruo atacante por el Monstruo que recibió el ataque.
-      // Cada uno ocupa la casilla del otro; ambos conservan sus cartas asociadas y posición.
-      if (attacker && defender) {
-        const attackerSlot = players[attackerPlayer].field.findIndex((f) => f?.uid === attackerUid);
-        const defenderSlot = players[defenderPlayer].field.findIndex((f) => f?.uid === defenderUid);
-        if (attackerSlot >= 0 && defenderSlot >= 0) {
-          const attackerAfterSwap: FieldMonster = { ...attacker, controlledBy: defenderPlayer };
-          const defenderAfterSwap: FieldMonster = { ...defender, controlledBy: attackerPlayer };
-          players[attackerPlayer] = {
-            ...players[attackerPlayer],
-            field: players[attackerPlayer].field.map((f, i) => i === attackerSlot ? null : f),
-          };
-          players[defenderPlayer] = {
-            ...players[defenderPlayer],
-            field: players[defenderPlayer].field.map((f, i) => i === defenderSlot ? null : f),
-          };
-          players[attackerPlayer] = {
-            ...players[attackerPlayer],
-            field: players[attackerPlayer].field.map((f, i) => i === attackerSlot ? defenderAfterSwap : f),
-          };
-          players[defenderPlayer] = {
-            ...players[defenderPlayer],
-            field: players[defenderPlayer].field.map((f, i) => i === defenderSlot ? attackerAfterSwap : f),
-          };
-          log.push(`¡${trap.name}! ${attacker.card.name} y ${defender.card.name} intercambian sus campos.`);
-        }
+      // Trampa 7: el atacante pasa al campo del defensor; el defensor permanece.
+      if (attacker && hasEmptySlot(players[defenderPlayer])) {
+        const moved: FieldMonster = { ...attacker, controlledBy: defenderPlayer, hasAttacked: false };
+        players[defenderPlayer] = placeFieldMonster(players[defenderPlayer], moved);
+        players[attackerPlayer] = detachFieldMonster(players[attackerPlayer], attackerUid);
+        log.push(`¡${trap.name}! ${attacker.card.name} pasa a tu campo bajo tu control.`);
+        negateAttack = true;
+        skipCombat = true;
+      } else {
+        log.push(`¡${trap.name}! No hay espacio libre en tu campo. La Trampa no se activa.`);
       }
-      negateAttack = true;
-      skipCombat = true;
       break;
     }
     case 'destroy_attacker':
@@ -422,7 +404,7 @@ function applyTrapEffect(
         const movedAttacker: FieldMonster = {
           ...attacker,
           pendingEffect: 'control',
-          pendingTurns: 2,
+          pendingTurns: 3,
           controlledBy: defenderPlayer,
           // El ataque que activó la Trampa fue realizado por el jugador anterior.
           // Al cambiar de control, este Monstruo no ha atacado todavía para su nuevo controlador.
@@ -602,11 +584,9 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
       // duplicados: si la copia que hay en la mano es del RIVAL (Mágica 2), sí
       // se puede recuperar la propia.
       const toHand = monsters.filter((c) => !hasOwnCopy(players[me].hand, c));
-      // Mágica 5 sustituye la carta utilizada por el Monstruo recuperado:
-      // primero entra el Monstruo y después se retira la Mágica de la mano.
-      // Por tanto, la cantidad final de cartas no aumenta y no se aplica
-      // ningún límite de mano, aunque ya se tengan 9 cartas o más.
-      const canReviveToHand = toHand.length > 0;
+      // La Mágica 5 sustituye la carta utilizada, pero su regla específica
+      // exige que la mano no supere 9 cartas tras la sustitución.
+      const canReviveToHand = players[me].hand.length <= MAX_HAND_SIZE && toHand.length > 0;
       const canReviveToField = hasEmptySlot(players[me]);
       if (!canReviveToHand && !canReviveToField) {
         resolves = false;
@@ -824,15 +804,18 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
   const log: string[] = [];
   const queuedSelections: SelectionMode[] = [];
 
-  // Trampa 12: el efecto se anuncia a ambos jugadores y se revela la Trampa
-  // que lo provoca cuando se aplica.
-  for (const ownerIdx of [0, 1] as const) {
-    const opponentIdx = (ownerIdx === 0 ? 1 : 0) as 0 | 1;
-    for (const fm of players[ownerIdx].field) {
+  // Trampa 12: solo se activa al comienzo del turno de su propietario original.
+  // La carta puede estar asociada a un Monstruo que haya cambiado de controlador,
+  // por eso se consulta ownerOf(trap), no el jugador cuyo campo la contiene.
+  for (const controllerIdx of [0, 1] as const) {
+    for (const fm of players[controllerIdx].field) {
       if (!fm?.trap || fm.trap.effect.kind !== 'damage_per_turn') continue;
+      const trapOwner = ownerOf(fm.trap) ?? controllerIdx;
+      if (trapOwner !== playerIdx) continue;
+      const opponentIdx = (trapOwner === 0 ? 1 : 0) as 0 | 1;
       const amount = fm.trap.effect.amount;
       players[opponentIdx] = applyDamage(players[opponentIdx], amount);
-      players[ownerIdx] = updateFieldMonster(players[ownerIdx], fm.uid, (current) => ({
+      players[controllerIdx] = updateFieldMonster(players[controllerIdx], fm.uid, (current) => ({
         ...current,
         trapRevealed: true,
       }));
@@ -922,21 +905,19 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
 
     // pendingTurns es también el contador de la Trampa 9. No lo decrementamos
     // dos veces si un Monstruo lleva ese efecto y una condición pendiente.
-    if (fm.pendingEffect && fm.pendingTurns > 0 && fm.trap?.effect.kind !== 'three_turns_kill') {
+    // Trampa 10 mide turnos completos del propietario del efecto y se resuelve
+    // al inicio de su tercer turno (tras completar dos). La Trampa 11 se cuenta
+    // al final de los turnos del controlador y se resuelve en END_TURN.
+    if (fm.pendingEffect === 'control' && fm.pendingTurns > 0) {
       const newTurns = fm.pendingTurns - 1;
       if (newTurns === 0) {
-        if (fm.pendingEffect === 'death' || fm.pendingEffect === 'three_turns') {
-          removeFieldMonster(players, playerIdx, fm.uid);
-          log.push(fm.card.name + ' muere por efecto pendiente.');
-        } else if (fm.pendingEffect === 'control') {
-          players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({
-            ...f,
-            pendingEffect: null,
-            pendingTurns: 0,
-            controlledBy: null,
-          }));
-          log.push(fm.card.name + ' recupera el control.');
-        }
+        players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({
+          ...f,
+          pendingEffect: null,
+          pendingTurns: 0,
+          controlledBy: null,
+        }));
+        log.push(fm.card.name + ' recupera el control.');
       } else {
         players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({ ...f, pendingTurns: newTurns }));
       }
@@ -1199,6 +1180,9 @@ export function reducer(state: GameState, action: Action): GameState {
       // Solo las Trampas con respuesta al ataque abren esta fase.
       // En particular, la Trampa 2 se activa al comienzo del turno de su propietario.
       if (defender.trap && trapTriggersOnAttack(defender.trap)) {
+        if (defender.trap.effect.kind === 'swap_attacker' && !hasEmptySlot(state.players[opp])) {
+          return executeCombat(state, action.attackerUid, action.defenderUid);
+        }
         // Las Trampas colocadas se activan automáticamente al cumplirse su condición.
         // Se reutiliza el resolvedor existente sin mostrar una fase de confirmación.
         const pendingState: GameState = {
@@ -1315,7 +1299,31 @@ export function reducer(state: GameState, action: Action): GameState {
       if (state.phase !== 'playing') return state;
       const nextPlayer = (state.currentPlayer === 0 ? 1 : 0) as 0 | 1;
       const players = [...state.players] as [PlayerState, PlayerState];
-      // Reset de marcas del jugador que termina el turno.
+
+      // Trampa 11: el contador avanza al finalizar cada turno del jugador que
+      // actualmente controla al Monstruo. Así la destrucción ocurre al terminar
+      // el segundo turno contado, no al inicio de un turno posterior.
+      const endingPlayer = state.currentPlayer;
+      const markedUids = players[endingPlayer].field
+        .filter((fm): fm is FieldMonster => fm !== null && fm.pendingEffect === 'death' && fm.pendingTurns > 0)
+        .map((fm) => fm.uid);
+      const endTurnLog: string[] = [];
+      for (const uid of markedUids) {
+        const marked = findFieldMonster(players[endingPlayer], uid);
+        if (!marked) continue;
+        const remaining = marked.pendingTurns - 1;
+        if (remaining <= 0) {
+          removeFieldMonster(players, endingPlayer, uid);
+          endTurnLog.push(marked.card.name + ' es destruido al finalizar el segundo turno.');
+        } else {
+          players[endingPlayer] = updateFieldMonster(players[endingPlayer], uid, (fm) => ({
+            ...fm,
+            pendingTurns: remaining,
+          }));
+        }
+      }
+
+      // Reset de marcas de combate del jugador que termina el turno.
       players[state.currentPlayer] = {
         ...players[state.currentPlayer],
         field: players[state.currentPlayer].field.map((f) =>
@@ -1351,7 +1359,7 @@ export function reducer(state: GameState, action: Action): GameState {
         selection: { kind: 'none' },
         passTarget: nextPlayer,
         phase: state.mode === 'cpu' || state.mode === 'online' ? 'playing' : 'pass',
-        log: addLog(state, `Comienza su turno.`, nextPlayer),
+        log: [...state.log, ...endTurnLog.map((message) => `Jugador ${endingPlayer + 1}: ${message}`)].slice(-50).concat([(`Jugador ${nextPlayer + 1}: Comienza su turno.`)]),
       };
       // Apply turn start passive effects
       newState = applyTurnStartEffects(newState, nextPlayer);
@@ -1579,10 +1587,9 @@ export function reducer(state: GameState, action: Action): GameState {
       const me = state.currentPlayer;
       const monsters = players[me].graveyard.filter((c) => c.type === 'monster') as MonsterCard[];
       if (monsters.length === 0) return state;
+      if (action.choice === 'hand' && players[me].hand.length > MAX_HAND_SIZE) return state;
       const log: string[] = [];
-      // La Mágica 5 se sustituye por el Monstruo recuperado: no se exige
-      // espacio libre en la mano, independientemente de cuántas cartas tenga.
-      // Se mantiene la restricción de no recuperar otra copia propia ya presente.
+      // La Mágica 5 sustituye la carta utilizada, respetando su límite específico.
       const candidates =
         action.choice === 'hand'
           ? monsters.filter((c) => !hasOwnCopy(players[me].hand, c))
@@ -1731,6 +1738,7 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
     defenderCard: defender.card,
   };
   const hasReflect = defender.trap?.effect.kind === 'reflect_damage';
+  const attackerHasReflect = attacker.trap?.effect.kind === 'reflect_damage';
   const trapDiscoveryLog = defender.trap ? ` ¡Trampa descubierta: ${defender.trap.name}. ${defender.trap.description}` : '';
 
   // Regla 24.3 — en un empate ATQ vs ATQ ambos Monstruos se destruyen.
@@ -1777,9 +1785,12 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
     if (attacker.diceProtection) {
       const { ownerWins } = resolveDiceProtection();
       if (!ownerWins) {
-        // Gana el rival — el monstruo es eliminado
         removeFieldMonster(players, cp, attackerUid);
-        players[cp] = applyDamage(players[cp], result.attackerDamage);
+        if (attackerHasReflect && result.attackerDamage > 0) {
+          players[opp] = applyDamage(players[opp], result.attackerDamage);
+        } else {
+          players[cp] = applyDamage(players[cp], result.attackerDamage);
+        }
 
       } else {
         // Gana el propietario — el monstruo sobrevive
@@ -1788,10 +1799,11 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
       }
     } else {
       removeFieldMonster(players, cp, attackerUid);
-      // El daño del atacante siempre lo recibe su propietario. La Trampa 4
-      // solo redirige el daño que recibiría el propietario del Monstruo asociado
-      // cuando ese Monstruo es eliminado.
-      players[cp] = applyDamage(players[cp], result.attackerDamage);
+      if (attackerHasReflect && result.attackerDamage > 0) {
+        players[opp] = applyDamage(players[opp], result.attackerDamage);
+      } else {
+        players[cp] = applyDamage(players[cp], result.attackerDamage);
+      }
 
     }
   } else {
