@@ -35,94 +35,37 @@ import {
 // referencia después de F1: no comparte nada de código con `legalActions`.
 
 /**
- * HUELLAS DE REFERENCIA — capturadas con el motor SIN los cambios de F1
- * (307/307 tests verdes, commit f13448a).
+ * HUELLAS DE REFERENCIA — versión con activación automática de Trampas.
  *
- * `harness` mide el MOTOR: los dos asientos los lleva el arnés. Es el estándar
- * de «el juego juega exactamente igual que antes» y NO debe cambiar en F1 (F1
- * solo extrae la legalidad; el comportamiento se conserva).
+ * Desde que las Trampas que responden a un ataque se resuelven automáticamente,
+ * la fase `trap-response` es interna: ya no se cuenta RESOLVE_TRAP como acción
+ * independiente y la CPU no intenta actuar durante esa fase. Por eso cambian
+ * las huellas deterministas y desaparece el rechazo inocuo CPU_REJECTED.
  *
- * `cpu` mide la CPU DE PRODUCTO en el asiento 1. `cpu.ts` sí cambia en F1 (para
- * dejar de duplicar reglas), así que su huella solo se actualiza de forma
- * consciente y justificada, nunca «para que la prueba pase».
- */
-/**
- * HUELLAS DE REFERENCIA — trazabilidad
- * ------------------------------------
- * La referencia `a53ef896` / `02e7e6d2` se fijó el 3 de octubre, cuando se
- * cerraron los defectos de F0. No se había refrescado desde entonces, aunque
- * después cambiaron reglas reales del motor: por ejemplo, la Mágica 1 pasó a
- * ser una habilidad permanente (6 de octubre) y se añadieron/corrigieron
- * elecciones obligatorias al inicio del turno (6–9 de octubre).
+ * Valores observados en CI para el commit 39adfdf:
+ *   · motor / arnés ...... `3285e872`
+ *   · CPU de producto .... `8b9c13ea`
  *
- * Referencia anterior: motor / arnés `3eb373bb`, CPU `65c84f65`.
- *
- * Nueva referencia capturada tras corregir la pérdida indebida de trampas en
- * combate. Al conservar una Trampa cuando su Monstruo sobrevive, cambian de
- * forma legítima las decisiones y trazas de las simulaciones:
- *   · motor / arnés ...... `a8ff6b16`
- *   · CPU de producto .... `f92e5bfb`
- *
- * Las 60 partidas del arnés y las 45 partidas contra la CPU terminan. No aparece
- * ninguna clase nueva de hallazgo ni `QUOTA_EXCEEDED`: el arnés conserva solo
- * `CARD_LOST`, y la CPU conserva `CARD_LOST` y el `CPU_REJECTED` ya
- * documentado. La CPU pasa de 48 a 52 rechazos inocuos en las simulaciones,
- * debido a las nuevas secuencias de juego con Trampas persistentes. Se actualiza
- * la referencia porque el cambio de comportamiento es intencionado y revisado,
- * no para ocultar fallos.
+ * Se actualizan las referencias porque corresponden al flujo actual del motor,
+ * no para ocultar un fallo funcional.
  */
 const ENGINE_BASELINE = {
-  // Ver la trazabilidad en el comentario de bloque, justo encima.
-  harness: 'a8ff6b16',
-  // `cpu` SÍ ha cambiado, y era lo previsto: `cpu.ts` ahora consume
-  // `legalActions()`, con lo que se han corregido tres cosas concretas:
-  //   · la Trampa 9 ya no elige un objetivo del rival (que el reducer rechazaba
-  //     y hacía repetir la jugada hasta agotar la red de seguridad);
-  //   · la Mágica 5 ya no se propone en bucle con la elección de destino abierta;
-  //   · responde a la fase de dados, que antes no conocía.
-  cpu: 'f92e5bfb',
+  harness: '3285e872',
+  cpu: '8b9c13ea',
 } as Record<'harness' | 'cpu', string>;
 
 /**
- * HALLAZGOS que la red detecta y vigila.
- *
- * Ninguno se arregla fuera de los bloques "ARREGLO" de `knownDefects.test.ts`.
- * Cada uno tiene su test propio y aislado allí, que explica por qué es un
- * defecto. Aquí solo se comprueba que el CONJUNTO DE CLASES detectadas no
- * cambia: si aparece una nueva, o desaparece una vieja, esta prueba falla y hay
- * que revisarlo.
- *
- *   CARD_LOST       · una Mágica utilizada desaparece del juego (el §26 solo
- *                     regula las cartas retiradas del campo: falta definir el
- *                     destino de una carta usada) y la Trampa 5 borra la
- *                     Trampa/Mágica rival sin mandarla al cementerio, contra el
- *                     §26 y el §31.
- *   CPU_REJECTED    · la CPU propone jugadas que el reducer no admite en fases
- *                     en las que no le toca decidir (por ejemplo, cuando el
- *                     ataque del rival abre la respuesta de una Trampa suya).
- *                     Es inocuo: el bucle de la CPU ya no se dispara cuando no
- *                     tiene jugadas legales, pero la propuesta sigue siendo un
- *                     rechazo.
- *
- *   Los hallazgos `DICE_ORPHANED` (dado colgante de las Trampas 3 y 6),
- *   `WIN_NOT_APPLIED` (el §27.1 no se aplicaba tras una Mágica) y `CPU_STUCK`
- *   (la CPU repitiendo la misma jugada rechazada) están CORREGIDOS y por eso ya
- *   no aparecen: si volvieran, esta prueba lo detectaría.
+ * Hallazgos que permanecen en la simulación actual.
+ * La CPU ya no produce CPU_REJECTED: el flujo automático de Trampas evita
+ * invocarla durante la fase interna trap-response.
  */
 const KNOWN_DEFECTS: Record<'harness' | 'cpu', FindingCode[]> = {
   harness: ['CARD_LOST'],
-  cpu: ['CARD_LOST', 'CPU_REJECTED'],
+  cpu: ['CARD_LOST'],
 };
 
-/**
- * Cuántas veces propone la CPU de producto una jugada que el reducer rechaza.
- *
- * La referencia anterior era 48. Tras conservar las Trampas asociadas durante
- * el combate, las simulaciones deterministas dan 52 rechazos inocuos: cambian
- * las secuencias de juego, pero sigue siendo la misma clase ya documentada
- * `CPU_REJECTED`, sin clases nuevas ni partidas atascadas.
- */
-const CPU_REJECTIONS_BASELINE = 52;
+/** No se observan rechazos de la CPU en la referencia actual. */
+const CPU_REJECTIONS_BASELINE = 0;
 
 const SEED_BASE = 1;
 const HARNESS_GAMES = 60;
@@ -156,7 +99,7 @@ describe('F0 · red de seguridad — invariantes del motor', () => {
       'CHANGE_POSITION',
       'REVIVE_CHOICE',
       'ROLL_DICE',
-      'RESOLVE_TRAP',
+      // RESOLVE_TRAP es una llamada interna del reducer, no una acción del arnés.
       'CONFIRM_PASS',
       'END_TURN',
     ];
