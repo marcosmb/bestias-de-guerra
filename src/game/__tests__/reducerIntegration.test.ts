@@ -451,9 +451,8 @@ describe('Trampa 9 — countdown and activation', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const myFm = monster(m3, { trap: trap9 });
     const ownTarget = monster(m5, { uid: 'trap9-own-target' });
-    const rival = monster(getMonsterWithAtk(4), { uid: 'trap9-rival' });
     state = setField(state, 0, [myFm, ownTarget]);
-    state = setField(state, 1, [rival]);
+    state = setField(state, 1, []);
     for (let i = 0; i < 6; i++) state = dispatch(state, { type: 'END_TURN' });
     expect(state.selection.kind).toBe('choose-destroy-target');
     state = dispatch(state, { type: 'DESTROY_MONSTER', fieldUid: ownTarget.uid });

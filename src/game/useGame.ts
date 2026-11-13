@@ -734,7 +734,7 @@ function isValidTurnStartSelection(state: GameState, selection: SelectionMode): 
       return Boolean(
         carrier?.trap?.effect.kind === 'three_turns_kill' &&
         carrier.pendingTurns === 0 &&
-        opponent.field.some((fm) => fm !== null),
+        (own.field.some((fm) => fm !== null) || opponent.field.some((fm) => fm !== null)),
       );
     }
     default:
@@ -893,7 +893,7 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
       if (newTurns === 0) {
         players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({ ...f, pendingTurns: 0 }));
         queuedSelections.push({ kind: 'choose-destroy-target', trapUid: fm.uid });
-        log.push(fm.trap.name + ': ¡elige un Monstruo rival para destruir!');
+        log.push(fm.trap.name + ': ¡elige cualquier Monstruo del campo para destruir!');
       } else {
         players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({ ...f, pendingTurns: newTurns }));
         log.push(fm.trap.name + ': ' + newTurns + ' turnos restantes.');
