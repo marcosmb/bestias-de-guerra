@@ -7,6 +7,7 @@ import type {
 } from './types';
 import {
   MAX_CARDS_PER_TURN,
+  MAX_HAND_SIZE,
   canActivateMagic,
   canAttack,
   canPlaceTrapOn,
