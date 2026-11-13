@@ -726,17 +726,19 @@ function isValidTurnStartSelection(state: GameState, selection: SelectionMode): 
 
   switch (selection.kind) {
     case 'choose-trap-2-own': {
-      const carrier = findFieldMonster(own, selection.trapUid);
+      const carrier = findFieldMonster(state.players[selection.trapPlayer], selection.trapUid);
       return Boolean(
         carrier?.trap?.effect.kind === 'destroy_2_self_1_opp' &&
+        (ownerOf(carrier.trap) ?? selection.trapPlayer) === owner &&
         own.field.filter((fm) => fm !== null).length >= 2 &&
         opponent.field.some((fm) => fm !== null),
       );
     }
     case 'choose-destroy-target': {
-      const carrier = findFieldMonster(own, selection.trapUid);
+      const carrier = findFieldMonster(state.players[selection.trapPlayer], selection.trapUid);
       return Boolean(
         carrier?.trap?.effect.kind === 'three_turns_kill' &&
+        (ownerOf(carrier.trap) ?? selection.trapPlayer) === owner &&
         carrier.pendingTurns === 0 &&
         (own.field.some((fm) => fm !== null) || opponent.field.some((fm) => fm !== null)),
       );
@@ -861,28 +863,30 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
     }
   }
 
-  // Guardamos UIDs y volvemos a localizar cada Monstruo antes de procesarlo.
-  // Así un efecto previo que lo destruya impide ejecutar efectos de un portador
-  // que ya no sigue en el campo.
-  const turnStartUids = players[playerIdx].field
-    .filter((fm): fm is FieldMonster => fm !== null)
-    .map((fm) => fm.uid);
+  // Los efectos de Trampa 2 y 9 pertenecen al propietario original de la
+  // Trampa, aunque el Monstruo portador esté temporalmente en el campo rival.
+  const turnStartCarriers = ([0, 1] as const).flatMap((controllerIdx) =>
+    players[controllerIdx].field
+      .filter((fm): fm is FieldMonster => fm !== null && fm.trap !== null &&
+        (ownerOf(fm.trap) ?? controllerIdx) === playerIdx)
+      .map((fm) => ({ controllerIdx, uid: fm.uid })),
+  );
 
-  for (const uid of turnStartUids) {
-    let fm = findFieldMonster(players[playerIdx], uid);
-    if (!fm) continue;
+  for (const { controllerIdx, uid } of turnStartCarriers) {
+    const fm = findFieldMonster(players[controllerIdx], uid);
+    if (!fm?.trap || (ownerOf(fm.trap) ?? controllerIdx) !== playerIdx) continue;
 
-    fm = findFieldMonster(players[playerIdx], uid);
-    if (!fm) continue;
-
-    // Trampa 2: la elección se pone en cola en vez de interrumpir el resto de
-    // los efectos del inicio de turno.
-    if (fm.trap?.effect.kind === 'destroy_2_self_1_opp') {
+    if (fm.trap.effect.kind === 'destroy_2_self_1_opp') {
       const ownCount = players[playerIdx].field.filter((f) => f !== null).length;
       const opponentIdx = (playerIdx === 0 ? 1 : 0) as 0 | 1;
       const opponentHasMonsters = players[opponentIdx].field.some((f) => f !== null);
       if (ownCount >= 2 && opponentHasMonsters) {
-        queuedSelections.push({ kind: 'choose-trap-2-own', trapUid: fm.uid, selectedUids: [] });
+        queuedSelections.push({
+          kind: 'choose-trap-2-own',
+          trapUid: fm.uid,
+          trapPlayer: controllerIdx,
+          selectedUids: [],
+        });
         log.push(fm.trap.name + ': elige los 2 Monstruos propios que quieres destruir por efecto de la Trampa.');
       } else {
         const reason = ownCount < 2
@@ -892,28 +896,22 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
       }
     }
 
-    fm = findFieldMonster(players[playerIdx], uid);
-    if (!fm) continue;
-
-    // Trampa 9: cuenta sus turnos y encola la elección cuando llega a cero.
     if (fm.trap?.effect.kind === 'three_turns_kill') {
       const currentTurns = fm.pendingTurns > 0 ? fm.pendingTurns : 3;
       const newTurns = currentTurns - 1;
       if (newTurns === 0) {
-        players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({ ...f, pendingTurns: 0 }));
-        queuedSelections.push({ kind: 'choose-destroy-target', trapUid: fm.uid });
+        players[controllerIdx] = updateFieldMonster(players[controllerIdx], fm.uid, (f) => ({ ...f, pendingTurns: 0 }));
+        queuedSelections.push({
+          kind: 'choose-destroy-target',
+          trapUid: fm.uid,
+          trapPlayer: controllerIdx,
+        });
         log.push(fm.trap.name + ': ¡elige cualquier Monstruo del campo para destruir!');
       } else {
-        players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({ ...f, pendingTurns: newTurns }));
+        players[controllerIdx] = updateFieldMonster(players[controllerIdx], fm.uid, (f) => ({ ...f, pendingTurns: newTurns }));
         log.push(fm.trap.name + ': ' + newTurns + ' turnos restantes.');
       }
     }
-
-    fm = findFieldMonster(players[playerIdx], uid);
-    if (!fm) continue;
-
-    // pendingTurns de las Trampas 10 y 11 se procesa al finalizar el turno
-    // del jugador que controla actualmente al Monstruo (END_TURN).
   }
 
   let nextState: GameState = {
@@ -1511,7 +1509,7 @@ export function reducer(state: GameState, action: Action): GameState {
 
       const first = findFieldMonster(players[owner], selectedUids[0]);
       const second = findFieldMonster(players[owner], selectedUids[1]);
-      const trapFm = players[owner].field.find((f) => f?.uid === sel.trapUid);
+      const trapFm = players[sel.trapPlayer].field.find((f) => f?.uid === sel.trapUid);
       selectedUids.forEach((uid) => removeFieldMonster(players, owner, uid));
       removeFieldMonster(players, opponent, opponentTarget.uid);
 
@@ -1520,9 +1518,9 @@ export function reducer(state: GameState, action: Action): GameState {
       if (trapFm && !selectedUids.includes(sel.trapUid) && trapFm.trap) {
         const consumedTrap = trapFm.trap;
         const trapOwner = ownerOf(consumedTrap) ?? owner;
-        const remainingTrapFm = players[owner].field.find((f) => f?.uid === sel.trapUid);
+        const remainingTrapFm = players[sel.trapPlayer].field.find((f) => f?.uid === sel.trapUid);
         if (remainingTrapFm) {
-          players[owner] = updateFieldMonster(players[owner], sel.trapUid, (f) => ({ ...f, trap: null }));
+          players[sel.trapPlayer] = updateFieldMonster(players[sel.trapPlayer], sel.trapUid, (f) => ({ ...f, trap: null }));
           players[trapOwner] = {
             ...players[trapOwner],
             graveyard: [...players[trapOwner].graveyard, consumedTrap],
@@ -1555,15 +1553,16 @@ export function reducer(state: GameState, action: Action): GameState {
       // Si se destruye el propio Monstruo portador, removeFieldMonster ya habrá
       // enviado la Trampa 9 a su propietario original.
       const trapUid = state.selection.kind === 'choose-destroy-target' ? state.selection.trapUid : null;
+      const trapPlayer = state.selection.kind === 'choose-destroy-target' ? state.selection.trapPlayer : owner;
       if (trapUid) {
-        const trapFm = players[owner].field.find((f) => f?.uid === trapUid);
+        const trapFm = players[trapPlayer].field.find((f) => f?.uid === trapUid);
         if (trapFm?.trap) {
-          const trapOwner = ownerOf(trapFm.trap) ?? owner;
+          const trapOwner = ownerOf(trapFm.trap) ?? trapPlayer;
           players[trapOwner] = {
             ...players[trapOwner],
             graveyard: [...players[trapOwner].graveyard, trapFm.trap],
           };
-          players[owner] = updateFieldMonster(players[owner], trapUid, (f) => ({ ...f, trap: null, trapRevealed: false }));
+          players[trapPlayer] = updateFieldMonster(players[trapPlayer], trapUid, (f) => ({ ...f, trap: null, trapRevealed: false }));
         }
       }
       const winResult = checkWinner(players);
