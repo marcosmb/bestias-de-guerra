@@ -445,10 +445,7 @@ export function legalActions(state: GameState, player: 0 | 1): Action[] {
   // destruir corresponde al propietario de la Trampa.
   if (state.phase === 'playing' && state.selection.kind === 'choose-destroy-associated-card') {
     if (player !== state.selection.player) return [];
-    return [
-      ...selectionActions(state, player, me, opp) ?? [],
-      { type: 'CANCEL_SELECTION' },
-    ];
+    return selectionActions(state, player, me, opp) ?? [];
   }
 
   // A partir de aquí solo juega quien tiene el turno: el reducer siempre aplica
