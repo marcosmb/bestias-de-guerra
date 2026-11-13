@@ -215,7 +215,7 @@ describe('CANCEL_SELECTION — choose-destroy-target', () => {
     const m3 = getMonsterWithAtk(3);
     const myFm = monster(m3);
     let state = setField(makeState(), 0, [myFm]);
-    state = { ...state, selection: { kind: 'choose-destroy-target', trapUid: myFm.uid } };
+    state = { ...state, selection: { kind: 'choose-destroy-target', trapUid: myFm.uid, trapPlayer: 0 } };
     expect(state.selection.kind).toBe('choose-destroy-target');
 
     state = dispatch(state, { type: 'CANCEL_SELECTION' });
@@ -228,7 +228,7 @@ describe('CANCEL_SELECTION — choose-destroy-target', () => {
     const myFm = monster(m3);
     const targetFm = monster(m5);
     let state = setField(makeState(), 0, [myFm, targetFm]);
-    state = { ...state, selection: { kind: 'choose-destroy-target', trapUid: myFm.uid } };
+    state = { ...state, selection: { kind: 'choose-destroy-target', trapUid: myFm.uid, trapPlayer: 0 } };
 
     const fieldBefore = state.players[0].field.filter(Boolean).length;
     state = dispatch(state, { type: 'CANCEL_SELECTION' });

@@ -49,9 +49,9 @@ export type SelectionMode =
   | { kind: 'attack'; attackerUid: string }
   | { kind: 'direct-attack'; attackerUid: string }
   | { kind: 'attack-or-direct'; attackerUid: string }
-  | { kind: 'choose-destroy-target'; trapUid: string }
+  | { kind: 'choose-destroy-target'; trapUid: string; trapPlayer: 0 | 1 }
   | { kind: 'choose-destroy-associated-card'; trapUid: string; player: 0 | 1; returnPlayer: 0 | 1; targetUid?: string }
-  | { kind: 'choose-trap-2-own'; trapUid: string; selectedUids: string[] }
+  | { kind: 'choose-trap-2-own'; trapUid: string; trapPlayer: 0 | 1; selectedUids: string[] }
   | { kind: 'revive-choice'; card: MagicCard };
 
 export interface PendingDice {
