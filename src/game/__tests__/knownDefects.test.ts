@@ -464,7 +464,7 @@ describe('REGRESIÓN · Trampa 9 permite elegir cualquier Monstruo del campo', (
   it('puede destruir su propio Monstruo portador y consumir la Trampa 9', () => {
     const trampa9 = trap(9);
     const conSeleccion = scene({
-      selection: { kind: 'choose-destroy-target', trapUid: 'mio' },
+      selection: { kind: 'choose-destroy-target', trapUid: 'mio', trapPlayer: 0 },
       me: {
         field: [fieldMonster(monster(2), { uid: 'mio', trap: trampa9, pendingTurns: 0 }), null, null, null, null, null],
       },
@@ -575,7 +575,7 @@ describe('ARREGLO · una acción normal ya no cancela una selección pendiente',
       scene({ selection: { kind: 'place-trap', card: trap(1) }, me: { hand: [trap(1)], field: [fieldMonster(monster(3)), ...blankField().slice(1)] } }),
       scene({ selection: { kind: 'place-magic', card: magic(4) }, me: { hand: [magic(4)], field: [fieldMonster(monster(3)), ...blankField().slice(1)] } }),
       scene({ selection: { kind: 'attack', attackerUid: 'a' }, me: { field: [fieldMonster(monster(8), { uid: 'a' }), ...blankField().slice(1)] }, opp: { field: [fieldMonster(monster(2), { uid: 'd', position: 'defense', faceDown: true }), ...blankField().slice(1)] } }),
-      scene({ selection: { kind: 'choose-destroy-target', trapUid: 'a' }, me: { field: [fieldMonster(monster(2), { uid: 'a' }), ...blankField().slice(1)] } }),
+      scene({ selection: { kind: 'choose-destroy-target', trapUid: 'a', trapPlayer: 0 }, me: { field: [fieldMonster(monster(2), { uid: 'a' }), ...blankField().slice(1)] } }),
       scene({ selection: { kind: 'revive-choice', card: magic(5) }, me: { hand: [magic(5)], graveyard: [monster(3)] } }),
     ];
     for (const estado of casos) {

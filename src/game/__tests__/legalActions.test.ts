@@ -647,7 +647,7 @@ describe('legalActions · fases especiales', () => {
 
   it('Trampa 9: se puede elegir cualquier Monstruo de ambos campos', () => {
     const state = scene({
-      selection: { kind: 'choose-destroy-target', trapUid: 'mio' },
+      selection: { kind: 'choose-destroy-target', trapUid: 'mio', trapPlayer: 0 },
       me: { field: [fieldMonster(monster(2), { uid: 'mio' }), fieldMonster(monster(3), { uid: 'mio2' }), ...blank().slice(2)] },
       opp: { field: [fieldMonster(monster(12), { uid: 'rival' }), ...blank().slice(1)] },
     });
