@@ -42,7 +42,7 @@ import {
  * independiente y la CPU no intenta actuar durante esa fase. Por eso cambian
  * las huellas deterministas y desaparece el rechazo inocuo CPU_REJECTED.
  *
- * Valores observados en CI tras corregir Trampas 4, 7, 10, 11 y 12,
+ * Valores observados en CI tras corregir Trampas 4, 7, 9, 10, 11 y 12,
  * y aplicar el límite específico de la Mágica 5:
  *   · motor / arnés ...... `f8df1c65`
  *   · CPU de producto .... `d61625f8`
