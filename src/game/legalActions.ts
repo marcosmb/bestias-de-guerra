@@ -261,8 +261,8 @@ function selectionActions(state: GameState, player: 0 | 1, me: PlayerState, opp:
     }
     
     case 'choose-destroy-associated-card': {
-      const owner = sel.player;
-      const field = monstersOf(state.players[owner]);
+      const targetPlayer = sel.returnPlayer;
+      const field = monstersOf(state.players[targetPlayer]);
       return field
         .filter((fm) => fm.trap || fm.magic)
         .flatMap((fm) => [

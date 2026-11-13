@@ -348,9 +348,9 @@ function applyTrapEffect(
             selection: {
               kind: 'choose-destroy-associated-card',
               trapUid: defenderUid,
-              // player identifica el campo objetivo (el del atacante).
-              player: attackerPlayer,
-              // Tras la elección, el turno vuelve al jugador que declaró el ataque.
+              // player identifica al propietario de la Trampa (quien elige).
+              player: defenderPlayer,
+              // returnPlayer identifica el campo objetivo y el turno que se reanuda.
               returnPlayer: attackerPlayer,
             },
             log: addLog(
@@ -1551,8 +1551,11 @@ export function reducer(state: GameState, action: Action): GameState {
       return continueTurnStartSelection(resolvedState);
     }
     case 'DESTROY_ASSOCIATED_CARD': {
-      if (state.selection.kind !== 'choose-destroy-associated-card') return state;
-      const owner = state.selection.player;
+      if (
+        state.selection.kind !== 'choose-destroy-associated-card' ||
+        state.currentPlayer !== state.selection.player
+      ) return state;
+      const owner = state.selection.returnPlayer;
       const carrier = findFieldMonster(state.players[owner], action.fieldUid);
       if (!carrier) return state;
       const card = action.cardType === 'trap' ? carrier.trap : carrier.magic;
