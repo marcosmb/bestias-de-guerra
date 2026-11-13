@@ -51,8 +51,8 @@ import {
  * no para ocultar un fallo funcional.
  */
 const ENGINE_BASELINE = {
-  harness: '6c27abfb',
-  cpu: '87dde524',
+  harness: '84e72a00',
+  cpu: '01ea3ca9',
 } as Record<'harness' | 'cpu', string>;
 
 /**

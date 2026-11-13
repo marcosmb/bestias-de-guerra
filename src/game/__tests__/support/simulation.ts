@@ -290,8 +290,8 @@ export function rejectedByProbe(state: GameState, seat: 0 | 1): Map<string, numb
 /**
  * Comprobaciones que el juego debe cumplir SIEMPRE, paso a paso. No derivan de
  * ninguna regla nueva: son la lectura directa de los invariantes que el motor ya
- * respeta (campo de 6, cuota de 3, LP ≥ 0, conservación de cartas). El umbral
- * de 9 cartas solo limita el robo automático, no el tamaño general de la mano.
+ * respeta (campo de 6, cuota de 3, LP ≥ 0, conservación de cartas). No existe
+ * un límite máximo de puntos de vida; el umbral de 9 cartas solo limita el robo automático.
  *
  * Cada problema lleva su código al principio (`CÓDIGO: texto`) para que la
  * simulación pueda clasificarlos sin adivinar.
@@ -302,7 +302,6 @@ export function checkInvariants(state: GameState, context: string): string[] {
 
   for (const p of state.players) {
     if (p.lp < 0) push('INVARIANT', `${p.name} tiene ${p.lp} PV (negativos)`);
-    if (p.lp > 999) push('INVARIANT', `${p.name} tiene ${p.lp} PV (por encima del tope)`);
     if (p.cardsPlayedThisTurn < 0) push('INVARIANT', `${p.name} tiene cuota negativa`);
     if (p.cardsPlayedThisTurn > MAX_CARDS_PER_TURN) {
       push('QUOTA_EXCEEDED', `${p.name} ha jugado ${p.cardsPlayedThisTurn} cartas este turno (tope ${MAX_CARDS_PER_TURN})`);
@@ -352,15 +351,18 @@ export function checkInvariants(state: GameState, context: string): string[] {
       if (!monstersOf(me).some((f) => f.uid === sel.attackerUid)) push('INVARIANT', `selección '${sel.kind}' con un atacante que no está en el campo propio`);
       break;
     case 'choose-destroy-target':
-      if (!monstersOf(me).some((f) => f.uid === sel.trapUid)) push('INVARIANT', 'selección choose-destroy-target sin el Monstruo de la Trampa 9 en el campo propio');
+      if (!state.players[sel.trapPlayer].field.some((fm) => fm?.uid === sel.trapUid)) {
+        push('INVARIANT', 'selección choose-destroy-target sin su Monstruo portador en el campo registrado');
+      }
       break;
     case 'choose-trap-2-own':
-      if (!monstersOf(me).some((f) => f.uid === sel.trapUid)) push('INVARIANT', 'selección choose-trap-2-own sin su Monstruo portador');
+      if (!state.players[sel.trapPlayer].field.some((fm) => fm?.uid === sel.trapUid)) {
+        push('INVARIANT', 'selección choose-trap-2-own sin su Monstruo portador en el campo registrado');
+      }
       if (sel.selectedUids.some((uid) => !monstersOf(me).some((f) => f.uid === uid))) push('INVARIANT', 'Trampa 2 mantiene seleccionado un Monstruo que ya no está en el campo');
       break;
     case 'choose-destroy-associated-card':
-      // trapUid identifies the Monster carrying Trampa 5 on the OTHER field;
-      // the chooser selects an associated card from their own field instead.
+      // player is the chooser; returnPlayer is the field containing the target.
       break;
   }
 

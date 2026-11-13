@@ -1053,7 +1053,7 @@ describe('Reducer integration — cola de efectos de inicio de turno', () => {
     expect(state.selection.kind).toBe('choose-trap-2-own');
     expect(state.turnStartSelectionActive).toBe(true);
     expect(state.pendingTurnStartSelections).toEqual([
-      { kind: 'choose-destroy-target', trapUid: trap9Carrier.uid },
+      { kind: 'choose-destroy-target', trapUid: trap9Carrier.uid, trapPlayer: 1 },
     ]);
 
     // Una elección obligatoria no se puede cancelar accidentalmente.
