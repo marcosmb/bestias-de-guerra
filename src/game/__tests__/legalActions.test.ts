@@ -660,7 +660,7 @@ describe('legalActions · fases especiales', () => {
     expect(legalActions(state, 0)).toEqual([]);
   });
 
-  it('fase de respuesta de Trampa: decide el defensor, y puede activarla o no', () => {
+  it('fase interna de respuesta de Trampa: no ofrece acciones manuales', () => {
     const pendiente = {
       attackerUid: 'a',
       defenderUid: 'd',
@@ -672,8 +672,9 @@ describe('legalActions · fases especiales', () => {
       defenderPosition: 'attack' as Position,
     };
     const state = scene({ phase: 'trap-response', currentPlayer: 0, pendingTrap: pendiente });
-    expect(find(state, 1, 'RESOLVE_TRAP').map((a) => (a as { activate: boolean }).activate)).toEqual([true, false]);
-    // Al atacante no le toca decidir.
+    // El reducer resuelve automáticamente la Trampa al declarar el ataque.
+    // Esta fase solo existe durante esa resolución interna.
+    expect(legalActions(state, 1)).toEqual([]);
     expect(legalActions(state, 0)).toEqual([]);
   });
 

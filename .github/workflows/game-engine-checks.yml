@@ -6,9 +6,11 @@ on:
       - master
       - fix/engine-stability
       - fusion-de-ramas
+      - audit/corregir-fallos-ci
   pull_request:
     branches:
       - master
+      - fusion-de-ramas
 
 permissions:
   contents: read
