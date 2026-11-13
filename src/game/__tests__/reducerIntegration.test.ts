@@ -16,6 +16,27 @@ describe('Trampa 4 — refleja el daño al morir el Monstruo atacante', () => {
   });
 });
 
+describe('Trampa 12 — daño solo al comienzo del turno de su propietario', () => {
+  it('no daña al rival en el turno contrario y aplica 5 LP en el turno del propietario', () => {
+    let state = makeState({ turnCount: 1, currentPlayer: 0 });
+    const trap12 = getTrapByEffect('damage_per_turn');
+    const carrier = monster(getMonsterWithAtk(5), { trap: trap12 });
+    state = setField(state, 0, [carrier]);
+    state = setLp(state, 1, 100);
+
+    // Empieza el turno del rival: la Trampa 12 no debe activarse.
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.currentPlayer).toBe(1);
+    expect(state.players[1].lp).toBe(100);
+
+    // Empieza el turno de su propietario: el rival pierde 5 LP.
+    state = dispatch(state, { type: 'END_TURN' });
+    expect(state.currentPlayer).toBe(0);
+    expect(state.players[1].lp).toBe(95);
+    expect(state.players[0].field.find((f) => f?.uid === carrier.uid)?.trapRevealed).toBe(true);
+  });
+});
+
 describe('Reducer integration — COMBATE', () => {
   it('ATQ igual a ATQ destruye ambos Monstruos en la partida real', () => {
     let state = makeState();

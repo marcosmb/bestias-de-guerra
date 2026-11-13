@@ -804,15 +804,18 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
   const log: string[] = [];
   const queuedSelections: SelectionMode[] = [];
 
-  // Trampa 12: el efecto se anuncia a ambos jugadores y se revela la Trampa
-  // que lo provoca cuando se aplica.
-  for (const ownerIdx of [0, 1] as const) {
-    const opponentIdx = (ownerIdx === 0 ? 1 : 0) as 0 | 1;
-    for (const fm of players[ownerIdx].field) {
+  // Trampa 12: solo se activa al comienzo del turno de su propietario original.
+  // La carta puede estar asociada a un Monstruo que haya cambiado de controlador,
+  // por eso se consulta ownerOf(trap), no el jugador cuyo campo la contiene.
+  for (const controllerIdx of [0, 1] as const) {
+    for (const fm of players[controllerIdx].field) {
       if (!fm?.trap || fm.trap.effect.kind !== 'damage_per_turn') continue;
+      const trapOwner = ownerOf(fm.trap) ?? controllerIdx;
+      if (trapOwner !== playerIdx) continue;
+      const opponentIdx = (trapOwner === 0 ? 1 : 0) as 0 | 1;
       const amount = fm.trap.effect.amount;
       players[opponentIdx] = applyDamage(players[opponentIdx], amount);
-      players[ownerIdx] = updateFieldMonster(players[ownerIdx], fm.uid, (current) => ({
+      players[controllerIdx] = updateFieldMonster(players[controllerIdx], fm.uid, (current) => ({
         ...current,
         trapRevealed: true,
       }));
