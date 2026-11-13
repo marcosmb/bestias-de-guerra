@@ -905,21 +905,19 @@ function applyTurnStartEffects(state: GameState, playerIdx: 0 | 1): GameState {
 
     // pendingTurns es también el contador de la Trampa 9. No lo decrementamos
     // dos veces si un Monstruo lleva ese efecto y una condición pendiente.
-    if (fm.pendingEffect && fm.pendingTurns > 0 && fm.trap?.effect.kind !== 'three_turns_kill') {
+    // Trampa 10 mide turnos completos del propietario del efecto y se resuelve
+    // al inicio de su tercer turno (tras completar dos). La Trampa 11 se cuenta
+    // al final de los turnos del controlador y se resuelve en END_TURN.
+    if (fm.pendingEffect === 'control' && fm.pendingTurns > 0) {
       const newTurns = fm.pendingTurns - 1;
       if (newTurns === 0) {
-        if (fm.pendingEffect === 'death' || fm.pendingEffect === 'three_turns') {
-          removeFieldMonster(players, playerIdx, fm.uid);
-          log.push(fm.card.name + ' muere por efecto pendiente.');
-        } else if (fm.pendingEffect === 'control') {
-          players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({
-            ...f,
-            pendingEffect: null,
-            pendingTurns: 0,
-            controlledBy: null,
-          }));
-          log.push(fm.card.name + ' recupera el control.');
-        }
+        players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({
+          ...f,
+          pendingEffect: null,
+          pendingTurns: 0,
+          controlledBy: null,
+        }));
+        log.push(fm.card.name + ' recupera el control.');
       } else {
         players[playerIdx] = updateFieldMonster(players[playerIdx], fm.uid, (f) => ({ ...f, pendingTurns: newTurns }));
       }
@@ -1301,7 +1299,31 @@ export function reducer(state: GameState, action: Action): GameState {
       if (state.phase !== 'playing') return state;
       const nextPlayer = (state.currentPlayer === 0 ? 1 : 0) as 0 | 1;
       const players = [...state.players] as [PlayerState, PlayerState];
-      // Reset de marcas del jugador que termina el turno.
+
+      // Trampa 11: el contador avanza al finalizar cada turno del jugador que
+      // actualmente controla al Monstruo. Así la destrucción ocurre al terminar
+      // el segundo turno contado, no al inicio de un turno posterior.
+      const endingPlayer = state.currentPlayer;
+      const markedUids = players[endingPlayer].field
+        .filter((fm): fm is FieldMonster => fm !== null && fm.pendingEffect === 'death' && fm.pendingTurns > 0)
+        .map((fm) => fm.uid);
+      const endTurnLog: string[] = [];
+      for (const uid of markedUids) {
+        const marked = findFieldMonster(players[endingPlayer], uid);
+        if (!marked) continue;
+        const remaining = marked.pendingTurns - 1;
+        if (remaining <= 0) {
+          removeFieldMonster(players, endingPlayer, uid);
+          endTurnLog.push(marked.card.name + ' es destruido al finalizar el segundo turno.');
+        } else {
+          players[endingPlayer] = updateFieldMonster(players[endingPlayer], uid, (fm) => ({
+            ...fm,
+            pendingTurns: remaining,
+          }));
+        }
+      }
+
+      // Reset de marcas de combate del jugador que termina el turno.
       players[state.currentPlayer] = {
         ...players[state.currentPlayer],
         field: players[state.currentPlayer].field.map((f) =>
@@ -1337,7 +1359,7 @@ export function reducer(state: GameState, action: Action): GameState {
         selection: { kind: 'none' },
         passTarget: nextPlayer,
         phase: state.mode === 'cpu' || state.mode === 'online' ? 'playing' : 'pass',
-        log: addLog(state, `Comienza su turno.`, nextPlayer),
+        log: [...state.log, ...endTurnLog.map((message) => `Jugador ${endingPlayer + 1}: ${message}`)].slice(-50).concat([(`Jugador ${nextPlayer + 1}: Comienza su turno.`)]),
       };
       // Apply turn start passive effects
       newState = applyTurnStartEffects(newState, nextPlayer);
