@@ -624,7 +624,7 @@ El daño reflejado se aplica a los **LP del rival**, no a un Monstruo.
 Cuando un Monstruo rival te ataca:
 
 - se niega el ataque;
-- el propietario de la Trampa elige una Trampa o Mágica rival colocada en el campo;
+- el atacante elige una Trampa o Mágica colocada del defensor;
 - esa carta es destruida.
 
 ---
@@ -643,17 +643,16 @@ Cuando se activa:
 
 Cuando un Monstruo rival te ataca:
 
-- el Monstruo atacante pasa directamente a tu campo;
-- queda bajo tu control;
-- no se intercambia por uno de tus Monstruos.
+- el Monstruo atacante pasa a la casilla que ocupaba el Monstruo defensor;
+- el Monstruo defensor pasa a la casilla que ocupaba el atacante;
+- ambos intercambian el control de sus respectivos Monstruos;
+- conservan sus posiciones de Ataque o Defensa;
+- conservan sus cartas asociadas;
+- no son destruidos;
+- no van al cementerio;
+- no necesitan una casilla libre, porque intercambian sus posiciones.
 
-Debe existir un espacio libre en tu campo.
-
-Si no existe un espacio libre, **la Trampa no puede activarse**.
-
-El Monstruo mantiene su posición al pasar a tu campo.
-
-Sus cartas asociadas conservan la propiedad de sus propietarios originales.
+La Trampa 7 se consume y va al cementerio de su propietario.
 
 La Trampa 7 no establece una duración temporal concreta de control; el Monstruo permanece bajo el nuevo control hasta que una regla o efecto posterior modifique esa situación.
 
@@ -788,6 +787,8 @@ Si existe al menos un Monstruo propio elegible, el jugador elige una de estas do
 
 - **Cementerio → Mano**
 - **Cementerio → Campo**
+
+La recuperación a la mano no tiene límite por cantidad de cartas: la Mágica 5 se consume al utilizarse y el Monstruo recuperado sustituye a la Mágica en la mano, por lo que la cantidad de cartas no aumenta ni disminuye.
 
 Una vez elegido el destino, el juego recupera automáticamente el Monstruo elegible con el **mayor ATQ**. El jugador no elige qué Monstruo concreto recuperar.
 

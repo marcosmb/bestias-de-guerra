@@ -1,4 +1,4 @@
-describe('Trampa 1 — curación sin límite máximo de puntos de vida', () => {
+﻿describe('Trampa 1 â€” curaciÃ³n sin lÃ­mite mÃ¡ximo de puntos de vida', () => {
   it('permite superar 999 LP al comenzar el turno del propietario', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 1 });
     const trap1 = getTrapByEffect('heal_per_turn');
@@ -14,7 +14,7 @@ describe('Trampa 1 — curación sin límite máximo de puntos de vida', () => {
   });
 });
 
-describe('Trampa 11 — destruye al atacante al finalizar su segundo turno', () => {
+describe('Trampa 11 â€” destruye al atacante al finalizar su segundo turno', () => {
   it('cuenta al final de los turnos de quien controla el Monstruo', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const trap11 = getTrapByEffect('death_after_two_turns');
@@ -42,8 +42,8 @@ describe('Trampa 11 — destruye al atacante al finalizar su segundo turno', () 
   });
 });
 
-describe('Trampa 4 — refleja el daño al morir el Monstruo atacante', () => {
-  it('redirige al rival el daño que recibiría el propietario del atacante', () => {
+describe('Trampa 4 â€” refleja el daÃ±o al morir el Monstruo atacante', () => {
+  it('redirige al rival el daÃ±o que recibirÃ­a el propietario del atacante', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const reflect = getTrapByEffect('reflect_damage');
     const attacker = monster(getMonsterWithAtk(3), { trap: reflect });
@@ -60,8 +60,8 @@ describe('Trampa 4 — refleja el daño al morir el Monstruo atacante', () => {
   });
 });
 
-describe('Trampa 12 — daño solo al comienzo del turno de su propietario', () => {
-  it('no daña al rival en el turno contrario y aplica 5 LP en el turno del propietario', () => {
+describe('Trampa 12 â€” daÃ±o solo al comienzo del turno de su propietario', () => {
+  it('no daÃ±a al rival en el turno contrario y aplica 5 LP en el turno del propietario', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const trap12 = getTrapByEffect('damage_per_turn');
     const carrier = monster(getMonsterWithAtk(5), { trap: trap12 });
@@ -81,8 +81,8 @@ describe('Trampa 12 — daño solo al comienzo del turno de su propietario', () 
   });
 });
 
-describe('Trampas 2 y 9 — activación según el propietario original', () => {
-  it('Trampa 2 se activa en el turno de su propietario aunque el portador esté en el campo rival', () => {
+describe('Trampas 2 y 9 â€” activaciÃ³n segÃºn el propietario original', () => {
+  it('Trampa 2 se activa en el turno de su propietario aunque el portador estÃ© en el campo rival', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 1 });
     const trap2 = { ...getTrapByEffect('destroy_2_self_1_opp'), owner: 0 as const };
     const ownA = monster(getMonsterWithAtk(3), { uid: 'trap2-owner-a' });
@@ -95,7 +95,7 @@ describe('Trampas 2 y 9 — activación según el propietario original', () => {
     state = dispatch(state, { type: 'END_TURN' });
     expect(state.currentPlayer).toBe(0);
     expect(state.selection.kind).toBe('choose-trap-2-own');
-    if (state.selection.kind !== 'choose-trap-2-own') throw new Error('La Trampa 2 debería activarse');
+    if (state.selection.kind !== 'choose-trap-2-own') throw new Error('La Trampa 2 deberÃ­a activarse');
     expect(state.selection.trapPlayer).toBe(1);
 
     state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownA.uid });
@@ -108,7 +108,7 @@ describe('Trampas 2 y 9 — activación según el propietario original', () => {
     expect(state.players[0].graveyard.some((card) => card.id === trap2.id)).toBe(true);
   });
 
-  it('Trampa 9 cuenta los turnos de su propietario aunque el portador esté en el campo rival', () => {
+  it('Trampa 9 cuenta los turnos de su propietario aunque el portador estÃ© en el campo rival', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 1 });
     const trap9 = { ...getTrapByEffect('three_turns_kill'), owner: 0 as const };
     const carrier = monster(getMonsterWithAtk(5), { uid: 'trap9-owner-carrier', trap: trap9 });
@@ -120,7 +120,7 @@ describe('Trampas 2 y 9 — activación según el propietario original', () => {
 
     expect(state.currentPlayer).toBe(0);
     expect(state.selection.kind).toBe('choose-destroy-target');
-    if (state.selection.kind !== 'choose-destroy-target') throw new Error('La Trampa 9 debería activarse');
+    if (state.selection.kind !== 'choose-destroy-target') throw new Error('La Trampa 9 deberÃ­a activarse');
     expect(state.selection.trapPlayer).toBe(1);
 
     state = dispatch(state, { type: 'DESTROY_MONSTER', fieldUid: ownTarget.uid });
@@ -132,7 +132,7 @@ describe('Trampas 2 y 9 — activación según el propietario original', () => {
   });
 });
 
-describe('Reducer integration — COMBATE', () => {
+describe('Reducer integration â€” COMBATE', () => {
   it('ATQ igual a ATQ destruye ambos Monstruos en la partida real', () => {
     let state = makeState();
     const equalCard = getMonsterWithAtk(8);
@@ -259,7 +259,7 @@ function setHand(state: GameState, playerIdx: 0 | 1, cards: typeof state.players
 
 // --- Tests ---
 
-describe('Reducer integration — TRAMPA 2', () => {
+describe('Reducer integration â€” TRAMPA 2', () => {
   it('se activa al comienzo del turno de su propietario y destruye 2 Monstruos propios + 1 rival', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const trap2 = getTrapByEffect('destroy_2_self_1_opp');
@@ -271,7 +271,7 @@ describe('Reducer integration — TRAMPA 2', () => {
     state = setField(state, 0, [carrier, ownA, ownB]);
     state = setField(state, 1, [rival]);
 
-    // P1 termina -> P2. Todavía no debe dispararse la Trampa 2 de P1.
+    // P1 termina -> P2. TodavÃ­a no debe dispararse la Trampa 2 de P1.
     state = dispatch(state, { type: 'END_TURN' });
     expect(state.currentPlayer).toBe(1);
     expect(state.selection.kind).toBe('none');
@@ -292,7 +292,7 @@ describe('Reducer integration — TRAMPA 2', () => {
     expect(state.players[0].graveyard.some((c) => c.id === trap2.id)).toBe(true);
   });
 
-  it('espera a confirmar el paso local antes de resolver la selección de Trampa 2', () => {
+  it('espera a confirmar el paso local antes de resolver la selecciÃ³n de Trampa 2', () => {
     let state = makeState({ mode: 'local', turnCount: 1, currentPlayer: 0 });
     const trap2 = getTrapByEffect('destroy_2_self_1_opp');
     const carrier = monster(getMonsterWithAtk(8), { uid: 'trap2-pass-carrier', trap: trap2 });
@@ -323,7 +323,7 @@ describe('Reducer integration — TRAMPA 2', () => {
 
     state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownA.uid });
     expect(state.selection.kind).toBe('choose-trap-2-own');
-    if (state.selection.kind !== 'choose-trap-2-own') throw new Error('La selección debería continuar');
+    if (state.selection.kind !== 'choose-trap-2-own') throw new Error('La selecciÃ³n deberÃ­a continuar');
     expect(state.selection.selectedUids).toEqual([ownA.uid]);
 
     state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownB.uid });
@@ -357,7 +357,7 @@ describe('Reducer integration — TRAMPA 2', () => {
   });
 });
 
-describe('Reducer integration — TRAMPA 9', () => {
+describe('Reducer integration â€” TRAMPA 9', () => {
   it('espera a confirmar el paso local antes de destruir el objetivo', () => {
     let state = makeState({ mode: 'local', turnCount: 1, currentPlayer: 0 });
     const trap9 = getTrapByEffect('three_turns_kill');
@@ -394,8 +394,8 @@ describe('Reducer integration — TRAMPA 9', () => {
   });
 });
 
-describe('Mágica 5 — Monstruo revivido puede atacar inmediatamente', () => {
-  it('permite atacar al Monstruo revivido al campo por Mágica 5 en el mismo turno', () => {
+describe('MÃ¡gica 5 â€” Monstruo revivido puede atacar inmediatamente', () => {
+  it('permite atacar al Monstruo revivido al campo por MÃ¡gica 5 en el mismo turno', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const m5 = getMagicByEffect('revive_monster');
     const revivedCard = getMonsterWithAtk(8);
@@ -422,7 +422,7 @@ describe('Mágica 5 — Monstruo revivido puede atacar inmediatamente', () => {
   });
 });
 
-describe('Reducer integration — SUMMON_MONSTER', () => {
+describe('Reducer integration â€” SUMMON_MONSTER', () => {
   it('places a monster in the first empty slot and consumes the card', () => {
     const state = makeState();
     const card = getFirstMonsterCard();
@@ -449,7 +449,7 @@ describe('Reducer integration — SUMMON_MONSTER', () => {
   });
 });
 
-describe('Reducer integration — END_TURN', () => {
+describe('Reducer integration â€” END_TURN', () => {
   it('switches player, draws 2 cards, resets flags', () => {
     const state = makeState();
     const oppDeckBefore = state.players[1].deck.length;
@@ -463,40 +463,40 @@ describe('Reducer integration — END_TURN', () => {
 
 // --- Trampa 9 (three_turns_kill) ---
 
-describe('Trampa 9 — countdown and activation', () => {
+describe('Trampa 9 â€” countdown and activation', () => {
   const trap9 = getTrapByEffect('three_turns_kill');
   const m3 = getMonsterWithAtk(3);
   const m5 = getMonsterWithAtk(5);
 
-  it('counts down 3 → 2 → 1 → activation', () => {
+  it('counts down 3 â†’ 2 â†’ 1 â†’ activation', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const fm = monster(m3, { trap: trap9 });
     state = setField(state, 0, [fm]);
     state = setField(state, 1, [monster(getMonsterWithAtk(4), { uid: 'trap9-rival' })]);
-    // Turn 1 (currentPlayer 0) ends → turn 2 (player 1)
+    // Turn 1 (currentPlayer 0) ends â†’ turn 2 (player 1)
     state = dispatch(state, { type: 'END_TURN' });
     // After END_TURN, applyTurnStartEffects runs for player 1.
     // Trampa 9 is on player 0's field, so it counts down during player 0's turn start.
     // We need to advance to player 0's turn start.
-    // Turn 2 (player 1) ends → turn 3 (player 0)
+    // Turn 2 (player 1) ends â†’ turn 3 (player 0)
     state = dispatch(state, { type: 'END_TURN' });
-    // Now player 0's turn start: first countdown → 2 remaining
+    // Now player 0's turn start: first countdown â†’ 2 remaining
     const fm0 = state.players[0].field.find((f) => f?.uid === fm.uid);
     expect(fm0?.pendingTurns).toBe(2);
 
-    // Turn 3 (player 0) ends → turn 4 (player 1)
+    // Turn 3 (player 0) ends â†’ turn 4 (player 1)
     state = dispatch(state, { type: 'END_TURN' });
-    // Turn 4 (player 1) ends → turn 5 (player 0)
+    // Turn 4 (player 1) ends â†’ turn 5 (player 0)
     state = dispatch(state, { type: 'END_TURN' });
-    // Player 0's turn start: second countdown → 1 remaining
+    // Player 0's turn start: second countdown â†’ 1 remaining
     const fm1 = state.players[0].field.find((f) => f?.uid === fm.uid);
     expect(fm1?.pendingTurns).toBe(1);
 
-    // Turn 5 (player 0) ends → turn 6 (player 1)
+    // Turn 5 (player 0) ends â†’ turn 6 (player 1)
     state = dispatch(state, { type: 'END_TURN' });
-    // Turn 6 (player 1) ends → turn 7 (player 0)
+    // Turn 6 (player 1) ends â†’ turn 7 (player 0)
     state = dispatch(state, { type: 'END_TURN' });
-    // Player 0's turn start: third countdown → 0 → activation
+    // Player 0's turn start: third countdown â†’ 0 â†’ activation
     expect(state.selection.kind).toBe('choose-destroy-target');
   });
 
@@ -529,12 +529,12 @@ describe('Trampa 9 — countdown and activation', () => {
     expect(state.selection.kind).toBe('none');
   });
 
-  it('monster destroyed before 3 turns — trap has no target', () => {
+  it('monster destroyed before 3 turns â€” trap has no target', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const myFm = monster(m3, { trap: trap9 });
     state = setField(state, 0, [myFm]);
     // Destroy the trap-holding monster via combat before countdown finishes
-    // Advance 4 turns (2 applyTurnStartEffects for player 0 → countdown at 1)
+    // Advance 4 turns (2 applyTurnStartEffects for player 0 â†’ countdown at 1)
     for (let i = 0; i < 4; i++) {
       state = dispatch(state, { type: 'END_TURN' });
     }
@@ -542,7 +542,7 @@ describe('Trampa 9 — countdown and activation', () => {
     expect(fm1?.pendingTurns).toBe(1);
     // Manually remove the monster (simulating destruction)
     state = setField(state, 0, []);
-    // Advance 2 more turns — countdown would try to fire but monster is gone
+    // Advance 2 more turns â€” countdown would try to fire but monster is gone
     for (let i = 0; i < 2; i++) {
       state = dispatch(state, { type: 'END_TURN' });
     }
@@ -551,14 +551,12 @@ describe('Trampa 9 — countdown and activation', () => {
   });
 });
 
-// --- Trampa 7 (swap_attacker) ---
-
-describe('Trampa 7 — el atacante pasa al campo del defensor', () => {
+describe('Trampa 7 â€” intercambio completo del atacante y el defensor', () => {
   const trap7 = getTrapByEffect('swap_attacker');
   const m5 = getMonsterWithAtk(5);
   const m3 = getMonsterWithAtk(3);
 
-  it('mueve solo al atacante y deja al defensor en su campo', () => {
+  it('intercambia ambos monstruos, sus controladores y conserva posiciones', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const attacker = monster(m5);
     const defender = monster(m3, { trap: trap7 });
@@ -567,12 +565,16 @@ describe('Trampa 7 — el atacante pasa al campo del defensor', () => {
     state = dispatch(state, { type: 'START_ATTACK', attackerUid: attacker.uid });
     state = dispatch(state, { type: 'DECLARE_ATTACK', attackerUid: attacker.uid, defenderUid: defender.uid });
 
+    // El atacante queda en el campo del defensor (posiciÃ³n del defensor).
     const attackerNow = state.players[1].field.find((f) => f?.uid === attacker.uid);
-    const defenderNow = state.players[1].field.find((f) => f?.uid === defender.uid);
+    // El defensor queda en el campo del atacante (posiciÃ³n del atacante).
+    const defenderNow = state.players[0].field.find((f) => f?.uid === defender.uid);
     expect(attackerNow).toBeDefined();
     expect(defenderNow).toBeDefined();
     expect(state.players[0].field.find((f) => f?.uid === attacker.uid)).toBeUndefined();
+    expect(state.players[1].field.find((f) => f?.uid === defender.uid)).toBeUndefined();
     expect(attackerNow?.controlledBy).toBe(1);
+    expect(defenderNow?.controlledBy).toBe(0);
     expect(attackerNow?.position).toBe(attacker.position);
     expect(defenderNow?.position).toBe(defender.position);
     expect(defenderNow?.trap).toBeNull();
@@ -581,25 +583,27 @@ describe('Trampa 7 — el atacante pasa al campo del defensor', () => {
     expect(state.players[1].graveyard.some((c) => c.id === m5.id || c.id === m3.id)).toBe(false);
   });
 
-  it('si el campo está lleno, la Trampa no se activa y el combate sigue', () => {
+  it('conserva las cartas asociadas a cada monstruo tras el intercambio', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
-    const attacker = monster(m3);
-    const defender = monster(m5, { trap: trap7 });
-    const others = getDistinctMonsterCards(5).map((card, i) => monster(card, { uid: `occupied-${i}` }));
+    const attacker = monster(m5, { magic: getMagicByEffect ? getMagicByEffect('direct_attack') : null });
+    const defender = monster(m3, { trap: trap7 });
     state = setField(state, 0, [attacker]);
-    state = setField(state, 1, [defender, ...others]);
+    state = setField(state, 1, [defender]);
     state = dispatch(state, { type: 'START_ATTACK', attackerUid: attacker.uid });
     state = dispatch(state, { type: 'DECLARE_ATTACK', attackerUid: attacker.uid, defenderUid: defender.uid });
 
-    expect(state.players[0].field.find((f) => f?.uid === attacker.uid)).toBeUndefined();
-    expect(state.players[1].field.find((f) => f?.uid === defender.uid)?.trap?.id).toBe(trap7.id);
-    expect(state.players[1].graveyard.some((c) => c.id === trap7.id)).toBe(false);
+    const attackerNow = state.players[1].field.find((f) => f?.uid === attacker.uid);
+    const defenderNow = state.players[0].field.find((f) => f?.uid === defender.uid);
+    // La carta asociada del atacante viaja con Ã©l al campo del defensor.
+    expect(attackerNow?.magic?.id).toBe(attacker.magic?.id ?? null);
+    // El defensor no llevaba carta asociada distinta de la trampa (consumida).
+    expect(defenderNow?.trap).toBeNull();
   });
 });
 
 // --- Trampa 10 (control_two_turns) ---
 
-describe('Trampa 10 — control and return', () => {
+describe('Trampa 10 â€” control and return', () => {
   const trap10 = getTrapByEffect('control_two_turns');
   const m5 = getMonsterWithAtk(5);
   const m3 = getMonsterWithAtk(3);
@@ -639,13 +643,13 @@ describe('Trampa 10 — control and return', () => {
       { type: 'DECLARE_ATTACK', attackerUid: attacker.uid, defenderUid: defender.uid },
       { type: 'RESOLVE_TRAP', activate: true },
     ]);
-    // Termina el turno del atacante: todavía no consume el turno del controlador.
+    // Termina el turno del atacante: todavÃ­a no consume el turno del controlador.
     state = dispatch(state, { type: 'END_TURN' });
     expect(state.players[1].field.find((f) => f?.card.id === m5.id)?.pendingTurns).toBe(2);
-    // Final del primer turno completo del controlador: 2→1.
+    // Final del primer turno completo del controlador: 2â†’1.
     state = dispatch(state, { type: 'END_TURN' });
     expect(state.players[1].field.find((f) => f?.card.id === m5.id)?.pendingTurns).toBe(1);
-    // Termina el turno del rival: no consume duración.
+    // Termina el turno del rival: no consume duraciÃ³n.
     state = dispatch(state, { type: 'END_TURN' });
     expect(state.players[1].field.find((f) => f?.card.id === m5.id)?.pendingTurns).toBe(1);
     // Final del segundo turno completo del controlador: vuelve al propietario.
@@ -657,7 +661,7 @@ describe('Trampa 10 — control and return', () => {
     expect(onP1).toBeUndefined();
   });
 
-  it('no space on defender field — trap does not activate', () => {
+  it('no space on defender field â€” trap does not activate', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const attacker = monster(m5);
     const defender = monster(m3, { trap: trap10 });
@@ -673,13 +677,13 @@ describe('Trampa 10 — control and return', () => {
   });
 });
 
-// --- Regla 22.2 — direct attack optional ---
+// --- Regla 22.2 â€” direct attack optional ---
 
-describe('Regla 22.2 — direct attack optional vs attack-only', () => {
+describe('Regla 22.2 â€” direct attack optional vs attack-only', () => {
   const m5 = getMonsterWithAtk(5);
   const m3 = getMonsterWithAtk(3);
 
-  it('rival has only attack monsters → attack-or-direct selection', () => {
+  it('rival has only attack monsters â†’ attack-or-direct selection', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const attacker = monster(m5);
     const oppMonster = monster(m3, { position: 'attack' });
@@ -689,7 +693,7 @@ describe('Regla 22.2 — direct attack optional vs attack-only', () => {
     expect(state.selection.kind).toBe('attack-or-direct');
   });
 
-  it('rival has defense monsters → attack selection only', () => {
+  it('rival has defense monsters â†’ attack selection only', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const attacker = monster(m5);
     const oppDefense = monster(m3, { position: 'defense' });
@@ -699,7 +703,7 @@ describe('Regla 22.2 — direct attack optional vs attack-only', () => {
     expect(state.selection.kind).toBe('attack');
   });
 
-  it('rival has no monsters → direct attack auto', () => {
+  it('rival has no monsters â†’ direct attack auto', () => {
     let state = makeState({ turnCount: 1, currentPlayer: 0 });
     const attacker = monster(m5);
     state = setField(state, 0, [attacker]);
@@ -717,11 +721,11 @@ describe('Regla 22.2 — direct attack optional vs attack-only', () => {
     state = setField(state, 0, [attacker]);
     state = setField(state, 1, [oppDefense]);
     state = dispatch(state, { type: 'DIRECT_ATTACK', attackerUid: attacker.uid });
-    // Should be blocked — no damage
+    // Should be blocked â€” no damage
     expect(state.players[1].lp).toBe(100);
   });
 
-  it('first turn — no attacking', () => {
+  it('first turn â€” no attacking', () => {
     let state = makeState({ turnCount: 0, currentPlayer: 0 });
     const attacker = monster(m5);
     state = setField(state, 0, [attacker]);
@@ -740,10 +744,10 @@ describe('Regla 22.2 — direct attack optional vs attack-only', () => {
   });
 });
 
-// --- Regla 27.3 — draw on simultaneous 0 LP ---
+// --- Regla 27.3 â€” draw on simultaneous 0 LP ---
 
-describe('Regla 27.3 — draw detection', () => {
-  it('player 1 at 0 LP → player 2 wins', () => {
+describe('Regla 27.3 â€” draw detection', () => {
+  it('player 1 at 0 LP â†’ player 2 wins', () => {
     let state = makeState();
     state = setLp(state, 0, 0);
     // Trigger a check via END_TURN (which calls checkWinner)
@@ -753,7 +757,7 @@ describe('Regla 27.3 — draw detection', () => {
     expect(state.isDraw).toBe(false);
   });
 
-  it('player 2 at 0 LP → player 1 wins', () => {
+  it('player 2 at 0 LP â†’ player 1 wins', () => {
     let state = makeState();
     state = setLp(state, 1, 0);
     state = dispatch(state, { type: 'END_TURN' });
@@ -762,7 +766,7 @@ describe('Regla 27.3 — draw detection', () => {
     expect(state.isDraw).toBe(false);
   });
 
-  it('both at 0 LP simultaneously → draw', () => {
+  it('both at 0 LP simultaneously â†’ draw', () => {
     let state = makeState();
     state = setLp(state, 0, 0);
     state = setLp(state, 1, 0);
@@ -772,7 +776,7 @@ describe('Regla 27.3 — draw detection', () => {
     expect(state.isDraw).toBe(true);
   });
 
-  it('neither at 0 LP → game continues', () => {
+  it('neither at 0 LP â†’ game continues', () => {
     let state = makeState();
     state = dispatch(state, { type: 'END_TURN' });
     expect(state.phase).not.toBe('game-over');
@@ -781,7 +785,7 @@ describe('Regla 27.3 — draw detection', () => {
 
 // --- PLACE_TRAP_ON_MONSTER integration ---
 
-describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
+describe('Reducer integration â€” PLACE_TRAP_ON_MONSTER', () => {
   it('places trap on own monster and consumes card', () => {
     const trap = TRAPS[0]; // heal_per_turn
     const m = getFirstMonsterCard();
@@ -805,14 +809,14 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     state = dispatch(state, { type: 'SUMMON_MONSTER', card: m, position: 'defense' });
     const fm = state.players[0].field.find((f) => f !== null)!;
     expect(fm.summonedThisTurn).toBe(true);
-    // Place trap — should now work (summonedThisTurn no longer blocks)
+    // Place trap â€” should now work (summonedThisTurn no longer blocks)
     state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: fm.uid });
     const placed = state.players[0].field.find((f) => f?.uid === fm.uid);
     expect(placed?.trap?.id).toBe(trap.id);
     expect(state.players[0].hand.some((c) => c.id === trap.id)).toBe(false);
   });
 
-  it('full flow: SELECT_TRAP_PLACE → PLACE_TRAP_ON_MONSTER → trap associated, card consumed, selection cleared', () => {
+  it('full flow: SELECT_TRAP_PLACE â†’ PLACE_TRAP_ON_MONSTER â†’ trap associated, card consumed, selection cleared', () => {
     const trap = TRAPS[3]; // reflect_damage
     const m = getFirstMonsterCard();
     let state = makeState();
@@ -851,7 +855,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     const fm = monster(m, { trap: trap1 });
     state = setField(state, 0, [fm]);
     state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap2, fieldUid: fm.uid });
-    // Should be blocked — trap1 still there, trap2 not placed
+    // Should be blocked â€” trap1 still there, trap2 not placed
     const placed = state.players[0].field.find((f) => f?.uid === fm.uid);
     expect(placed?.trap?.id).toBe(trap1.id);
     // trap2 still in hand
@@ -891,7 +895,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     state = setField(state, 1, [oppFm]);
     // Player 0 tries to place trap on player 1's monster
     state = dispatch(state, { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: oppFm.uid });
-    // Should be blocked — reducer only looks at currentPlayer's field
+    // Should be blocked â€” reducer only looks at currentPlayer's field
     expect(state.players[1].field.find((f) => f?.uid === oppFm.uid)?.trap).toBeFalsy();
     expect(state.players[0].hand.some((c) => c.id === trap.id)).toBe(true);
   });
@@ -911,7 +915,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     expect(state.selection.kind).toBe('none');
   });
 
-  it('first turn — summon monster then place trap on it (full flow)', () => {
+  it('first turn â€” summon monster then place trap on it (full flow)', () => {
     const trap = TRAPS[0];
     const m = getFirstMonsterCard();
     let state = makeState({ turnCount: 0, currentPlayer: 0 });
@@ -932,7 +936,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     expect(state.players[0].field.filter((f) => f?.uid === fm.uid).length).toBe(1);
   });
 
-  it('first turn — cannot attack (Regla 17)', () => {
+  it('first turn â€” cannot attack (Regla 17)', () => {
     const m = getFirstMonsterCard();
     let state = makeState({ turnCount: 0, currentPlayer: 0 });
     const fm = monster(m, { position: 'attack', summonedThisTurn: false });
@@ -942,7 +946,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
     expect(state.selection.kind).toBe('none');
   });
 
-  it('normal turn — summon monster then place trap on it (full flow)', () => {
+  it('normal turn â€” summon monster then place trap on it (full flow)', () => {
     const trap = TRAPS[0];
     const m = getFirstMonsterCard();
     let state = makeState({ turnCount: 5, currentPlayer: 0 });
@@ -963,7 +967,7 @@ describe('Reducer integration — PLACE_TRAP_ON_MONSTER', () => {
 
 // --- CHANGE_POSITION integration ---
 
-describe('Reducer integration — CHANGE_POSITION', () => {
+describe('Reducer integration â€” CHANGE_POSITION', () => {
   it('changes attack to defense and keeps the monster face-up', () => {
     const m = getFirstMonsterCard();
     let state = makeState();
@@ -989,7 +993,7 @@ describe('Reducer integration — CHANGE_POSITION', () => {
 });
 
 
-describe('Reducer integration — Trap 2 target selection', () => {
+describe('Reducer integration â€” Trap 2 target selection', () => {
   it('lets the trap owner choose exactly two own monsters before resolving', () => {
     const trap = getTrapByEffect('destroy_2_self_1_opp');
     const [m1, m2, m3] = getDistinctMonsterCards(3);
@@ -1004,7 +1008,7 @@ describe('Reducer integration — Trap 2 target selection', () => {
     ]);
     state = setField(state, 1, [monster(rival)]);
 
-    // Termina el turno del rival y activa la Trampa al comenzar el turno del dueño.
+    // Termina el turno del rival y activa la Trampa al comenzar el turno del dueÃ±o.
     state = dispatch(state, { type: 'END_TURN' });
 
     expect(state.selection.kind).toBe('choose-trap-2-own');
@@ -1032,8 +1036,8 @@ describe('Reducer integration — Trap 2 target selection', () => {
 });
 
 
-describe('Reducer integration — cola de efectos de inicio de turno', () => {
-  it('resuelve la Trampa 2 y después la Trampa 9 sin perder ninguna elección', () => {
+describe('Reducer integration â€” cola de efectos de inicio de turno', () => {
+  it('resuelve la Trampa 2 y despuÃ©s la Trampa 9 sin perder ninguna elecciÃ³n', () => {
     let state = makeState({ currentPlayer: 0, turnCount: 1, mode: 'cpu' });
     const trap2 = getTrapByEffect('destroy_2_self_1_opp');
     const trap9 = getTrapByEffect('three_turns_kill');
@@ -1056,12 +1060,12 @@ describe('Reducer integration — cola de efectos de inicio de turno', () => {
       { kind: 'choose-destroy-target', trapUid: trap9Carrier.uid, trapPlayer: 1 },
     ]);
 
-    // Una elección obligatoria no se puede cancelar accidentalmente.
+    // Una elecciÃ³n obligatoria no se puede cancelar accidentalmente.
     const beforeCancel = state;
     state = dispatch(state, { type: 'CANCEL_SELECTION' });
     expect(state).toBe(beforeCancel);
 
-    // La Trampa 2 resuelve sus dos sacrificios y pasa a la elección de Trampa 9.
+    // La Trampa 2 resuelve sus dos sacrificios y pasa a la elecciÃ³n de Trampa 9.
     state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: trap2Carrier.uid });
     state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: ownSacrifice.uid });
     expect(state.selection.kind).toBe('choose-destroy-target');

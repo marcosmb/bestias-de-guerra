@@ -13,14 +13,14 @@
 | Área | Corrección |
 |---|---|
 | Trampa 4 | Reflejo de daño cuando muere el Monstruo asociado, tanto si era atacante como defensor. |
-| Trampa 5 | La elección corresponde al propietario de la Trampa; el turno pasa temporalmente a ese jugador y vuelve al atacante después. Puede elegir Trampa o Mágica cuando ambas están asociadas al objetivo. |
-| Trampa 7 | Solo se traslada el Monstruo atacante al campo del defensor. No se intercambia por el Monstruo defensor. Sin espacio libre, la Trampa no se activa. |
+| Trampa 5 | La elección corresponde al atacante: niega el ataque y el atacante elige una Trampa o Mágica colocada del defensor, que se destruye. La activación es automática. |
+| Trampa 7 | Intercambio completo: el atacante y el defensor intercambian casillas y control, conservan posición y cartas asociadas, no se destruyen y no requieren espacio libre. La Trampa se consume al cementerio de su propietario. |
 | Trampa 9 | Permite elegir cualquier Monstruo de cualquiera de los dos campos. El efecto y su contador siguen al propietario original de la Trampa aunque el portador cambie de controlador. |
 | Trampa 10 | Cuenta dos turnos completos al final de los turnos del controlador temporal y devuelve el Monstruo a su propietario original. |
 | Trampa 11 | Destruye al Monstruo al finalizar el segundo turno del jugador que lo controla. |
 | Trampa 12 | Aplica -5 LP al comienzo del turno del propietario original, no en ambos turnos. |
 | Trampas 1 y 2 | Sus efectos de inicio de turno se resuelven según el propietario original de la Trampa aunque el portador haya cambiado de campo. |
-| Mágica 5 | Se respeta el límite específico de 9 cartas para recuperar a la mano. |
+| Mágica 5 | No tiene límite de 9 cartas para recuperar a la mano: la Mágica se consume y el Monstruo recuperado sustituye a la Mágica en la mano. |
 | Puntos de vida | Se elimina el límite artificial de 999 LP; el reglamento no establece un máximo. |
 
 ## Integraciones

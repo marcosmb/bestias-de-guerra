@@ -42,7 +42,6 @@ import {
   ownerOf,
   hasOwnCopy,
   MAX_CARDS_PER_TURN,
-  MAX_HAND_SIZE,
   placeFieldMonster,
   resolveCombat,
   shuffleDeck,
@@ -336,27 +335,25 @@ function applyTrapEffect(
     case 'negate_destroy_card': {
       negateAttack = true;
       skipCombat = true;
-      const hasTarget = players[attackerPlayer].field.some((f) => f !== null && (f.trap || f.magic));
+      const hasTarget = players[defenderPlayer].field.some((f) => f !== null && (f.magic || (f.trap && f.trap.id !== trap.id)));
       if (hasTarget) {
-        // Trampa 5: el atacante (rival del propietario de la Trampa) elige qué carta asociada destruir.
-        // La selección queda pendiente para que no se destruya arbitrariamente la primera.
+        // Trampa 5: el atacante (rival del propietario de la Trampa) elige qué
+        // carta asociada del defensor destruir. La selección queda pendiente.
         return {
           state: {
             ...state,
             players,
-            currentPlayer: defenderPlayer,
+            currentPlayer: attackerPlayer,
             selection: {
               kind: 'choose-destroy-associated-card',
               trapUid: defenderUid,
-              // player identifica al propietario de la Trampa (quien elige).
-              player: defenderPlayer,
-              // returnPlayer identifica el campo objetivo y el turno que se reanuda.
-              returnPlayer: attackerPlayer,
+              player: attackerPlayer,
+              returnPlayer: defenderPlayer,
             },
             log: addLog(
               state,
-              trap.name + '! Ataque negado. El propietario de la Trampa elige qué carta asociada rival destruir.',
-              defenderPlayer,
+              trap.name + '! Ataque negado. El atacante elige qué carta asociada del defensor será destruida.',
+              attackerPlayer,
             ),
           },
           negateAttack,
@@ -370,17 +367,36 @@ function applyTrapEffect(
     case 'dice_4plus_destroy':
       return { state: { ...state, phase: 'dice-roll', pendingDice: { reason: trap.name, onRoll: (roll: number) => ({ type: 'ROLL_DICE', roll }) } }, negateAttack: true, destroyAttacker: false, skipCombat: true };
     case 'swap_attacker': {
-      // Trampa 7: el atacante pasa al campo del defensor; el defensor permanece.
-      if (attacker && hasEmptySlot(players[defenderPlayer])) {
-        const moved: FieldMonster = { ...attacker, controlledBy: defenderPlayer, hasAttacked: false };
-        players[defenderPlayer] = placeFieldMonster(players[defenderPlayer], moved);
-        players[attackerPlayer] = detachFieldMonster(players[attackerPlayer], attackerUid);
-        log.push(`¡${trap.name}! ${attacker.card.name} pasa a tu campo bajo tu control.`);
-        negateAttack = true;
-        skipCombat = true;
-      } else {
-        log.push(`¡${trap.name}! No hay espacio libre en tu campo. La Trampa no se activa.`);
+      // Trampa 7: intercambia el Monstruo atacante por el Monstruo que recibió
+      // el ataque. Cada uno ocupa la casilla del otro; ambos conservan sus
+      // cartas asociadas y posición, y ambos intercambian el control.
+      if (attacker && defender) {
+        const attackerSlot = players[attackerPlayer].field.findIndex((f) => f?.uid === attackerUid);
+        const defenderSlot = players[defenderPlayer].field.findIndex((f) => f?.uid === defenderUid);
+        if (attackerSlot >= 0 && defenderSlot >= 0) {
+          const attackerAfterSwap: FieldMonster = { ...attacker, controlledBy: defenderPlayer };
+          const defenderAfterSwap: FieldMonster = { ...defender, controlledBy: attackerPlayer };
+          players[attackerPlayer] = {
+            ...players[attackerPlayer],
+            field: players[attackerPlayer].field.map((f, i) => (i === attackerSlot ? null : f)),
+          };
+          players[defenderPlayer] = {
+            ...players[defenderPlayer],
+            field: players[defenderPlayer].field.map((f, i) => (i === defenderSlot ? null : f)),
+          };
+          players[attackerPlayer] = {
+            ...players[attackerPlayer],
+            field: players[attackerPlayer].field.map((f, i) => (i === attackerSlot ? defenderAfterSwap : f)),
+          };
+          players[defenderPlayer] = {
+            ...players[defenderPlayer],
+            field: players[defenderPlayer].field.map((f, i) => (i === defenderSlot ? attackerAfterSwap : f)),
+          };
+          log.push(`¡${trap.name}! ${attacker.card.name} y ${defender.card.name} intercambian sus campos.`);
+        }
       }
+      negateAttack = true;
+      skipCombat = true;
       break;
     }
     case 'destroy_attacker':
@@ -588,9 +604,10 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
       // duplicados: si la copia que hay en la mano es del RIVAL (Mágica 2), sí
       // se puede recuperar la propia.
       const toHand = monsters.filter((c) => !hasOwnCopy(players[me].hand, c));
-      // La Mágica 5 sustituye la carta utilizada, pero su regla específica
-      // exige que la mano no supere 9 cartas tras la sustitución.
-      const canReviveToHand = players[me].hand.length <= MAX_HAND_SIZE && toHand.length > 0;
+      // La Mágica 5 se consume al usarse y el monstruo recuperado sustituye
+      // a la Mágica en la mano: la cantidad de cartas no aumenta ni disminuye,
+      // por lo que no existe límite de 9 cartas para recuperar a la mano.
+      const canReviveToHand = toHand.length > 0;
       const canReviveToField = hasEmptySlot(players[me]);
       if (!canReviveToHand && !canReviveToField) {
         resolves = false;
@@ -1606,7 +1623,7 @@ export function reducer(state: GameState, action: Action): GameState {
         ...state,
         players,
         phase: 'playing',
-        currentPlayer: state.selection.returnPlayer,
+        currentPlayer: state.selection.player,
         selection: { kind: 'none' },
         log: addLog(
           state,
@@ -1626,9 +1643,9 @@ export function reducer(state: GameState, action: Action): GameState {
       const me = state.currentPlayer;
       const monsters = players[me].graveyard.filter((c) => c.type === 'monster') as MonsterCard[];
       if (monsters.length === 0) return state;
-      if (action.choice === 'hand' && players[me].hand.length > MAX_HAND_SIZE) return state;
       const log: string[] = [];
-      // La Mágica 5 sustituye la carta utilizada, respetando su límite específico.
+      // La Mágica 5 sustituye la carta utilizada; el monstruo entra en la mano
+      // sin límite de 9 cartas.
       const candidates =
         action.choice === 'hand'
           ? monsters.filter((c) => !hasOwnCopy(players[me].hand, c))
