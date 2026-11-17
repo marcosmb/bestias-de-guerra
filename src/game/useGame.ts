@@ -1187,9 +1187,6 @@ export function reducer(state: GameState, action: Action): GameState {
       // Solo las Trampas con respuesta al ataque abren esta fase.
       // En particular, la Trampa 2 se activa al comienzo del turno de su propietario.
       if (defender.trap && trapTriggersOnAttack(defender.trap)) {
-        if (defender.trap.effect.kind === 'swap_attacker' && !hasEmptySlot(state.players[opp])) {
-          return executeCombat(state, action.attackerUid, action.defenderUid);
-        }
         // Las Trampas colocadas se activan automáticamente al cumplirse su condición.
         // Se reutiliza el resolvedor existente sin mostrar una fase de confirmación.
         const pendingState: GameState = {

@@ -1,6 +1,7 @@
 ﻿import { describe, it, expect } from 'vitest';
 import { initialState, reducer } from '../useGame';
 import { nextCpuAction } from '../cpu';
+import { legalActions } from '../legalActions';
 import { changedTheGame } from './support/simulation';
 import type { Action, FieldMonster, GameState, PlayerState, Position } from '../types';
 import { MAX_CARDS_PER_TURN, createPlayer, indexOfCardInstance } from '../types';
@@ -747,3 +748,67 @@ describe('REGRESIÃ“N Â· las Trampas asociadas sobreviven al combate si sobr
   });
 });
 
+describe('REGRESION: Magica 5 no limita la recuperacion a una mano de 9 cartas', () => {
+  it('ofrece recuperar a la mano con 10 o mas cartas aunque el campo este lleno', () => {
+    const m5 = magic(5);
+    const recovered = monster(12);
+    const hand = [m5, ...Array.from({ length: 10 }, (_, index) => monster(index + 1))];
+    const fullField = Array.from({ length: 6 }, (_, index) =>
+      fieldMonster(monster(index + 20), { uid: `magic5-full-${index}` }),
+    );
+    const state = scene({ me: { hand, graveyard: [recovered], field: fullField } });
+
+    expect(legalActions(state, 0).some((action) => action.type === 'SELECT_MAGIC' && action.card === m5)).toBe(true);
+
+    const selecting = reducer(state, { type: 'SELECT_MAGIC', card: m5 });
+    expect(selecting.selection.kind).toBe('revive-choice');
+    const choices = legalActions(selecting, 0);
+    expect(choices.some((action) => action.type === 'REVIVE_CHOICE' && action.choice === 'hand')).toBe(true);
+    expect(choices.some((action) => action.type === 'REVIVE_CHOICE' && action.choice === 'field')).toBe(false);
+  });
+});
+
+describe('REGRESION: Trampa 7 intercambia monstruos aunque ambos campos esten llenos', () => {
+  it('intercambia control y casillas sin destruir monstruos ni exigir huecos libres', () => {
+    const attacker = fieldMonster(monster(8), { uid: 'full-field-attacker', position: 'attack' });
+    const defender = fieldMonster(monster(3), {
+      uid: 'full-field-defender',
+      position: 'defense',
+      trap: trap(7),
+    });
+    const attackerField = [
+      attacker,
+      ...Array.from({ length: 5 }, (_, index) =>
+        fieldMonster(monster(index + 30), { uid: `attacker-side-${index}` }),
+      ),
+    ];
+    const defenderField = [
+      defender,
+      ...Array.from({ length: 5 }, (_, index) =>
+        fieldMonster(monster(index + 40), { uid: `defender-side-${index}` }),
+      ),
+    ];
+    const state = scene({ me: { field: attackerField }, opp: { field: defenderField } });
+
+    const after = reducer(state, {
+      type: 'DECLARE_ATTACK',
+      attackerUid: attacker.uid,
+      defenderUid: defender.uid,
+    });
+
+    const attackerAfter = after.players[1].field.find((fm) => fm?.uid === attacker.uid);
+    const defenderAfter = after.players[0].field.find((fm) => fm?.uid === defender.uid);
+    expect(attackerAfter).toBeDefined();
+    expect(defenderAfter).toBeDefined();
+    expect(attackerAfter?.controlledBy).toBe(1);
+    expect(defenderAfter?.controlledBy).toBe(0);
+    expect(attackerAfter?.position).toBe('attack');
+    expect(defenderAfter?.position).toBe('defense');
+    expect(after.players[0].field.filter(Boolean)).toHaveLength(6);
+    expect(after.players[1].field.filter(Boolean)).toHaveLength(6);
+    expect(defenderAfter?.trap).toBeNull();
+    expect(after.players[1].graveyard.some((card) => card.id === trap(7).id)).toBe(true);
+    expect(after.players[0].graveyard.some((card) => card.id === attacker.card.id || card.id === defender.card.id)).toBe(false);
+    expect(after.players[1].graveyard.some((card) => card.id === attacker.card.id || card.id === defender.card.id)).toBe(false);
+  });
+});
