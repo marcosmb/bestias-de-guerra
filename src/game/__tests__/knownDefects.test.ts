@@ -760,11 +760,14 @@ describe('REGRESION: Magica 5 no limita la recuperacion a una mano de 9 cartas',
 
     expect(legalActions(state, 0).some((action) => action.type === 'SELECT_MAGIC' && action.card === m5)).toBe(true);
 
+    // Con el campo lleno solo existe la opción de recuperar a la mano:
+    // el efecto se resuelve automáticamente y la Mágica se sustituye por el monstruo.
     const selecting = reducer(state, { type: 'SELECT_MAGIC', card: m5 });
-    expect(selecting.selection.kind).toBe('revive-choice');
-    const choices = legalActions(selecting, 0);
-    expect(choices.some((action) => action.type === 'REVIVE_CHOICE' && action.choice === 'hand')).toBe(true);
-    expect(choices.some((action) => action.type === 'REVIVE_CHOICE' && action.choice === 'field')).toBe(false);
+    expect(selecting.selection.kind).toBe('none');
+    expect(selecting.players[0].hand).toHaveLength(hand.length);
+    expect(selecting.players[0].hand).toContain(recovered);
+    expect(selecting.players[0].hand).not.toContain(m5);
+    expect(selecting.players[0].graveyard).not.toContain(recovered);
   });
 });
 
