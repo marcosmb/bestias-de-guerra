@@ -380,21 +380,16 @@ function App() {
     roomId, 
     playerRole, 
     isHost, 
-    opponentConnected, 
-    createRoom, 
-    joinRoom, 
-    leaveRoom, 
-    dispatchAction, 
-    sendRematch, 
-    isConnected, 
-    error: onlineError,
-    waitingForOpponent
+    createRoom,
+    joinRoom,
+    leaveRoom,
+    dispatchAction,
+    waitingForOpponent,
   } = useOnlineGame();
   const [flow, setFlow] = useState<FlowPhase>('menu');
   const [onlineRoomId, setOnlineRoomId] = useState<string>('');
   const [onlinePlayerName, setOnlinePlayerName] = useState<string>('');
   const [storedHistory, setStoredHistory] = useState<MatchHistory | null>(null);
-  const [copied, setCopied] = useState(false);
   const [menuBackgroundIndex, setMenuBackgroundIndex] = useState(() => Number(window.localStorage.getItem('bg-menu-index') ?? 0));
   const [menuBackgroundMode, setMenuBackgroundMode] = useState<BackgroundMode>(() => window.localStorage.getItem('bg-menu-mode') === 'fixed' ? 'fixed' : 'slideshow');
   const [gameBackgroundIndex, setGameBackgroundIndex] = useState(() => Number(window.localStorage.getItem('bg-game-index') ?? 0));
@@ -649,8 +644,6 @@ function App() {
             roomUrl={roomUrl}
             onCopyLink={() => {
               navigator.clipboard.writeText(roomUrl);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
             }}
             onClose={() => {
               leaveRoom();

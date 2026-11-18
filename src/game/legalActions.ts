@@ -285,11 +285,10 @@ function selectionActions(state: GameState, player: 0 | 1, me: PlayerState, opp:
       // Mágica 5: recuperar del cementerio a la mano o al campo.
       const out: Action[] = [];
 
-      // A la mano: no hay límite de cantidad; solo se evita recuperar una carta
-      // que ya esté representada por OTRA COPIA PROPIA (la del rival no lo impide).
+      // A la mano: la Mágica 5 se sustituye por el Monstruo recuperado, sin
+      // límite de tamaño; solo se impide recuperar otra copia propia.
       const alCementerio = me.graveyard.filter((c) => c.type === 'monster');
-      const aLaManoPosible =
-        alCementerio.some((c) => !hasOwnCopy(me.hand, c));
+      const aLaManoPosible = alCementerio.some((c) => !hasOwnCopy(me.hand, c));
       if (aLaManoPosible) {
         out.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'hand' });
       }

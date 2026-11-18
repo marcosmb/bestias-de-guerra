@@ -44,15 +44,15 @@ import {
  *
  * Valores reproducidos con el estado actual del motor, incluidas las reglas
  * vigentes de Mágica 5 (recuperar a la mano no tiene límite de tamaño):
- *   · motor / arnés ...... `d82786a4`
- *   · CPU de producto .... `54503823`
+ *   · motor / arnés ...... `c0afddc3`
+ *   · CPU de producto .... `6d7425db`
  *
  * Se actualizan las referencias porque corresponden al flujo actual del motor,
  * no para ocultar un fallo funcional.
  */
 const ENGINE_BASELINE = {
-  harness: 'd82786a4',
-  cpu: '54503823',
+  harness: 'c0afddc3',
+  cpu: '6d7425db',
 } as Record<'harness' | 'cpu', string>;
 
 /**
@@ -61,16 +61,31 @@ const ENGINE_BASELINE = {
  * invocarla durante la fase interna trap-response.
  */
 const KNOWN_DEFECTS: Record<'harness' | 'cpu', FindingCode[]> = {
-  harness: ['CARD_LOST'],
-  cpu: ['CARD_LOST'],
+  harness: [],
+  cpu: [],
 };
 
-/** No se observan rechazos de la CPU en la referencia actual. */
+/** No se admiten pérdidas, duplicaciones ni rechazos de acciones por la CPU. */
 const CPU_REJECTIONS_BASELINE = 0;
 
 const SEED_BASE = 1;
 const HARNESS_GAMES = 60;
 const CPU_GAMES = 45;
+
+describe('semillas problemáticas CARD_LOST — repetición', () => {
+  it.each([59, 42, 19, 14, 46, 36])('arnés local, semilla %i: conserva cada instancia', (seed) => {
+    const result = simulateGame({ seed, driver: 'harness' });
+    expect(result.endReason).not.toBe('unfinished');
+    expect(result.findings.filter((finding) => finding.code === 'CARD_LOST' || finding.code === 'CARD_DUPLICATED')).toEqual([]);
+  });
+
+  it.each([19, 13, 28, 25, 38, 5])('CPU, semilla %i: no pierde cartas ni rechaza acciones', (seed) => {
+    const result = simulateGame({ seed, driver: 'cpu' });
+    expect(result.endReason).not.toBe('unfinished');
+    expect(result.cpuRejections).toBe(0);
+    expect(result.findings.filter((finding) => finding.code === 'CARD_LOST' || finding.code === 'CARD_DUPLICATED')).toEqual([]);
+  });
+});
 
 describe('F0 · red de seguridad — invariantes del motor', () => {
   const harness = runTournament({ driver: 'harness', games: HARNESS_GAMES, seedBase: SEED_BASE });

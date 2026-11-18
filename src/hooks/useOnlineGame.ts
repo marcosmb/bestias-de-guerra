@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, type OnlineGameState } from '../lib/supabase';
+import type { Action, GameState, PlayerState } from '../game/types';
 import { createPlayer, drawCards, shuffleDeck } from '../game/types';
-import { legalActions, isLegalAction } from '../game/legalActions';
+import { isLegalAction } from '../game/legalActions';
 import { buildDeck } from '../game/cardData';
 import { reducer } from '../game/useGame';
 
@@ -9,7 +10,7 @@ export type GameMode = 'local' | 'cpu' | 'online';
 
 export type OnlineGameHook = {
   // Estado del juego
-  gameState: any; // GameState from the engine
+  gameState: GameState | null;
   mode: GameMode;
   difficulty: 'easy' | 'normal' | 'hard' | 'expert';
   
@@ -25,7 +26,7 @@ export type OnlineGameHook = {
   createRoom: (playerName: string) => Promise<string>;
   joinRoom: (roomId: string, playerName: string) => Promise<boolean>;
   leaveRoom: () => Promise<void>;
-  dispatchAction: (action: any) => void;
+  dispatchAction: (action: Action) => void;
   sendRematch: () => void;
   
   // Estado de conexión
@@ -35,10 +36,16 @@ export type OnlineGameHook = {
 
 const INITIAL_HAND_SIZE = 7;
 
+type RemoteActionPayload = { playerId: string; payload: Action };
+type RemoteSyncPayload = {
+  playerId: string;
+  payload: { gameStateP1: GameState | null; gameStateP2: GameState | null };
+};
+
 export function useOnlineGame(): OnlineGameHook {
-  const [gameState, setGameState] = useState<any>(null);
+  const [gameState, setGameState] = useState<GameState | null>(null);
   const [mode, setMode] = useState<'local' | 'cpu' | 'online'>('local');
-  const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard' | 'expert'>('normal');
+  const difficulty = 'normal';
   
   // Estado online
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -46,18 +53,17 @@ export function useOnlineGame(): OnlineGameHook {
   const [isHost, setIsHost] = useState(false);
   const [opponentConnected, setOpponentConnected] = useState(false);
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
-  const [myTurn, setMyTurn] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const channelRef = useRef<any>(null);
-  const gameStateRef = useRef<any>(null);
-  const realGameStateRef = useRef<any>(null); // Estado REAL sin filtrar (fuente de verdad)
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const gameStateRef = useRef<GameState | null>(null);
+  const realGameStateRef = useRef<GameState | null>(null); // Estado REAL sin filtrar (fuente de verdad)
   const myPlayerIdRef = useRef<string>('');
   const roomIdRef = useRef<string>('');
   const isProcessingRef = useRef(false);
   const isHostRef = useRef(false);
-  const presenceRef = useRef<any>(null);
+  const presenceRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const gameInitializedRef = useRef(false);
   const playerRoleRef = useRef<'player1' | 'player2' | 'spectator' | null>(null);
   
@@ -78,14 +84,6 @@ export function useOnlineGame(): OnlineGameHook {
     }
   }, [gameState]);
   
-  // Actualizar myTurn cuando cambia gameState o playerRole
-  useEffect(() => {
-    if (gameState && playerRole) {
-      const myIndex = playerRoleRef.current === 'player1' ? 0 : 1;
-      setMyTurn(gameState.currentPlayer === myIndex);
-    }
-  }, [gameState, playerRole]);
-  
   // Sincronizar playerRoleRef cuando cambia playerRole
   useEffect(() => {
     playerRoleRef.current = playerRole;
@@ -101,15 +99,13 @@ export function useOnlineGame(): OnlineGameHook {
   }, []);
   
   // Filtrar estado para privacidad: cada jugador solo ve su mano
-  const filterStateForPlayer = useCallback((state: any, playerIndex: 0 | 1): any => {
-    if (!state) return null;
-    return {
+  const filterStateForPlayer = useCallback((state: GameState, playerIndex: 0 | 1): GameState => ({
       ...state,
-      players: state.players.map((p: any, i: number) => ({
+      players: state.players.map((p, i) => ({
         ...p,
         hand: i === playerIndex 
           ? p.hand 
-          : p.hand.map((card: any) => ({ 
+          : p.hand.map((card) => ({
               ...card, 
               hidden: true, 
               // Preservar campos necesarios para CardView (imagen) pero marcar como oculta
@@ -120,7 +116,7 @@ export function useOnlineGame(): OnlineGameHook {
             })),
         deck: i === playerIndex 
           ? p.deck 
-          : p.deck.map((card: any) => ({ 
+          : p.deck.map((card) => ({
               ...card, 
               hidden: true,
               type: card.type || 'hidden',
@@ -128,13 +124,12 @@ export function useOnlineGame(): OnlineGameHook {
               number: card.number,
               name: card.name,
             })),
-      })),
-    };
-  }, []);
+      })) as [PlayerState, PlayerState],
+    }), []);
   
   // Función para enviar acción al oponente
-  const broadcastAction = useCallback(async (action: any) => {
-    if (!roomIdRef.current) return;
+  const broadcastAction = useCallback(async (action: Action) => {
+    if (!roomIdRef.current || !channelRef.current) return;
     
     const actionPayload = {
       type: 'action',
@@ -147,7 +142,7 @@ export function useOnlineGame(): OnlineGameHook {
       actionType: action?.type,
       currentPlayer: gameStateRef.current?.currentPlayer,
       playerRole: playerRoleRef.current,
-      player2Field: realGameStateRef.current?.players[1]?.field?.map((f: any, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
+      player2Field: realGameStateRef.current?.players[1]?.field?.map((f, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
       timestamp: Date.now(),
     });
     
@@ -159,7 +154,7 @@ export function useOnlineGame(): OnlineGameHook {
   }, []);
   
   // Función para enviar sync completo del estado (filtrado para cada jugador)
-  const broadcastSync = useCallback(async (fullState: any) => {
+  const broadcastSync = useCallback(async (fullState: GameState) => {
     if (!roomIdRef.current || !channelRef.current) return;
     
     // Enviar estado filtrado para cada jugador
@@ -179,8 +174,8 @@ export function useOnlineGame(): OnlineGameHook {
       currentPlayer: fullState.currentPlayer,
       turnCount: fullState.turnCount,
       stateVersion: fullState.stateVersion,
-      player1Field: fullState.players[0].field.map((f: any, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
-      player2Field: fullState.players[1].field.map((f: any, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
+      player1Field: fullState.players[0].field.map((f, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
+      player2Field: fullState.players[1].field.map((f, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
     });
     
     await channelRef.current.send({
@@ -191,7 +186,7 @@ export function useOnlineGame(): OnlineGameHook {
   }, [filterStateForPlayer]);
   
   // Manejar acción recibida del oponente
-  const handleRemoteAction = useCallback((payload: any) => {
+  const handleRemoteAction = useCallback((payload: RemoteActionPayload) => {
     if (payload.playerId === myPlayerIdRef.current) return;
     if (isProcessingRef.current) return;
     
@@ -221,7 +216,7 @@ export function useOnlineGame(): OnlineGameHook {
       const opponentPlayer = playerRoleRef.current === 'player1' ? 1 : 0;
       if (!isLegalAction(currentState, opponentPlayer, payload.payload)) {
         console.warn('[ONLINE-TRACE] A remote action REJECTED: not legal', payload.payload);
-        broadcastSync(realGameStateRef.current);
+        broadcastSync(currentState);
         return;
       }
       
@@ -258,17 +253,17 @@ export function useOnlineGame(): OnlineGameHook {
       } finally {
         isProcessingRef.current = false;
       }
-  }, [broadcastSync, playerRole]);
+  }, [broadcastSync, filterStateForPlayer, playerRole]);
   
   // Manejar sincronización completa del estado
-  const handleSync = useCallback((payload: any) => {
+  const handleSync = useCallback((payload: RemoteSyncPayload) => {
     if (payload.playerId === myPlayerIdRef.current) return;
     if (!payload.payload) return;
     
     console.log('[ONLINE-TRACE] B SYNC RECEIVED', {
       payloadKeys: Object.keys(payload.payload),
-      player1Field: payload.payload.gameStateP1?.players[0]?.field?.map((f: any, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
-      player2Field: payload.payload.gameStateP2?.players[1]?.field?.map((f: any, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
+      player1Field: payload.payload.gameStateP1?.players[0]?.field?.map((f, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
+      player2Field: payload.payload.gameStateP2?.players[1]?.field?.map((f, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
     });
     
     // Recibir el estado filtrado para nuestro jugador
@@ -290,8 +285,8 @@ export function useOnlineGame(): OnlineGameHook {
         currentPlayer: gameStateForMe.currentPlayer,
         turnCount: gameStateForMe.turnCount,
         stateVersion: incomingVersion,
-        player1Field: gameStateForMe.players[0].field.map((f: any, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
-        player2Field: gameStateForMe.players[1].field.map((f: any, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
+        player1Field: gameStateForMe.players[0].field.map((f, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
+        player2Field: gameStateForMe.players[1].field.map((f, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
       });
       // Actualizar también el estado REAL (fuente de verdad) con el estado completo recibido
       const fullRealState = myIndex === 0 ? payload.payload.gameStateP1 : payload.payload.gameStateP2;
@@ -301,7 +296,7 @@ export function useOnlineGame(): OnlineGameHook {
   }, []);
   
   // Función compartida para inicializar partida completa (igual que START_GAME)
-  const initializeFullGameState = useCallback((player1Name: string, player2Name: string) => {
+  const initializeFullGameState = useCallback((player1Name: string, player2Name: string): GameState => {
     const deck1 = shuffleDeck(buildDeck());
     let p1 = createPlayer(0, player1Name, deck1);
     p1 = drawCards(p1, INITIAL_HAND_SIZE);
@@ -316,10 +311,11 @@ export function useOnlineGame(): OnlineGameHook {
     return {
       phase: 'playing',
       mode: 'online',
+      difficulty: 'normal',
       currentPlayer: startingPlayer,
       turnCount: 0,
       stateVersion: 0,
-      players: [p1, p2] as [any, any],
+      players: [p1, p2] as [PlayerState, PlayerState],
       selection: { kind: 'none' },
       log: ['¡Empieza la partida! Empieza ' + startingPlayerName + '.'],
       winner: null,
@@ -391,10 +387,11 @@ export function useOnlineGame(): OnlineGameHook {
           // Actualizar el estado REAL con el nombre real del jugador 2
           const updatedRealState = {
             ...realGameStateRef.current,
-            players: [
-              realGameStateRef.current.players[0],
-              { ...realGameStateRef.current.players[1], name: opponentName }
-            ],
+      players: [
+        realGameStateRef.current.players[0],
+        { ...realGameStateRef.current.players[1], name: opponentName }
+      ] as [PlayerState, PlayerState],
+
             log: realGameStateRef.current.turnCount === 0
               ? ['¡Empieza la partida! Empieza ' + (
                   realGameStateRef.current.currentPlayer === 0
@@ -425,7 +422,7 @@ export function useOnlineGame(): OnlineGameHook {
         }
       })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
-        const otherPresence = newPresences.find((p: any) => p.user_id !== myPlayerIdRef.current);
+        const otherPresence = newPresences.find((p) => p.user_id !== myPlayerIdRef.current);
         if (otherPresence) {
           setOpponentConnected(true);
           // Fallback: si el broadcast player-joined no llegó, Presence join también limpia la espera
@@ -433,7 +430,7 @@ export function useOnlineGame(): OnlineGameHook {
         }
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        const leftPlayer = leftPresences.find((p: any) => p.user_id !== myPlayerIdRef.current);
+        const leftPlayer = leftPresences.find((p) => p.user_id !== myPlayerIdRef.current);
         if (leftPlayer) {
           setOpponentConnected(false);
           // Solo el host debe volver a esperar rival; el guest no ve el modal
@@ -472,7 +469,7 @@ export function useOnlineGame(): OnlineGameHook {
     gameInitializedRef.current = true;
     
     return roomCode;
-  }, [handleRemoteAction, handleSync, broadcastSync, initializeFullGameState, filterStateForPlayer]);
+  }, [handleRemoteAction, handleSync, initializeFullGameState, filterStateForPlayer]);
   
   const joinRoom = useCallback(async (roomId: string, playerName: string): Promise<boolean> => {
     setError(null);
@@ -483,23 +480,23 @@ export function useOnlineGame(): OnlineGameHook {
     const upperRoomId = roomId.toUpperCase();
     
     // Verificar que la sala existe y obtener el estado de la partida YA INICIADO
-    const { data: room, error: roomError } = await supabase
+    const { data: roomData, error: roomError } = await supabase
       .from('game_rooms')
       .select('*')
       .eq('id', upperRoomId)
       .single();
     
-    if (roomError || !room) {
+    if (roomError || !roomData) {
       setError('Sala no encontrada');
       return false;
     }
+    const room = roomData as OnlineGameState;
     
     if (room.player2.id) {
       setError('La sala ya está completa');
       return false;
     }
     
-    const hostName = room.player1.name;
     const existingGameState = room.game_state;
     
     // Unirse como jugador 2
@@ -523,7 +520,7 @@ export function useOnlineGame(): OnlineGameHook {
       players: [
         existingGameState.players[0],
         { ...existingGameState.players[1], name: playerName }
-      ],
+      ] as [PlayerState, PlayerState],
       log: existingGameState.turnCount === 0
         ? ['¡Empieza la partida! Empieza ' + (
             existingGameState.currentPlayer === 0
@@ -555,13 +552,13 @@ export function useOnlineGame(): OnlineGameHook {
         handleSync(payload.payload);
       })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
-        const otherPresence = newPresences.find((p: any) => p.user_id !== myPlayerIdRef.current);
+        const otherPresence = newPresences.find((p) => p.user_id !== myPlayerIdRef.current);
         if (otherPresence) {
           setOpponentConnected(true);
         }
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        const leftPlayer = leftPresences.find((p: any) => p.user_id !== myPlayerIdRef.current);
+        const leftPlayer = leftPresences.find((p) => p.user_id !== myPlayerIdRef.current);
         if (leftPlayer) {
           setOpponentConnected(false);
         }
@@ -641,7 +638,7 @@ export function useOnlineGame(): OnlineGameHook {
     gameInitializedRef.current = false;
   }, []);
   
-  const dispatchAction = useCallback((action: any) => {
+  const dispatchAction = useCallback((action: Action) => {
     // Leer siempre desde refs: el callback puede sobrevivir a varios renders y
     // no debe quedarse con un gameState antiguo en partidas online.
     const currentViewState = gameStateRef.current;

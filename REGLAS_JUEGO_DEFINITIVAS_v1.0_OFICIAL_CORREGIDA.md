@@ -794,7 +794,7 @@ Una vez elegido el destino, el juego recupera automáticamente el Monstruo elegi
 
 La opción elegida debe ser posible:
 
-- Para llevarlo a la mano debe existir espacio dentro del máximo de 9 cartas y el Monstruo debe cumplir la restricción de no tener ya otra copia propia en la mano.
+- Para llevarlo a la mano no se exige espacio dentro de un máximo de cartas; el Monstruo no debe tener ya otra copia propia en la mano.
 - Para llevarlo al campo debe existir al menos un espacio libre de Monstruo.
 
 Si ninguna de las dos opciones es posible, **la Mágica no puede utilizarse** y no se consume.

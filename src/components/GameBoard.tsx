@@ -611,8 +611,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   const selectedCardPanelRef = useRef<HTMLDivElement>(null);
   const [selectedFieldUid, setSelectedFieldUid] = useState<string | null>(null);
   const [pendingTrap5Choice, setPendingTrap5Choice] = useState<string | null>(null);
+  const [, setLastCombat] = useState<{ damage: number; player: 0 | 1 } | null>(null);
   const [summonedUids, setSummonedUids] = useState<Set<string>>(new Set());
-  const [lastCombat, setLastCombat] = useState<{ damage: number; player: 0 | 1 } | null>(null);
   const [zoomCard, setZoomCard] = useState<{
     card: Card | null;
     fieldMonster?: FieldMonster | null;
@@ -1108,8 +1108,6 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
 
   const handleOpponentFieldClick = (uid: string) => {
     if (sel.kind === 'attack' || sel.kind === 'attack-or-direct') {
-      const target = opp.field.find((fm) => fm?.uid === uid) ?? null;
-      const attacker = me.field.find((fm) => fm?.uid === sel.attackerUid) ?? null;
       const attackAction = {
         type: 'DECLARE_ATTACK' as const,
         attackerUid: sel.attackerUid,
@@ -1294,29 +1292,12 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     return () => window.clearTimeout(timer);
   }, [dicePrompt, state.diceResult, state.pendingTrap, state.turnCount, state.log.length, dispatch]);
 
-  // La etiqueta identifica al propietario original de la carta, no al atacante.
-  // En partidas online usamos el nombre real; en local/CPU distinguimos propio y rival.
-  const pendingTrapOwner = state.pendingTrap
-    ? (state.pendingTrap.trap.owner ?? state.pendingTrap.defenderPlayer)
-    : null;
-  const trapOwnerName = pendingTrapOwner === null
-    ? ''
-    : (state.players[pendingTrapOwner]?.name || `Jugador ${pendingTrapOwner + 1}`);
-  const trapHeader = pendingTrapOwner === null
-    ? 'Trampa'
-    : state.mode === 'online'
-      ? `Trampa de ${trapOwnerName}`
-      : pendingTrapOwner === viewer
-        ? `Trampa del Jugador ${pendingTrapOwner + 1}`
-        : 'Trampa del rival';
-
   const selectionPromptText = (): string => {
     switch (sel.kind) {
       case 'attack': return 'Elige un monstruo enemigo para atacar';
       case 'attack-or-direct': return 'Elige un Monstruo enemigo para atacar o realiza un ataque directo a sus LP';
       case 'place-trap': return 'Elige tu monstruo para colocar la trampa';
       case 'place-magic':
-        // Regla 5: la Mágica 8 es la única que va sobre un Monstruo rival.
         return magicSide === 'enemy'
           ? 'Elige un monstruo rival para colocar la mágica'
           : 'Elige uno de tus monstruos para colocar la mágica';

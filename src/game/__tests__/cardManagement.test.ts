@@ -440,6 +440,25 @@ describe('Gestión de cartas — una Mágica ilegal no se consume', () => {
     expect(state.players[0].cardsPlayedThisTurn).toBe(1);
   });
 
+  it.each([0, 1])('Mágica 10 roba las cartas disponibles cuando el mazo tiene %i', (deckSize) => {
+    const draw = magic('m10', { kind: 'draw_cards', amount: 2 });
+    const available = Array.from({ length: deckSize }, (_, i) => monster(`available-${i}`, i + 1));
+    let state = setHand(baseState(), 0, [draw]);
+    state = {
+      ...state,
+      players: [
+        { ...state.players[0], deck: available },
+        state.players[1],
+      ],
+    };
+
+    state = run(state, { type: 'SELECT_MAGIC', card: draw });
+
+    expect(state.players[0].hand).toEqual(available);
+    expect(state.players[0].deck).toHaveLength(0);
+    expect(state.players[0].cardsPlayedThisTurn).toBe(1);
+  });
+
   it('Mágica 10 roba 2 cartas por encima de 9 y se elimina sin descartar ninguna', () => {
     const draw = magic('m10', { kind: 'draw_cards', amount: 2 });
     const startingHand = [

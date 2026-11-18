@@ -177,6 +177,23 @@ function playCardFromHand(player: PlayerState, card: Card): PlayerState {
   return { ...removeCardFromHand(player, card), cardsPlayedThisTurn: player.cardsPlayedThisTurn + 1 };
 }
 
+function consumeInstantMagic(players: [PlayerState, PlayerState], playerIndex: 0 | 1, card: MagicCard): void {
+  players[playerIndex] = {
+    ...removeCardFromHand(players[playerIndex], card),
+    cardsPlayedThisTurn: players[playerIndex].cardsPlayedThisTurn + 1,
+  };
+  const owner = ownerOf(card) ?? playerIndex;
+  const instanceId = card.instanceId;
+  const alreadyInGraveyard = players.some((player) =>
+    player.graveyard.some((candidate) => instanceId !== undefined
+      ? candidate.instanceId === instanceId
+      : candidate === card),
+  );
+  if (!alreadyInGraveyard) {
+    players[owner] = { ...players[owner], graveyard: [...players[owner].graveyard, card] };
+  }
+}
+
 /**
  * Elimina de la mano UNA sola copia: la carta que se ha jugado, identificada por
  * su `instanceId`.
@@ -335,7 +352,13 @@ function applyTrapEffect(
     case 'negate_destroy_card': {
       negateAttack = true;
       skipCombat = true;
-      const hasTarget = players[defenderPlayer].field.some((f) => f !== null && (f.magic || (f.trap && f.trap.id !== trap.id)));
+      const isActivatedTrap = (candidate: TrapCard): boolean =>
+        trap.instanceId !== undefined
+          ? candidate.instanceId === trap.instanceId
+          : candidate === trap;
+      const hasTarget = players[defenderPlayer].field.some(
+        (f) => f !== null && (f.magic || (f.trap && !isActivatedTrap(f.trap))),
+      );
       if (hasTarget) {
         // Trampa 5: el atacante (rival del propietario de la Trampa) elige qué
         // carta asociada del defensor destruir. La selección queda pendiente.
@@ -703,7 +726,18 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
       break;
     }
     case 'dice_damage': {
-      return { ...state, phase: 'dice-roll', pendingDice: { reason: card.name, onRoll: (roll: number) => ({ type: 'ROLL_DICE', roll }) }, diceResult: null, selection: { kind: 'none' } };
+      return {
+        ...state,
+        phase: 'dice-roll',
+        pendingDice: {
+          reason: card.name,
+          onRoll: (roll: number) => ({ type: 'ROLL_DICE', roll }),
+          magicCardInstanceId: card.instanceId,
+          magicPlayer: me,
+        },
+        diceResult: null,
+        selection: { kind: 'none' },
+      };
     }
     case 'clean_opp_field': {
       const allFms = players[opp].field.filter(Boolean) as FieldMonster[];
@@ -714,7 +748,9 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
   }
 
   // La Mágica solo se retira de la mano cuando el efecto se resolvió de verdad.
-  if (resolves && (card.placement === 'instant' || targetUid)) {
+  if (resolves && card.placement === 'instant') {
+    consumeInstantMagic(players, me, card);
+  } else if (resolves && targetUid) {
     players[me] = playCardFromHand(players[me], card);
   }
 
@@ -1476,10 +1512,14 @@ export function reducer(state: GameState, action: Action): GameState {
         const opp = (cp === 0 ? 1 : 0) as 0 | 1;
         players[opp] = applyDamage(players[opp], roll);
         log.push(`${roll} PV de daño al rival.`);
-        // consume the magic card
-        const me = state.currentPlayer;
-        const magicCard = state.players[me].hand.find((c) => c.type === 'magic' && c.name.includes('dado'));
-        if (magicCard) players[me] = playCardFromHand(players[me], magicCard);
+        const magicPlayer = state.pendingDice?.magicPlayer;
+        const instanceId = state.pendingDice?.magicCardInstanceId;
+        if (magicPlayer !== undefined && instanceId !== undefined) {
+          const magicCard = state.players[magicPlayer].hand.find(
+            (candidate) => candidate.instanceId === instanceId,
+          );
+          if (magicCard?.type === 'magic') consumeInstantMagic(players, magicPlayer, magicCard);
+        }
       }
 
       const winResult = checkWinner(players);
@@ -1688,8 +1728,8 @@ export function reducer(state: GameState, action: Action): GameState {
         };
         log.push(`${action.card.name}: ${revived.name} revivido del cementerio al campo en posición ${position === 'attack' ? 'Ataque' : 'Defensa'}.`);
       }
-      // Consumir la carta de la mano
-      players[me] = playCardFromHand(players[me], action.card);
+  consumeInstantMagic(players, me, action.card);
+
       const winResult = checkWinner(players);
       const newState: GameState = {
         ...state,
