@@ -95,9 +95,72 @@ function hidePendingTrap(
   };
 }
 
+
+function hiddenCardNames(state: GameState, viewerIndex: 0 | 1): string[] {
+  const opponent = state.players[viewerIndex === 0 ? 1 : 0];
+  const names = new Set<string>();
+  const add = (card: Card | null | undefined) => {
+    if (card?.name && card.name !== 'Carta oculta') names.add(card.name);
+  };
+
+  // Hand and deck are always private to their owner.
+  opponent.hand.forEach(add);
+  opponent.deck.forEach(add);
+
+  // Face-down monsters and unrevealed associated traps are also private.
+  for (const monster of opponent.field) {
+    if (!monster) continue;
+    if (monster.faceDown) add(monster.card);
+    if (monster.trap && !monster.trapRevealed) add(monster.trap);
+    // Associated magic cards are not revealed by the online rules.
+    if (monster.magic) add(monster.magic);
+  }
+
+  // A pending selection belongs to the active player and can expose its card.
+  if (state.currentPlayer !== viewerIndex) {
+    const selection = state.selection;
+    if (selection.kind === 'place-trap' || selection.kind === 'place-magic' ||
+        selection.kind === 'magic-target-monster' || selection.kind === 'revive-choice') {
+      add(selection.card);
+    }
+    for (const pending of state.pendingTurnStartSelections ?? []) {
+      if (pending.kind === 'place-trap' || pending.kind === 'place-magic' ||
+          pending.kind === 'magic-target-monster' || pending.kind === 'revive-choice') {
+        add(pending.card);
+      }
+    }
+  }
+
+  if (state.pendingTrap && state.pendingTrap.defenderPlayer !== viewerIndex) {
+    add(state.pendingTrap.trap);
+    const defender = opponent.field.find((fieldMonster) =>
+      fieldMonster?.uid === state.pendingTrap?.defenderUid);
+    if (defender?.faceDown) add(state.pendingTrap.defenderCard);
+  }
+  return [...names].sort((a, b) => b.length - a.length);
+}
+
+function redactHiddenNames(value: string, names: string[]): string {
+  return names.reduce((result, name) => result.split(name).join('Carta oculta'), value);
+}
+
 export function filterOnlineState(state: GameState, viewerIndex: 0 | 1): GameState {
+  const privateNames = hiddenCardNames(state, viewerIndex);
   return {
     ...state,
+    // Historial y último combate también son superficies de salida: sus textos
+    // pueden contener nombres de cartas que siguen ocultas para este jugador.
+    log: state.log.map((entry) => redactHiddenNames(entry, privateNames)),
+    lastCombat: state.lastCombat ? {
+      ...state.lastCombat,
+      log: redactHiddenNames(state.lastCombat.log, privateNames),
+      attackerCard: state.lastCombat.attackerCard && privateNames.includes(state.lastCombat.attackerCard.name)
+        ? hiddenHandCard('hidden-last-combat-attacker')
+        : state.lastCombat.attackerCard,
+      defenderCard: state.lastCombat.defenderCard && privateNames.includes(state.lastCombat.defenderCard.name)
+        ? hiddenHandCard('hidden-last-combat-defender')
+        : state.lastCombat.defenderCard,
+    } : null,
     selection: state.currentPlayer === viewerIndex
       ? state.selection
       : hidePendingCardSelection(state.selection, state.currentPlayer),
