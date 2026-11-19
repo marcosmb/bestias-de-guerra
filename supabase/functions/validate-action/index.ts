@@ -44,6 +44,14 @@ function allCards(state: GameState): Card[] {
       state.selection.kind === "magic-target-monster" || state.selection.kind === "revive-choice") {
     cards.push(state.selection.card);
   }
+  // Turn-start effects can hold a card outside the hand/field while awaiting
+  // the player's placement choice. It remains canonical and must be resolvable.
+  for (const selection of state.pendingTurnStartSelections ?? []) {
+    if (selection.kind === "place-trap" || selection.kind === "place-magic" ||
+        selection.kind === "magic-target-monster" || selection.kind === "revive-choice") {
+      cards.push(selection.card);
+    }
+  }
   return cards;
 }
 
