@@ -75,12 +75,29 @@ function hideFieldMonster(fm: FieldMonster, playerIndex: 0 | 1, slot: number): F
   };
 }
 
+function hidePendingTrap(
+  pendingTrap: GameState['pendingTrap'],
+  viewerIndex: 0 | 1,
+): GameState['pendingTrap'] {
+  if (!pendingTrap || pendingTrap.defenderPlayer === viewerIndex) return pendingTrap;
+  return {
+    ...pendingTrap,
+    trap: hiddenTrap(`hidden-${pendingTrap.defenderPlayer}-pending-trap`),
+  };
+}
+
 export function filterOnlineState(state: GameState, viewerIndex: 0 | 1): GameState {
   return {
     ...state,
     selection: state.currentPlayer === viewerIndex
       ? state.selection
       : hidePendingCardSelection(state.selection, state.currentPlayer),
+    pendingTurnStartSelections: state.pendingTurnStartSelections?.map((selection) =>
+      state.currentPlayer === viewerIndex
+        ? selection
+        : hidePendingCardSelection(selection, state.currentPlayer),
+    ),
+    pendingTrap: hidePendingTrap(state.pendingTrap, viewerIndex),
     players: state.players.map((player, index) => {
       if (index === viewerIndex) return player;
 

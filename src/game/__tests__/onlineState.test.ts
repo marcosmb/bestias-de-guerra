@@ -104,6 +104,46 @@ describe('filterOnlineState', () => {
     expect(hiddenMagicSelection.card.instanceId).not.toBe(selectedMagic.instanceId);
   });
 
+  it('hides the defender trap in a pending trap from the attacker', () => {
+    const state = stateWithPlayers();
+    const defenderTrap = { ...TRAPS[4], instanceId: 'pending-trap-secret', owner: 1 as const };
+    const attackerCard = state.players[0].hand.find((card) => card.type === 'monster');
+    const defenderCard = state.players[1].hand.find((card) => card.type === 'monster');
+    if (!attackerCard || attackerCard.type !== 'monster' || !defenderCard || defenderCard.type !== 'monster') {
+      throw new Error('Expected monsters in hands');
+    }
+    state.pendingTrap = {
+      attackerUid: 'a',
+      defenderUid: 'd',
+      trap: defenderTrap,
+      defenderPlayer: 1,
+      attackerPlayer: 0,
+      attackerCard,
+      defenderCard,
+      defenderPosition: 'defense',
+    };
+
+    const attackerView = filterOnlineState(state, 0).pendingTrap;
+    expect(attackerView?.trap.name).toBe('Carta oculta');
+    expect(attackerView?.trap.instanceId).not.toBe(defenderTrap.instanceId);
+    expect(JSON.stringify(attackerView)).not.toContain(TRAPS[4].name);
+    expect(filterOnlineState(state, 1).pendingTrap?.trap).toEqual(defenderTrap);
+  });
+
+  it('hides opponent cards in turn-start selections', () => {
+    const state = stateWithPlayers();
+    const ownTrap = { ...TRAPS[4], instanceId: 'turn-start-secret', owner: 0 as const };
+    state.currentPlayer = 0;
+    state.pendingTurnStartSelections = [{ kind: 'place-trap', card: ownTrap }];
+
+    const opponentView = filterOnlineState(state, 1).pendingTurnStartSelections?.[0];
+    expect(opponentView?.kind).toBe('place-trap');
+    if (opponentView?.kind !== 'place-trap') throw new Error('Expected a trap selection');
+    expect(opponentView.card.name).toBe('Carta oculta');
+    expect(opponentView.card.instanceId).not.toBe(ownTrap.instanceId);
+    expect(filterOnlineState(state, 0).pendingTurnStartSelections).toEqual(state.pendingTurnStartSelections);
+  });
+
   it('retains revealed information but does not disclose the underlying owner or instance id for hidden cards', () => {
     const state = stateWithPlayers();
     const opponent = state.players[1];
