@@ -54,7 +54,7 @@ export function useOnlineGame(): OnlineGameHook {
 
   useEffect(() => { stateRef.current = gameState; }, [gameState]);
 
-  const setCurrentState = useCallback((next: GameState, version?: number) => {
+  const setCurrentState = useCallback((next: GameState | null, version?: number) => {
     stateRef.current = next;
     setGameState(next);
     if (typeof version === 'number') stateVersionRef.current = version;
@@ -190,7 +190,7 @@ export function useOnlineGame(): OnlineGameHook {
       roleRef.current = null;
       setRoomId(null);
       setPlayerRole(null);
-      setCurrentState(null as unknown as GameState);
+      setCurrentState(null);
       stateRef.current = null;
       stateVersionRef.current = 0;
       setOpponentConnected(false);
