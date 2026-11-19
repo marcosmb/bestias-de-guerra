@@ -189,8 +189,8 @@ describe('filterOnlineState', () => {
 
   it('redacts hidden opponent card names from log and last combat without changing dice result', () => {
     const state = stateWithPlayers();
-    const hidden = state.players[1].hand[0];
-    if (!hidden) throw new Error('Expected a hidden opponent card');
+    const hidden = state.players[1].deck.find((card) => card.type === 'monster');
+    if (!hidden || hidden.type !== 'monster') throw new Error('Expected a hidden opponent monster');
 
     state.log = [`El rival prepara ${hidden.name}.`];
     state.lastCombat = {
@@ -199,7 +199,7 @@ describe('filterOnlineState', () => {
       attackerDamage: 0,
       defenderDamage: 0,
       log: `La carta ${hidden.name} permanece oculta.`,
-      attackerCard: hidden.type === 'monster' ? hidden : undefined,
+      attackerCard: hidden,
       defenderCard: undefined,
     };
     state.diceResult = 4;
