@@ -489,7 +489,7 @@ describe('REGRESIÃ“N Â· el dado solo admite resultados entre 1 y 6', () => 
   it('rechaza un resultado fuera del rango y no altera la partida', () => {
     const estado = scene({
       phase: 'dice-roll',
-      pendingDice: { reason: 'DaÃ±o por dado', onRoll: (roll: number) => ({ type: 'ROLL_DICE', roll }) as Action },
+      pendingDice: { reason: 'DaÃ±o por dado' },
     });
     expect(reducer(estado, { type: 'ROLL_DICE', roll: 999 })).toBe(estado);
     expect(reducer(estado, { type: 'ROLL_DICE', roll: 0 })).toBe(estado);
