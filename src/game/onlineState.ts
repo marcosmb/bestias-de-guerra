@@ -1,5 +1,5 @@
-import type { Card, MagicCard, MonsterCard, TrapCard } from './cardData';
-import type { FieldMonster, GameState, PlayerState } from './types';
+import type { Card, MagicCard, MonsterCard, TrapCard } from './cardData.ts';
+import type { FieldMonster, GameState, PlayerState } from './types.ts';
 
 function hiddenHandCard(key: string): MonsterCard {
   return {
