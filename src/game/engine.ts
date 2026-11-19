@@ -5,7 +5,7 @@ import {
   type MagicCard,
   type MonsterCard,
   type TrapCard,
-} from './cardData';
+} from './cardData.ts';
 import {
   type Action,
   type CombatResult,
@@ -35,8 +35,8 @@ import {
   shuffleDeck,
   newInstanceId,
   indexOfCardInstance,
-} from './types';
-import { getTrap3CountingOrder } from './trapCounting';
+} from './types.ts';
+import { getTrap3CountingOrder } from './trapCounting.ts';
 
 // Motor de juego puro, compartido por el cliente y el servidor.
 // No importa React ni accede al navegador.
