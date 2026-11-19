@@ -49,6 +49,29 @@ using (
   and public.is_online_room_member(split_part((select realtime.topic()), ':', 2), (select auth.uid()))
 );
 
+-- Presence metadata is readable/writable only by members of the room.
+drop policy if exists "room members receive shared presence state" on realtime.messages;
+create policy "room members receive shared presence state"
+on realtime.messages
+for select
+to authenticated
+using (
+  split_part((select realtime.topic()), ':', 1) = 'room-presence'
+  and realtime.messages.extension = 'presence'
+  and public.is_online_room_member(split_part((select realtime.topic()), ':', 2), (select auth.uid()))
+);
+
+drop policy if exists "room members publish shared presence state" on realtime.messages;
+create policy "room members publish shared presence state"
+on realtime.messages
+for insert
+to authenticated
+with check (
+  split_part((select realtime.topic()), ':', 1) = 'room-presence'
+  and realtime.messages.extension = 'presence'
+  and public.is_online_room_member(split_part((select realtime.topic()), ':', 2), (select auth.uid()))
+);
+
 alter table public.game_rooms enable row level security;
 drop policy if exists "Anyone can create a room" on public.game_rooms;
 drop policy if exists "Anyone can delete rooms" on public.game_rooms;
