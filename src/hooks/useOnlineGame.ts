@@ -158,6 +158,16 @@ export function useOnlineGame(): OnlineGameHook {
       await connectRoom(result.roomId, 'player1');
       return result.roomId;
     } catch (createError) {
+      if (roomRef.current && roleRef.current === 'player1') {
+        try { await invokeLifecycle({ operation: 'leave', roomId: roomRef.current }); } catch { /* best-effort cleanup */ }
+      }
+      await closeChannels();
+      roomRef.current = null;
+      roleRef.current = null;
+      setRoomId(null);
+      setPlayerRole(null);
+      setWaitingForOpponent(false);
+      setIsConnected(false);
       const message = createError instanceof Error ? createError.message : 'Error creando sala';
       setError(message);
       throw createError;
@@ -182,6 +192,19 @@ export function useOnlineGame(): OnlineGameHook {
       await connectRoom(result.roomId, 'player2');
       return true;
     } catch (joinError) {
+      if (roomRef.current && roleRef.current === 'player2') {
+        try { await invokeLifecycle({ operation: 'leave', roomId: roomRef.current }); } catch { /* best-effort cleanup */ }
+      }
+      await closeChannels();
+      roomRef.current = null;
+      roleRef.current = null;
+      setRoomId(null);
+      setPlayerRole(null);
+      setOpponentConnected(false);
+      setWaitingForOpponent(false);
+      setIsConnected(false);
+      setGameState(null);
+      stateRef.current = null;
       setError(joinError instanceof Error ? joinError.message : 'Error uniéndose a la sala');
       return false;
     }
@@ -213,7 +236,7 @@ export function useOnlineGame(): OnlineGameHook {
     const current = stateRef.current;
     const id = roomRef.current;
     const role = roleRef.current;
-    if (!current || !id || (role !== 'player1' && role !== 'player2')) return;
+    if (!current || !id || waitingForOpponent || (role !== 'player1' && role !== 'player2')) return;
     if (dispatchingRef.current || current.currentPlayer !== (role === 'player1' ? 0 : 1)) return;
     if (!isLegalAction(current, role === 'player1' ? 0 : 1, action)) return;
 
@@ -241,7 +264,7 @@ export function useOnlineGame(): OnlineGameHook {
         dispatchingRef.current = false;
       }
     })();
-  }, [invokeLifecycle, setCurrentState]);
+  }, [invokeLifecycle, setCurrentState, waitingForOpponent]);
 
   const sendRematch = useCallback(() => {
     setError('La revancha online estará disponible cuando se implemente el endpoint de reinicio seguro.');
