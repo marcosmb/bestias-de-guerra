@@ -152,6 +152,13 @@ Deno.serve(async (req: Request) => {
 
       if (claimError) return json({ error: "Could not join room" }, 500);
       if (!claimed && room.player2_uid !== user.id) return json({ error: "Room was claimed by another player" }, 409);
+      if (!claimed && room.player2_uid === user.id) {
+        const existingPlayer2 = isRecord(room.player2) ? room.player2 : {};
+        const { error: reconnectError } = await db.from("game_rooms").update({
+          player2: { ...existingPlayer2, name: playerName, connected: true },
+        }).eq("id", roomId).eq("player2_uid", user.id);
+        if (reconnectError) return json({ error: "Could not reconnect player" }, 500);
+      }
 
       const { data: privateRow, error: privateError } = await db.from("room_private_state")
         .select("game_state, state_version").eq("room_id", roomId).maybeSingle();
@@ -168,19 +175,21 @@ Deno.serve(async (req: Request) => {
           ? [`¡Empieza la partida! Empieza ${state.currentPlayer === 0 ? ((room.player1 as { name?: string })?.name ?? "Jugador 1") : playerName}.`]
           : state.log,
       };
-      const { error: saveError } = await db.from("room_private_state").update({
+      const { data: savedState, error: saveError } = await db.from("room_private_state").update({
         game_state: updatedState,
         state_version: privateRow.state_version + 1,
         updated_at: new Date().toISOString(),
-      }).eq("room_id", roomId).eq("state_version", privateRow.state_version);
-      if (saveError) return json({ error: "Could not initialize joined player" }, 409);
+      }).eq("room_id", roomId).eq("state_version", privateRow.state_version)
+        .select("state_version").maybeSingle();
+      if (saveError) return json({ error: "Could not initialize joined player" }, 500);
+      if (!savedState) return json({ error: "Room state changed; retry joining" }, 409);
       const presenceChannel = db.channel("room-presence:" + roomId, { config: { private: true } });
       try {
         await presenceChannel.send({ type: "broadcast", event: "room-status", payload: { status: "player-joined" } });
       } finally {
         await db.removeChannel(presenceChannel);
       }
-      return json({ roomId, role: "player2", state: filterOnlineState(updatedState, 1), stateVersion: privateRow.state_version + 1 });
+      return json({ roomId, role: "player2", state: filterOnlineState(updatedState, 1), stateVersion: savedState.state_version });
     }
 
     if (body.operation === "get") {
