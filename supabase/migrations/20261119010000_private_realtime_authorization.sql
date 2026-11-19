@@ -44,6 +44,37 @@ using (
   )
 );
 
+-- Presence is shared room metadata only; it contains no card or game state.
+drop policy if exists "room members receive shared presence state" on realtime.messages;
+create policy "room members receive shared presence state"
+on realtime.messages
+for select
+to authenticated
+using (
+  split_part((select realtime.topic()), ':', 1) = 'room-presence'
+  and realtime.messages.extension = 'presence'
+  and exists (
+    select 1 from public.game_rooms r
+    where r.id = split_part((select realtime.topic()), ':', 2)
+      and (r.player1_uid = (select auth.uid()) or r.player2_uid = (select auth.uid()))
+  )
+);
+
+drop policy if exists "room members publish shared presence state" on realtime.messages;
+create policy "room members publish shared presence state"
+on realtime.messages
+for insert
+to authenticated
+with check (
+  split_part((select realtime.topic()), ':', 1) = 'room-presence'
+  and realtime.messages.extension = 'presence'
+  and exists (
+    select 1 from public.game_rooms r
+    where r.id = split_part((select realtime.topic()), ':', 2)
+      and (r.player1_uid = (select auth.uid()) or r.player2_uid = (select auth.uid()))
+  )
+);
+
 -- No client INSERT policy is granted: clients cannot broadcast actions or state.
 -- Authoritative server functions publish using the service role.
 
