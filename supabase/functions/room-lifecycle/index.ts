@@ -185,8 +185,20 @@ Deno.serve(async (req: Request) => {
         updated_at: new Date().toISOString(),
       }).eq("room_id", roomId).eq("state_version", privateRow.state_version)
         .select("state_version").maybeSingle();
-      if (saveError) return json({ error: "Could not initialize joined player" }, 500);
-      if (!savedState) return json({ error: "Room state changed; retry joining" }, 409);
+      if (saveError || !savedState) {
+        // If this request claimed the empty seat, roll it back when the private
+        // state CAS fails. Otherwise a failed join could strand the room as full.
+        if (claimed) {
+          await db.from("game_rooms").update({
+            player2_uid: null,
+            player2: { id: null, name: null, connected: false },
+            status: "waiting",
+            updated_at: new Date().toISOString(),
+          }).eq("id", roomId).eq("player2_uid", user.id).eq("status", "playing");
+        }
+        if (saveError) return json({ error: "Could not initialize joined player" }, 500);
+        return json({ error: "Room state changed; retry joining" }, 409);
+      }
       const presenceChannel = db.channel("room-presence:" + roomId, { config: { private: true } });
       try {
         await presenceChannel.send({ type: "broadcast", event: "room-status", payload: { status: "player-joined" } });
