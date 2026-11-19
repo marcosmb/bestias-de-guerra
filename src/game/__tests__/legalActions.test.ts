@@ -14,6 +14,41 @@ import { MAX_CARDS_PER_TURN, MAX_HAND_SIZE, createPlayer } from '../types';
 import type { Card, MagicCard, MonsterCard, TrapCard } from '../cardData';
 import { MAGICS, TRAPS, buildDeck } from '../cardData';
 
+describe('sameAction security-sensitive fields', () => {
+  it('does not accept a magic action retargeted to the opposite side', () => {
+    const card = { ...MAGICS[0], instanceId: 'magic-side-test' };
+    const ownTarget: Action = {
+      type: 'PLACE_MAGIC_ON_MONSTER',
+      card,
+      side: 'self',
+      fieldUid: 'target-1',
+    };
+    const enemyTarget: Action = {
+      type: 'PLACE_MAGIC_ON_MONSTER',
+      card,
+      side: 'enemy',
+      fieldUid: 'target-1',
+    };
+    expect(sameAction(ownTarget, enemyTarget)).toBe(false);
+    expect(sameAction(enemyTarget, ownTarget)).toBe(false);
+
+    const ownInstantTarget: Action = {
+      type: 'MAGIC_TARGET_MONSTER',
+      card,
+      side: 'self',
+      fieldUid: 'target-2',
+    };
+    const enemyInstantTarget: Action = {
+      type: 'MAGIC_TARGET_MONSTER',
+      card,
+      side: 'enemy',
+      fieldUid: 'target-2',
+    };
+    expect(sameAction(ownInstantTarget, enemyInstantTarget)).toBe(false);
+    expect(sameAction(enemyInstantTarget, ownInstantTarget)).toBe(false);
+  });
+});
+
 // ============================================================================
 // F1 — `legalActions()`: GENERADOR ÚNICO DE ACCIONES LEGALES
 // ============================================================================
