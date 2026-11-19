@@ -135,8 +135,12 @@ Deno.serve(async (req: Request) => {
     if (!room) return json({ error: "Room not found" }, 404);
 
     if (body.operation === "join") {
+      if (room.status === "finished") return json({ error: "Room is finished" }, 409);
       if (room.player1_uid === user.id) return json({ error: "You already own this room" }, 409);
       if (room.player2_uid && room.player2_uid !== user.id) return json({ error: "Room is full" }, 409);
+      const { data: privateRow, error: privateError } = await db.from("room_private_state")
+        .select("game_state, state_version").eq("room_id", roomId).maybeSingle();
+      if (privateError || !privateRow) return json({ error: "Private state unavailable; legacy room cannot be joined securely" }, 409);
       if (room.status !== "waiting" && room.player2_uid !== user.id) return json({ error: "Room is not waiting" }, 409);
 
       const playerName = cleanName(body.playerName);
@@ -159,10 +163,6 @@ Deno.serve(async (req: Request) => {
         }).eq("id", roomId).eq("player2_uid", user.id);
         if (reconnectError) return json({ error: "Could not reconnect player" }, 500);
       }
-
-      const { data: privateRow, error: privateError } = await db.from("room_private_state")
-        .select("game_state, state_version").eq("room_id", roomId).maybeSingle();
-      if (privateError || !privateRow) return json({ error: "Private state unavailable; legacy room cannot be joined securely" }, 409);
 
       const state = privateRow.game_state as GameState;
       const updatedState: GameState = {
