@@ -488,9 +488,9 @@ export function sameAction(a: Action, b: Action): boolean {
     case 'SELECT_MAGIC':
       return b.type === 'SELECT_MAGIC' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
     case 'PLACE_MAGIC_ON_MONSTER':
-      return b.type === 'PLACE_MAGIC_ON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid;
+      return b.type === 'PLACE_MAGIC_ON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid && a.side === b.side;
     case 'MAGIC_TARGET_MONSTER':
-      return b.type === 'MAGIC_TARGET_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid;
+      return b.type === 'MAGIC_TARGET_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid && a.side === b.side;
     case 'MAGIC_INSTANT':
       return b.type === 'MAGIC_INSTANT' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
     case 'START_ATTACK':
