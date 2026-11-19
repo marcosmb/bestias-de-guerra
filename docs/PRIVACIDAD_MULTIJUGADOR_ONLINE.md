@@ -51,6 +51,8 @@ Desplegar ambas funciones con verificación JWT activada:
 
 Ambas verifican el usuario autenticado. La service-role key solo se usa dentro de las Edge Functions y nunca en el navegador.
 
+Antes del despliegue, configurar el secreto `APP_ALLOWED_ORIGIN` en ambas funciones con el origen HTTPS exacto del frontend (por ejemplo, `https://tu-dominio.example`, sin ruta ni barra final). La política CORS falla de forma cerrada (`null`) si falta el secreto; no se admite `*`. Si se usan varios dominios legítimos, habrá que ampliar la implementación a una allowlist explícita y validada, no usar wildcard.
+
 No desplegar una sola función de forma aislada: el cliente nuevo depende del ciclo de vida y del endpoint de acciones.
 
 ## Pruebas de aceptación para dos usuarios
