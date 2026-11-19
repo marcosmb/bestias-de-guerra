@@ -198,7 +198,7 @@ export function useOnlineGame(): OnlineGameHook {
       setError(message);
       throw createError;
     }
-  }, [connectRoom, ensureAuthenticated, invokeLifecycle, setCurrentState]);
+  }, [closeChannels, connectRoom, ensureAuthenticated, invokeLifecycle, setCurrentState]);
 
   const joinRoom = useCallback(async (requestedRoomId: string, playerName: string): Promise<boolean> => {
     setError(null);
@@ -235,7 +235,7 @@ export function useOnlineGame(): OnlineGameHook {
       setError(joinError instanceof Error ? joinError.message : 'Error uniéndose a la sala');
       return false;
     }
-  }, [connectRoom, ensureAuthenticated, invokeLifecycle, setCurrentState]);
+  }, [closeChannels, connectRoom, ensureAuthenticated, invokeLifecycle, setCurrentState]);
 
   const leaveRoom = useCallback(async () => {
     const id = roomRef.current;
