@@ -66,10 +66,9 @@ Deno.serve(async (req: Request) => {
     if (room.status !== "playing") return json({ error: "Room is not active" }, 409);
 
     const userId = authData.user.id;
-    const playerIndex: 0 | 1 =
-      room.player1_uid === userId ? 0 :
-      room.player2_uid === userId ? 1 : -1 as never;
-    if (playerIndex !== 0 && playerIndex !== 1) return json({ error: "Not a room player" }, 403);
+    const playerIndex = room.player1_uid === userId ? 0 :
+      room.player2_uid === userId ? 1 : null;
+    if (playerIndex === null) return json({ error: "Not a room player" }, 403);
 
     const { data: privateRow, error: privateError } = await db
       .from("room_private_state")
