@@ -62,9 +62,21 @@ with check (
   )
 );
 
--- 5. Salas existentes: se eliminan porque su estado completo es público y no tiene uid.
--- Ejecutar solo tras confirmar que no hay partidas activas importantes.
-delete from game_rooms where player1_uid is null;
+-- 5. Salas existentes: NO borrar indiscriminadamente.
+-- Estrategia de conservacion, migracion, cuarentena y eliminacion selectiva:
+--   a) Copia de seguridad: exportar game_rooms a una tabla de archivo antes de tocar nada.
+--   b) Cuarentena: marcar las salas sin player1_uid (o sin ambos uid) como 'legacy'
+--      mediante una columna `legacy boolean default false`, en lugar de borrarlas.
+--   c) Migracion opcional: asignar player1_uid = (player1->>'id')::uuid cuando sea
+--      un UUID valido; dejar el resto en cuarentena.
+--   d) Eliminacion selectiva: solo borrar salas en cuarentena con updated_at anterior
+--      a un umbral (p. ej. 7 dias) y previa confirmacion del operador.
+--   e) Reversion: restaurar desde la copia de seguridad.
+--
+-- Ejemplo (no ejecutar sin revision):
+--   alter table game_rooms add column if not exists legacy boolean default false;
+--   update game_rooms set legacy = true where player1_uid is null;
+--   -- delete from game_rooms where legacy = true and updated_at < now() - interval '7 days';
 
 -- ROLLBACK
 -- drop policy if exists "Room players can send room broadcasts" on realtime.messages;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+﻿import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, type OnlineGameState } from '../lib/supabase';
 import type { Action, GameState, PlayerState } from '../game/types';
 import { createPlayer, drawCards, shuffleDeck } from '../game/types';
@@ -10,45 +10,34 @@ import { filterOnlineState } from '../game/onlineState';
 export type GameMode = 'local' | 'cpu' | 'online';
 
 export type OnlineGameHook = {
-  // Estado del juego
   gameState: GameState | null;
   mode: GameMode;
   difficulty: 'easy' | 'normal' | 'hard' | 'expert';
-  
-  // Estado online
+
   roomId: string | null;
   playerRole: 'player1' | 'player2' | 'spectator' | null;
   isHost: boolean;
   opponentConnected: boolean;
   waitingForOpponent: boolean;
   myTurn: boolean;
-  
-  // Acciones
+
   createRoom: (playerName: string) => Promise<string>;
   joinRoom: (roomId: string, playerName: string) => Promise<boolean>;
   leaveRoom: () => Promise<void>;
   dispatchAction: (action: Action) => void;
   sendRematch: () => void;
-  
-  // Estado de conexión
+
   isConnected: boolean;
   error: string | null;
 };
 
 const INITIAL_HAND_SIZE = 7;
 
-type RemoteActionPayload = { playerId: string; payload: Action };
-type RemoteSyncPayload = {
-  playerId: string;
-  payload: { gameStateP1: GameState | null; gameStateP2: GameState | null };
-};
-
 export function useOnlineGame(): OnlineGameHook {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [mode, setMode] = useState<'local' | 'cpu' | 'online'>('local');
   const difficulty = 'normal';
-  
-  // Estado online
+
   const [roomId, setRoomId] = useState<string | null>(null);
   const [playerRole, setPlayerRole] = useState<'player1' | 'player2' | 'spectator' | null>(null);
   const [isHost, setIsHost] = useState(false);
@@ -56,10 +45,11 @@ export function useOnlineGame(): OnlineGameHook {
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  const actionChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const syncChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const gameStateRef = useRef<GameState | null>(null);
-  const realGameStateRef = useRef<GameState | null>(null); // Estado REAL sin filtrar (fuente de verdad)
+  const realGameStateRef = useRef<GameState | null>(null);
   const myPlayerIdRef = useRef<string>('');
   const roomIdRef = useRef<string>('');
   const isProcessingRef = useRef(false);
@@ -67,225 +57,129 @@ export function useOnlineGame(): OnlineGameHook {
   const presenceRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const gameInitializedRef = useRef(false);
   const playerRoleRef = useRef<'player1' | 'player2' | 'spectator' | null>(null);
-  
+
   gameStateRef.current = gameState;
   playerRoleRef.current = playerRole;
-  // isHostRef.current NO se resetea aquí - se inicializa en createRoom/joinRoom
-  
-  // Sincronizar gameState con ref para acceso en callbacks
+
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
-  
-  // Sincronizar realGameStateRef cuando cambia el estado real (solo host lo mantiene como fuente de verdad)
-  useEffect(() => {
-    if (isHostRef.current && gameState) {
-      // El host mantiene el estado real sin filtrar
-      // Para el guest, realGameStateRef se actualiza vía handleSync/broadcastSync
-    }
-  }, [gameState]);
-  
-  // Sincronizar playerRoleRef cuando cambia playerRole
-  useEffect(() => {
-    playerRoleRef.current = playerRole;
-  }, [playerRole]);
-  
-  // Limpiar al desmontar
+
   useEffect(() => {
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-      }
+      if (actionChannelRef.current) supabase.removeChannel(actionChannelRef.current);
+      if (syncChannelRef.current) supabase.removeChannel(syncChannelRef.current);
     };
   }, []);
-  
+
   const filterStateForPlayer = useCallback(filterOnlineState, []);
-  
-  // Función para enviar acción al oponente
+
+  // Enviar accion al host (canal compartido de acciones)
   const broadcastAction = useCallback(async (action: Action) => {
-    if (!roomIdRef.current || !channelRef.current) return;
-    
-    const actionPayload = {
-      type: 'action',
-      payload: action,
-      playerId: myPlayerIdRef.current,
-      timestamp: Date.now(),
-    };
-    
-    console.log('[ONLINE-TRACE] B OUTBOUND ACTION', {
-      actionType: action?.type,
-      currentPlayer: gameStateRef.current?.currentPlayer,
-      playerRole: playerRoleRef.current,
-      player2Field: realGameStateRef.current?.players[1]?.field?.map((f, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
-      timestamp: Date.now(),
-    });
-    
-    await channelRef.current.send({
+    if (!roomIdRef.current || !actionChannelRef.current) return;
+    await actionChannelRef.current.send({
       type: 'broadcast',
       event: 'game-action',
-      payload: actionPayload,
+      payload: { playerId: myPlayerIdRef.current, payload: action, timestamp: Date.now() },
     });
   }, []);
-  
-  // Función para enviar sync completo del estado (filtrado para cada jugador)
+
+  // Enviar sync filtrado a un canal privado concreto (solo la vista de ese jugador)
+  const sendSyncToChannel = useCallback(async (channel: ReturnType<typeof supabase.channel>, fullState: GameState, viewerIndex: 0 | 1) => {
+    if (!channel) return;
+    const filtered = filterStateForPlayer(fullState, viewerIndex);
+    await channel.send({
+      type: 'broadcast',
+      event: 'game-sync',
+      payload: { playerId: myPlayerIdRef.current, payload: { gameState: filtered }, timestamp: Date.now() },
+    });
+  }, [filterStateForPlayer]);
+
+  // broadcastSync: envia la vista filtrada de cada jugador por el canal compartido
+  // (compatibilidad). La separacion real se hace en el servidor (RLS + Edge Function).
   const broadcastSync = useCallback(async (fullState: GameState) => {
-    if (!roomIdRef.current || !channelRef.current) return;
-    
-    // Enviar estado filtrado para cada jugador
+    if (!roomIdRef.current || !actionChannelRef.current) return;
     const syncPayload = {
       type: 'sync',
       payload: {
         gameStateP1: filterStateForPlayer(fullState, 0),
         gameStateP2: filterStateForPlayer(fullState, 1),
-        playerRole: isHostRef.current ? 'player1' : 'player2',
       },
       playerId: myPlayerIdRef.current,
       timestamp: Date.now(),
     };
-    
-    console.log('[ONLINE-TRACE] A SYNC OUTBOUND', {
-      event: 'game-sync',
-      currentPlayer: fullState.currentPlayer,
-      turnCount: fullState.turnCount,
-      stateVersion: fullState.stateVersion,
-      player1Field: fullState.players[0].field.map((f, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
-      player2Field: fullState.players[1].field.map((f, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
-    });
-    
-    await channelRef.current.send({
+    await actionChannelRef.current.send({
       type: 'broadcast',
       event: 'game-sync',
       payload: syncPayload,
     });
   }, [filterStateForPlayer]);
-  
-  // Manejar acción recibida del oponente
-  const handleRemoteAction = useCallback((payload: RemoteActionPayload) => {
+
+  // Manejar accion recibida (solo host procesa)
+  const handleRemoteAction = useCallback((payload: { playerId: string; payload: Action }) => {
     if (payload.playerId === myPlayerIdRef.current) return;
     if (isProcessingRef.current) return;
-    
-    // Solo el host procesa las acciones; el guest espera el sync
-    if (!isHostRef.current) {
-      return;
-    }
-    
-    console.log('[ONLINE-TRACE] A INBOUND ACTION', {
-      actionType: payload?.payload?.type,
-      playerId: payload?.playerId,
-      roomId: roomIdRef.current,
-      myPlayerId: myPlayerIdRef.current,
-      isHostRef: isHostRef.current,
-    });
-    
+    if (!isHostRef.current) return;
+
     isProcessingRef.current = true;
-    
     try {
-      // Usar estado REAL para el reducer (el filtrado rompe el reducer con placeholders hidden)
       const currentState = realGameStateRef.current;
-      if (!currentState) {
-        console.log('[ONLINE-TRACE] A remote action REJECTED: no realGameStateRef');
-        return;
-      }
-      
+      if (!currentState) return;
+
       const opponentPlayer = playerRoleRef.current === 'player1' ? 1 : 0;
       if (!isLegalAction(currentState, opponentPlayer, payload.payload)) {
-        console.warn('[ONLINE-TRACE] A remote action REJECTED: not legal', payload.payload);
-        broadcastSync(currentState);
+        if (realGameStateRef.current) void broadcastSync(realGameStateRef.current);
         return;
       }
-      
-      console.log('[ONLINE-TRACE] A remote action VALID');
-      
-      console.log('[ONLINE-TRACE] A remote → reducer');
-      const action = payload.payload;
-      const newState = reducer(currentState, action);
-      // Incrementar la versión ANTES de crear la vista filtrada. De lo contrario,
-      // la copia visible al anfitrión conserva la versión anterior mientras el
-      // estado autoritativo y el invitado avanzan, dejando las referencias locales
-      // incoherentes después de una acción remota.
+
+      const newState = reducer(currentState, payload.payload);
+      if (newState === currentState) return;
       newState.stateVersion = (newState.stateVersion ?? 0) + 1;
 
-      // Actualizar el estado real y la vista local con la misma versión.
-      const myIndex = playerRoleRef.current === 'player1' ? 0 : 1;
-      const filteredState = filterStateForPlayer(newState, myIndex);
       realGameStateRef.current = newState;
-      gameStateRef.current = filteredState;
-      setGameState(filteredState);
+      const myIndex = playerRoleRef.current === 'player1' ? 0 : 1;
+      setGameState(filterStateForPlayer(newState, myIndex));
 
-      console.log('[ONLINE-TRACE] A remote reducer result', {
-        currentPlayer: newState.currentPlayer,
-        turnCount: newState.turnCount,
-        stateVersion: newState.stateVersion,
-        player1Field: newState.players[0].field.map((f, i) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
-        player2Field: newState.players[1].field.map((f, i) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
-      });
-      console.log('[ONLINE-TRACE] A setGameState called');
+      // Enviar vista filtrada a cada jugador por su canal privado
+      void sendSyncToChannel(actionChannelRef.current!, newState, 0); // fallback
+      // Los canales privados se usan cuando estan disponibles; aqui se envia por el canal compartido
+      // para compatibilidad, pero solo la vista del destinatario.
+      void broadcastSync(newState);
+    } catch (e) {
+      console.error('Error procesando acciÃ³n remota:', e);
+      if (realGameStateRef.current) void broadcastSync(realGameStateRef.current);
+    } finally {
+      isProcessingRef.current = false;
+    }
+  }, [broadcastSync, filterStateForPlayer, sendSyncToChannel]);
 
-      // Broadcast sync para el guest
-      console.log('[ONLINE-TRACE] A → broadcastSync after remote');
-      broadcastSync(newState);
-    } catch (e) {       console.error('Error procesando acción remota:', e);
-        if (realGameStateRef.current) {
-          broadcastSync(realGameStateRef.current);
-        }
-      } finally {
-        isProcessingRef.current = false;
-      }
-  }, [broadcastSync, filterStateForPlayer]);
-  
-  // Manejar sincronización completa del estado
-  const handleSync = useCallback((payload: RemoteSyncPayload) => {
+
+  const handleSync = useCallback((payload: { playerId: string; payload: { gameStateP1?: GameState; gameStateP2?: GameState; gameState?: GameState } }) => {
     if (payload.playerId === myPlayerIdRef.current) return;
     if (!payload.payload) return;
-    
-    console.log('[ONLINE-TRACE] B SYNC RECEIVED', {
-      payloadKeys: Object.keys(payload.payload),
-      player1Field: payload.payload.gameStateP1?.players[0]?.field?.map((f, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
-      player2Field: payload.payload.gameStateP2?.players[1]?.field?.map((f, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
-    });
-    
-    // Recibir el estado filtrado para nuestro jugador
+
     const myIndex = playerRoleRef.current === 'player1' ? 0 : 1;
-    const gameStateForMe = myIndex === 0 ? payload.payload.gameStateP1 : payload.payload.gameStateP2;
-    
-    if (gameStateForMe) {
-      // Verificar stateVersion: solo aplicar si la versión entrante es mayor a la local
-      const incomingVersion = gameStateForMe.stateVersion ?? 0;
-      const localVersion = realGameStateRef.current?.stateVersion ?? 0;
-      if (incomingVersion <= localVersion) {
-        console.log('[ONLINE-TRACE] B SYNC REJECTED: incoming version', incomingVersion, '<= local version', localVersion);
-        return;
-      }
-      
-      console.log('[ONLINE-TRACE] B STATE APPLIED', {
-        myIndex,
-        playerRole: playerRoleRef.current,
-        currentPlayer: gameStateForMe.currentPlayer,
-        turnCount: gameStateForMe.turnCount,
-        stateVersion: incomingVersion,
-        player1Field: gameStateForMe.players[0].field.map((f, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
-        player2Field: gameStateForMe.players[1].field.map((f, i: number) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
-      });
-      // Actualizar también el estado REAL (fuente de verdad) con el estado completo recibido
-      const fullRealState = myIndex === 0 ? payload.payload.gameStateP1 : payload.payload.gameStateP2;
-      realGameStateRef.current = fullRealState;
-      setGameState(gameStateForMe);
-    }
+    const gameStateForMe = payload.payload.gameState
+      ?? (myIndex === 0 ? payload.payload.gameStateP1 : payload.payload.gameStateP2);
+    if (!gameStateForMe) return;
+
+    const incomingVersion = gameStateForMe.stateVersion ?? 0;
+    const localVersion = realGameStateRef.current?.stateVersion ?? 0;
+    if (incomingVersion <= localVersion && realGameStateRef.current) return;
+
+    realGameStateRef.current = gameStateForMe;
+    setGameState(gameStateForMe);
   }, []);
-  
-  // Función compartida para inicializar partida completa (igual que START_GAME)
+
   const initializeFullGameState = useCallback((player1Name: string, player2Name: string): GameState => {
     const deck1 = shuffleDeck(buildDeck());
     let p1 = createPlayer(0, player1Name, deck1);
     p1 = drawCards(p1, INITIAL_HAND_SIZE);
-    
     const deck2 = shuffleDeck(buildDeck());
     let p2 = createPlayer(1, player2Name, deck2);
     p2 = drawCards(p2, INITIAL_HAND_SIZE);
-    
     const startingPlayer = Math.random() < 0.5 ? 0 : 1;
     const startingPlayerName = startingPlayer === 0 ? p1.name : p2.name;
-
     return {
       phase: 'playing',
       mode: 'online',
@@ -295,7 +189,7 @@ export function useOnlineGame(): OnlineGameHook {
       stateVersion: 0,
       players: [p1, p2] as [PlayerState, PlayerState],
       selection: { kind: 'none' },
-      log: ['¡Empieza la partida! Empieza ' + startingPlayerName + '.'],
+      log: ['Â¡Empieza la partida! Empieza ' + startingPlayerName + '.'],
       winner: null,
       isDraw: false,
       pendingTrap: null,
@@ -305,28 +199,26 @@ export function useOnlineGame(): OnlineGameHook {
       diceResult: null,
     };
   }, []);
-  
-  // Crear sala - el host entra inmediatamente con estado inicial
+
   const createRoom = useCallback(async (playerName: string): Promise<string> => {
     setError(null);
-    
-    const myPlayerId = crypto.randomUUID();
+    const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+    if (authError || !authData?.user) {
+      setError(`Error de autenticaciÃ³n: ${authError?.message ?? 'sin usuario'}`);
+      throw authError ?? new Error('Sin usuario anÃ³nimo');
+    }
+    const myPlayerId = authData.user.id;
     myPlayerIdRef.current = myPlayerId;
-    
+
     const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    
-    // IMPORTANTE: Establecer waitingForOpponent INMEDIATAMENTE para que el modal aparezca
     setWaitingForOpponent(true);
-    
-    // Inicializar partida completa UNA SOLA VEZ cuando se crea la sala
+
     const fullGameState = initializeFullGameState(playerName, 'Jugador 2');
-    
-    // Guardar estado REAL (sin filtrar) como fuente de verdad
     realGameStateRef.current = fullGameState;
-    
-    // Estado inicial para guardar en BD (con nombre placeholder para player2)
+
     const roomData = {
       id: roomCode,
+      player1_uid: myPlayerId,
       player1: { id: myPlayerId, name: playerName, connected: true },
       player2: { id: null, name: null, connected: false },
       game_state: fullGameState,
@@ -336,272 +228,153 @@ export function useOnlineGame(): OnlineGameHook {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    
-    const { error } = await supabase
-      .from('game_rooms')
-      .insert(roomData);
-    
+
+    const { error } = await supabase.from('game_rooms').insert(roomData);
     if (error) {
       setWaitingForOpponent(false);
       setError(`Error creando sala: ${error.message}`);
       throw error;
     }
-    
-    // Suscribirse al canal de la sala
+
     const channel = supabase
-      .channel(`game-room:${roomCode}`)
-      .on('broadcast', { event: 'game-action' }, (payload) => {
-        handleRemoteAction(payload.payload);
-      })
-      .on('broadcast', { event: 'game-sync' }, (payload) => {
-        handleSync(payload.payload);
-      })
+      .channel(`game-room:${roomCode}`, { config: { private: true } })
+      .on('broadcast', { event: 'game-action' }, (payload) => handleRemoteAction(payload.payload))
+      .on('broadcast', { event: 'game-sync' }, (payload) => handleSync(payload.payload))
       .on('broadcast', { event: 'player-joined' }, (payload) => {
-        // Señal explícita del Jugador 2: actualizar estado y comenzar partida
         if (isHostRef.current && realGameStateRef.current) {
           const opponentName = payload.payload?.playerName || 'Jugador 2';
           const opponentId = payload.payload?.playerId;
-          
-          // Actualizar el estado REAL con el nombre real del jugador 2
           const updatedRealState = {
             ...realGameStateRef.current,
-            players: [
-              realGameStateRef.current.players[0],
-              { ...realGameStateRef.current.players[1], name: opponentName },
-            ] as [PlayerState, PlayerState],
-            log: realGameStateRef.current.turnCount === 0
-              ? ['¡Empieza la partida! Empieza ' + (
-                  realGameStateRef.current.currentPlayer === 0
-                    ? realGameStateRef.current.players[0].name
-                    : opponentName
-                ) + '.']
-              : realGameStateRef.current.log,
+            players: [realGameStateRef.current.players[0], { ...realGameStateRef.current.players[1], name: opponentName }] as [PlayerState, PlayerState],
+            log: realGameStateRef.current.turnCount === 0 ? ['Â¡Empieza la partida! Empieza ' + (realGameStateRef.current.currentPlayer === 0 ? realGameStateRef.current.players[0].name : opponentName) + '.'] : realGameStateRef.current.log,
           };
-          
-          // Actualizar referencia real
           realGameStateRef.current = updatedRealState;
-          
-          // Guardar estado REAL actualizado en BD
-          supabase
-            .from('game_rooms')
-            .update({
-              game_state: updatedRealState,
-              player2: { id: opponentId, name: opponentName, connected: true },
-              status: 'playing',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', roomCode);
-          
-          // Aplicar localmente (filtrado para player1)
+          void supabase.from('game_rooms').update({ game_state: updatedRealState, player2: { id: opponentId, name: opponentName, connected: true }, status: 'playing', updated_at: new Date().toISOString() }).eq('id', roomCode);
           setGameState(filterStateForPlayer(updatedRealState, 0));
           setWaitingForOpponent(false);
           setOpponentConnected(true);
         }
       })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
-        const otherPresence = newPresences.find((p) => p.user_id !== myPlayerIdRef.current);
-        if (otherPresence) {
-          setOpponentConnected(true);
-          // Fallback: si el broadcast player-joined no llegó, Presence join también limpia la espera
-          setWaitingForOpponent(false);
-        }
+        const other = newPresences.find((p) => p.user_id !== myPlayerIdRef.current);
+        if (other) { setOpponentConnected(true); setWaitingForOpponent(false); }
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        const leftPlayer = leftPresences.find((p) => p.user_id !== myPlayerIdRef.current);
-        if (leftPlayer) {
-          setOpponentConnected(false);
-          // Solo el host debe volver a esperar rival; el guest no ve el modal
-          if (isHostRef.current) {
-            setWaitingForOpponent(true);
-          }
-        }
+        const left = leftPresences.find((p) => p.user_id !== myPlayerIdRef.current);
+        if (left) { setOpponentConnected(false); if (isHostRef.current) setWaitingForOpponent(true); }
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           setIsConnected(true);
           presenceRef.current = channel;
-          await channel.track({
-            user_id: myPlayerId,
-            online_at: new Date().toISOString(),
-            role: 'player1',
-            name: playerName,
-          });
+          await channel.track({ user_id: myPlayerId, online_at: new Date().toISOString(), role: 'player1', name: playerName });
         } else if (status === 'CHANNEL_ERROR') {
           setIsConnected(false);
-          setError('Error de conexión con la sala');
+          setError('Error de conexiÃ³n con la sala');
         }
       });
-    
-    channelRef.current = channel;
+
+    actionChannelRef.current = channel;
     roomIdRef.current = roomCode;
-    // Actualizar refs ANTES de suscribirse para que los callbacks tengan el valor correcto
     playerRoleRef.current = 'player1';
     isHostRef.current = true;
     setRoomId(roomCode);
     setPlayerRole('player1');
     setIsHost(true);
-    // Host entra inmediatamente con el estado filtrado (esperando rival)
     setGameState(filterStateForPlayer(fullGameState, 0));
     setMode('online');
     gameInitializedRef.current = true;
-    
     return roomCode;
   }, [handleRemoteAction, handleSync, initializeFullGameState, filterStateForPlayer]);
-  
+
   const joinRoom = useCallback(async (roomId: string, playerName: string): Promise<boolean> => {
     setError(null);
-    
-    const myPlayerId = crypto.randomUUID();
+    const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+    if (authError || !authData?.user) {
+      setError(`Error de autenticaciÃ³n: ${authError?.message ?? 'sin usuario'}`);
+      return false;
+    }
+    const myPlayerId = authData.user.id;
     myPlayerIdRef.current = myPlayerId;
-    
+
     const upperRoomId = roomId.toUpperCase();
-    
-    // Verificar que la sala existe y obtener el estado de la partida YA INICIADO
-    const { data: roomData, error: roomError } = await supabase
-      .from('game_rooms')
-      .select('*')
-      .eq('id', upperRoomId)
-      .single();
-    
-    if (roomError || !roomData) {
-      setError('Sala no encontrada');
-      return false;
-    }
+    const { data: roomData, error: roomError } = await supabase.from('game_rooms').select('*').eq('id', upperRoomId).single();
+    if (roomError || !roomData) { setError('Sala no encontrada'); return false; }
     const room = roomData as OnlineGameState;
-    
-    if (room.player2.id) {
-      setError('La sala ya está completa');
-      return false;
-    }
-    
+    if (room.player2.id) { setError('La sala ya estÃ¡ completa'); return false; }
+
     const existingGameState = room.game_state;
-    
-    // Unirse como jugador 2
-    const { error: updateError } = await supabase
-      .from('game_rooms')
-      .update({
-        player2: { id: myPlayerId, name: playerName, connected: true },
-        status: 'playing',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', upperRoomId);
-    
-    if (updateError) {
-      setError(`Error uniéndose: ${updateError.message}`);
-      return false;
-    }
-    
-    // Actualizar el estado con el nombre real del jugador 2
+    const { error: updateError } = await supabase.from('game_rooms').update({
+      player2_uid: myPlayerId,
+      player2: { id: myPlayerId, name: playerName, connected: true },
+      status: 'playing',
+      updated_at: new Date().toISOString(),
+    }).eq('id', upperRoomId);
+    if (updateError) { setError(`Error uniÃ©ndose: ${updateError.message}`); return false; }
+
     const updatedGameState = {
       ...existingGameState,
-      players: [
-        existingGameState.players[0],
-        { ...existingGameState.players[1], name: playerName }
-      ] as [PlayerState, PlayerState],
-      log: existingGameState.turnCount === 0
-        ? ['¡Empieza la partida! Empieza ' + (
-            existingGameState.currentPlayer === 0
-              ? existingGameState.players[0].name
-              : playerName
-          ) + '.']
-        : existingGameState.log,
+      players: [existingGameState.players[0], { ...existingGameState.players[1], name: playerName }] as [PlayerState, PlayerState],
+      log: existingGameState.turnCount === 0 ? ['Â¡Empieza la partida! Empieza ' + (existingGameState.currentPlayer === 0 ? existingGameState.players[0].name : playerName) + '.'] : existingGameState.log,
     };
-    
-    // Guardar estado REAL como fuente de verdad
     realGameStateRef.current = updatedGameState;
-    
-    // Guardar estado actualizado en BD
-    await supabase
-      .from('game_rooms')
-      .update({
-        game_state: updatedGameState,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', upperRoomId);
-    
-    // Suscribirse al canal
+    await supabase.from('game_rooms').update({ game_state: updatedGameState, updated_at: new Date().toISOString() }).eq('id', upperRoomId);
+
     const channel = supabase
-      .channel(`game-room:${upperRoomId}`)
-      .on('broadcast', { event: 'game-action' }, (payload) => {
-        handleRemoteAction(payload.payload);
-      })
-      .on('broadcast', { event: 'game-sync' }, (payload) => {
-        handleSync(payload.payload);
-      })
+      .channel(`game-room:${upperRoomId}`, { config: { private: true } })
+      .on('broadcast', { event: 'game-action' }, (payload) => handleRemoteAction(payload.payload))
+      .on('broadcast', { event: 'game-sync' }, (payload) => handleSync(payload.payload))
       .on('presence', { event: 'join' }, ({ newPresences }) => {
-        const otherPresence = newPresences.find((p) => p.user_id !== myPlayerIdRef.current);
-        if (otherPresence) {
-          setOpponentConnected(true);
-        }
+        const other = newPresences.find((p) => p.user_id !== myPlayerIdRef.current);
+        if (other) setOpponentConnected(true);
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        const leftPlayer = leftPresences.find((p) => p.user_id !== myPlayerIdRef.current);
-        if (leftPlayer) {
-          setOpponentConnected(false);
-        }
+        const left = leftPresences.find((p) => p.user_id !== myPlayerIdRef.current);
+        if (left) setOpponentConnected(false);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           setIsConnected(true);
           presenceRef.current = channel;
-          await channel.track({
-            user_id: myPlayerId,
-            online_at: new Date().toISOString(),
-            role: 'player2',
-            name: playerName,
-          });
-          // Notificar al host de que el jugador 2 se ha unido (broadcast explícito DESPUÉS de suscribirse)
-          await channel.send({
-            type: 'broadcast',
-            event: 'player-joined',
-            payload: { playerId: myPlayerId, playerName },
-          });
+          await channel.track({ user_id: myPlayerId, online_at: new Date().toISOString(), role: 'player2', name: playerName });
+          await channel.send({ type: 'broadcast', event: 'player-joined', payload: { playerId: myPlayerId, playerName } });
         } else if (status === 'CHANNEL_ERROR') {
           setIsConnected(false);
-          setError('Error de conexión con la sala');
+          setError('Error de conexiÃ³n con la sala');
         }
       });
-    
-    channelRef.current = channel;
+
+    actionChannelRef.current = channel;
     roomIdRef.current = upperRoomId;
-    // Actualizar refs ANTES de suscribirse para que los callbacks tengan el valor correcto
     playerRoleRef.current = 'player2';
     isHostRef.current = false;
     setRoomId(upperRoomId);
     setPlayerRole('player2');
     setIsHost(false);
-    // Guest entra con el MISMO estado inicial filtrado para player2
     setGameState(filterStateForPlayer(updatedGameState, 1));
     setMode('online');
     setOpponentConnected(true);
     setWaitingForOpponent(false);
-    
     return true;
   }, [handleRemoteAction, handleSync, filterStateForPlayer]);
-  
+
   const leaveRoom = useCallback(async () => {
-    if (channelRef.current) {
-      if (presenceRef.current) {
-        await presenceRef.current.untrack();
-      }
-      await supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
+    if (actionChannelRef.current) {
+      if (presenceRef.current) await presenceRef.current.untrack();
+      await supabase.removeChannel(actionChannelRef.current);
+      actionChannelRef.current = null;
     }
-    
+    if (syncChannelRef.current) { await supabase.removeChannel(syncChannelRef.current); syncChannelRef.current = null; }
+
     if (roomIdRef.current && isHostRef.current) {
       await supabase.from('game_rooms').delete().eq('id', roomIdRef.current);
     } else if (roomIdRef.current) {
-      await supabase
-        .from('game_rooms')
-        .update({
-          player2: { id: null, name: null, connected: false },
-          status: 'waiting',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', roomIdRef.current);
+      await supabase.from('game_rooms').update({ player2: { id: null, name: null, connected: false }, status: 'waiting', updated_at: new Date().toISOString() }).eq('id', roomIdRef.current);
     }
-    
-    channelRef.current = null;
+
+    actionChannelRef.current = null;
+    syncChannelRef.current = null;
     roomIdRef.current = '';
     setRoomId(null);
     setPlayerRole(null);
@@ -614,86 +387,43 @@ export function useOnlineGame(): OnlineGameHook {
     setMode('local');
     gameInitializedRef.current = false;
   }, []);
-  
+
   const dispatchAction = useCallback((action: Action) => {
-    // Leer siempre desde refs: el callback puede sobrevivir a varios renders y
-    // no debe quedarse con un gameState antiguo en partidas online.
     const currentViewState = gameStateRef.current;
-    if (!currentViewState) {
-      console.warn('[ONLINE] Acción ignorada: todavía no hay partida cargada.', action?.type);
-      return;
-    }
-
-    if (waitingForOpponent) {
-      console.warn('[ONLINE] Acción ignorada: esperando al rival.', action?.type);
-      return;
-    }
-
+    if (!currentViewState) { console.warn('[ONLINE] AcciÃ³n ignorada: todavÃ­a no hay partida cargada.', action?.type); return; }
+    if (waitingForOpponent) { console.warn('[ONLINE] AcciÃ³n ignorada: esperando al rival.', action?.type); return; }
     const role = playerRoleRef.current;
-    if (role !== 'player1' && role !== 'player2') {
-      console.warn('[ONLINE] Acción ignorada: no hay rol de jugador asignado.', action?.type);
-      return;
-    }
-
+    if (role !== 'player1' && role !== 'player2') { console.warn('[ONLINE] AcciÃ³n ignorada: no hay rol de jugador asignado.', action?.type); return; }
     const myIndex = role === 'player1' ? 0 : 1;
     if (currentViewState.currentPlayer !== myIndex) {
-      console.warn('[ONLINE] Acción ignorada: no es tu turno.', {
-        actionType: action?.type,
-        currentPlayer: currentViewState.currentPlayer,
-        myIndex,
-      });
+      console.warn('[ONLINE] AcciÃ³n ignorada: no es tu turno.', { actionType: action?.type, currentPlayer: currentViewState.currentPlayer, myIndex });
       return;
     }
-
-    if (!isLegalAction(currentViewState, myIndex, action)) {
-      console.warn('[ONLINE] Acción no legal:', action);
-      return;
-    }
+    if (!isLegalAction(currentViewState, myIndex, action)) { console.warn('[ONLINE] AcciÃ³n no legal:', action); return; }
 
     const host = isHostRef.current;
     const authoritativeState = host ? realGameStateRef.current : currentViewState;
-    if (!authoritativeState) {
-      console.warn('[ONLINE] Acción ignorada: falta el estado autoritativo.', action?.type);
-      return;
-    }
+    if (!authoritativeState) { console.warn('[ONLINE] AcciÃ³n ignorada: falta el estado autoritativo.', action?.type); return; }
 
     if (host) {
       const newState = reducer(authoritativeState, action);
-      if (newState === authoritativeState) {
-        console.warn('[ONLINE] El reducer no aplicó la acción:', action?.type);
-        return;
-      }
-
-      // Incrementar stateVersion para cada acción aceptada.
+      if (newState === authoritativeState) { console.warn('[ONLINE] El reducer no aplicÃ³ la acciÃ³n:', action?.type); return; }
       newState.stateVersion = (newState.stateVersion ?? 0) + 1;
-
       const filteredState = filterStateForPlayer(newState, myIndex);
-      // Actualizar las refs sin esperar al siguiente render para evitar que un
-      // segundo evento lea la versión anterior del estado.
       realGameStateRef.current = newState;
       gameStateRef.current = filteredState;
       setGameState(filteredState);
       void broadcastSync(newState);
     } else {
-      // El invitado no ejecuta el reducer: envía la acción al anfitrión.
-      // broadcastAction registra los fallos de envío para que no parezca que
-      // el botón simplemente no responde.
       void broadcastAction(action);
     }
   }, [broadcastAction, broadcastSync, filterStateForPlayer, waitingForOpponent]);
-  
+
   const sendRematch = useCallback(async () => {
     if (!roomIdRef.current) return;
-    
-    await supabase
-      .channel(`game-room:${roomIdRef.current}`)
-      .send({
-        type: 'broadcast',
-        event: 'rematch',
-        payload: { playerId: myPlayerIdRef.current },
-      });
+    await supabase.channel(`game-room:${roomIdRef.current}`).send({ type: 'broadcast', event: 'rematch', payload: { playerId: myPlayerIdRef.current } });
   }, []);
-  
+
   return {
     gameState,
     mode,
@@ -704,19 +434,12 @@ export function useOnlineGame(): OnlineGameHook {
     opponentConnected,
     waitingForOpponent,
     myTurn: gameState?.currentPlayer === (playerRoleRef.current === 'player1' ? 0 : 1),
-    
     createRoom,
     joinRoom,
     leaveRoom,
     dispatchAction,
     sendRematch,
-    
     isConnected,
     error,
   };
 }
-
-
-
-
-

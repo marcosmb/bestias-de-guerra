@@ -163,4 +163,20 @@ describe('filterOnlineState', () => {
     expect(filteredMonster.trap?.name).toBe(trap.name);
     expect(filteredMonster.trap?.instanceId).toBe(trap.instanceId);
   });
+
+  it('no filtra identificadores ni nombres de cartas ocultas del rival en ninguna zona', () => {
+    const state = stateWithPlayers();
+    const opponent = state.players[1];
+    const hiddenCard = opponent.hand[0];
+    if (!hiddenCard || !hiddenCard.instanceId) throw new Error('Expected a hidden card');
+    const hiddenInstanceId = hiddenCard.instanceId;
+    const hiddenName = hiddenCard.name;
+
+    const filtered = filterOnlineState(state, 0);
+    const opponentSerialized = JSON.stringify(filtered.players[1]);
+
+    expect(opponentSerialized).not.toContain(hiddenInstanceId);
+    expect(opponentSerialized).not.toContain(hiddenName);
+    expect(filtered.players[0].hand).toBe(state.players[0].hand);
+  });
 });
