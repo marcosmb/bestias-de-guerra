@@ -128,8 +128,12 @@ Deno.serve(async (req: Request) => {
     }
 
     const currentState = privateRow.game_state as GameState;
+    const actingPlayer = currentState?.phase === "playing" &&
+      currentState.selection?.kind === "choose-destroy-associated-card"
+      ? currentState.selection.player
+      : currentState?.currentPlayer;
     if (!isRecord(currentState) || !Array.isArray(currentState.players) ||
-        currentState.currentPlayer !== playerIndex) {
+        actingPlayer !== playerIndex) {
       return json({ error: "Not your turn or invalid game state" }, 403);
     }
 
@@ -157,6 +161,14 @@ Deno.serve(async (req: Request) => {
 
     if (saveError) return json({ error: "Could not save game state" }, 500);
     if (!saved) return json({ error: "Concurrent action; refresh state" }, 409);
+
+    if (nextState.phase === "game-over") {
+      await db.from("game_rooms").update({
+        status: "finished",
+        winner: nextState.isDraw ? "draw" : nextState.winner === 0 ? "player1" : "player2",
+        updated_at: new Date().toISOString(),
+      }).eq("id", body.roomId);
+    }
 
     // Each player receives a separately filtered payload on a distinct topic.
     // The corresponding private-channel RLS policies must be installed before
