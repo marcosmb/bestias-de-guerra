@@ -1,4 +1,4 @@
-import type { FieldMonster, PlayerState } from './types';
+import type { FieldMonster, PlayerState } from './types.ts';
 
 export type Trap3CountTarget = {
   fm: FieldMonster;
