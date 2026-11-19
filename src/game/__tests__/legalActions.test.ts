@@ -682,7 +682,7 @@ describe('legalActions · fases especiales', () => {
     const state = scene({
       phase: 'dice-roll',
       currentPlayer: 1,
-      pendingDice: { reason: 'Daño por dado', onRoll: (roll: number) => ({ type: 'ROLL_DICE', roll }) as Action },
+      pendingDice: { reason: 'Daño por dado' },
     });
     expect(find(state, 1, 'ROLL_DICE').map((a) => (a as { roll: number }).roll)).toEqual([1, 2, 3, 4, 5, 6]);
     expect(legalActions(state, 0)).toEqual([]);
