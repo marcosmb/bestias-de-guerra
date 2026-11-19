@@ -98,15 +98,20 @@ export function useOnlineGame(): OnlineGameHook {
         const version = payload?.stateVersion;
         if (!incoming || typeof version !== 'number' || version <= stateVersionRef.current) return;
         setCurrentState(incoming, version);
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') setIsConnected(true);
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          setIsConnected(false);
-          if (status === 'CHANNEL_ERROR') setError('No se pudo autorizar el canal privado de la partida');
-        }
       });
     stateChannelRef.current = stateChannel;
+    await new Promise<void>((resolve, reject) => {
+      stateChannel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setIsConnected(true);
+          resolve();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          setIsConnected(false);
+          setError('No se pudo autorizar el canal privado de la partida');
+          reject(new Error('No se pudo autorizar el canal privado de la partida'));
+        }
+      });
+    });
 
     const presenceChannel = supabase.channel(`room-presence:${id}`, { config: { private: true } })
       .on('broadcast', { event: 'room-status' }, async ({ payload }) => {
@@ -123,13 +128,17 @@ export function useOnlineGame(): OnlineGameHook {
           setOpponentConnected(false);
           setWaitingForOpponent(role === 'player1');
         }
-      })
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setError('No se pudo conectar al canal de presencia de la sala');
-        }
       });
     presenceChannelRef.current = presenceChannel;
+    await new Promise<void>((resolve, reject) => {
+      presenceChannel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') resolve();
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          setError('No se pudo conectar al canal de presencia de la sala');
+          reject(new Error('No se pudo conectar al canal de presencia de la sala'));
+        }
+      });
+    });
   }, [closeChannels, invokeLifecycle, setCurrentState]);
 
   const createRoom = useCallback(async (playerName: string): Promise<string> => {
