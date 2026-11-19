@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Swords,
   Shield,
@@ -587,7 +587,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       window.clearTimeout(changeTimer);
       if (fadeTimer !== undefined) window.clearTimeout(fadeTimer);
     };
-  }, [gameBackgroundIndex, gameBackgroundMode]);
+  }, [gameBackgroundIndex, gameBackgroundMode, setGameBackgroundIndex]);
 
   useEffect(() => {
     if (gameBackgroundMode !== 'slideshow' || showNextGameBackground) return;
@@ -864,7 +864,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     if (newUids.size > 0) {
       setSummonedUids(currentUids);
     }
-  }, [me.field]);
+  }, [me.field, summonedUids]);
 
   // Sonido de inicio de turno — se dispara una sola vez por cambio de turno.
   // Se usa un ref para no depender de re-renders (evita sonidos duplicados).
@@ -907,6 +907,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   // aumentar. Comparar el array garantiza que un efecto pasivo posterior no
   // quede sin aviso.
   const passiveLogRef = useRef(state.log);
+  const player0Lp = state.players[0].lp;
+  const player1Lp = state.players[1].lp;
+  const currentPlayer = state.currentPlayer;
   useEffect(() => {
     if (state.log !== passiveLogRef.current) {
       const latestEntry = state.log[state.log.length - 1] ?? '';
@@ -919,7 +922,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
 
       if (drewTwoCards) {
         addToast(
-          viewer === state.currentPlayer
+          viewer === currentPlayer
             ? 'Robar dos cartas: has robado 2 cartas.'
             : 'El rival usa Robar dos cartas y roba 2 cartas.',
           'info',
@@ -927,9 +930,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       }
 
       if (passiveEffectHappened) {
-        const viewerLp = state.players[viewer].lp;
+        const viewerLp = viewer === 0 ? player0Lp : player1Lp;
         const rivalIndex = viewer === 0 ? 1 : 0;
-        const rivalLp = state.players[rivalIndex].lp;
+        const rivalLp = rivalIndex === 0 ? player0Lp : player1Lp;
         const previousViewerLp = passiveLpRef.current[viewer];
         const previousRivalLp = passiveLpRef.current[rivalIndex];
         const viewerDelta = viewerLp - previousViewerLp;
@@ -955,8 +958,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     }
 
     passiveLogRef.current = state.log;
-    passiveLpRef.current = [state.players[0].lp, state.players[1].lp];
-  }, [state.log, state.players[0].lp, state.players[1].lp, viewer]);
+    passiveLpRef.current = [player0Lp, player1Lp];
+  }, [state.log, player0Lp, player1Lp, currentPlayer, viewer]);
 
   // Deduplicar efectos visuales, sonidos y mensajes para cada ataque real.
   const processedCombatIdsRef = useRef<Set<string>>(new Set());
@@ -1037,7 +1040,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         setTimeout(() => setLastCombat(null), 1000);
       }
     }
-  }, [state.lastCombat, state.turnCount, viewer]);
+  }, [state.lastCombat, state.turnCount, state.currentPlayer, viewer]);
 
   const handleHandCardClick = (card: Card) => {
     setSelectedFieldUid(null);
@@ -1243,7 +1246,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   const opponentUidOf = (fm: FieldMonster): string | null =>
     opp.field.some((f) => f?.uid === fm.uid) ? fm.uid : null;
 
-  const startTrap3CountAnimation = () => {
+  const startTrap3CountAnimation = useCallback(() => {
     if (!state.pendingTrap || !state.pendingDice || trapCountAnimation) return;
 
     const pt = state.pendingTrap;
@@ -1266,7 +1269,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     );
 
     setTrapCountAnimation({ roll, sequence, step: 0 });
-  };
+  }, [state.pendingTrap, state.pendingDice, trapCountAnimation, state.players]);
 
   const trapPrompt = false; // Las trampas se activan automáticamente; no hay confirmación manual.
   const dicePrompt = state.phase === 'dice-roll' && state.pendingDice;
@@ -1290,7 +1293,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       dispatch({ type: 'ROLL_DICE', roll: Math.floor(Math.random() * 6) + 1 });
     }, 450);
     return () => window.clearTimeout(timer);
-  }, [dicePrompt, state.diceResult, state.pendingTrap, state.turnCount, state.log.length, dispatch]);
+  }, [dicePrompt, state.diceResult, state.pendingTrap, state.turnCount, state.log.length, dispatch, startTrap3CountAnimation]);
 
   const selectionPromptText = (): string => {
     switch (sel.kind) {

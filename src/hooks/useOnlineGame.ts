@@ -257,7 +257,7 @@ export function useOnlineGame(): OnlineGameHook {
       } finally {
         isProcessingRef.current = false;
       }
-  }, [broadcastSync, filterStateForPlayer, playerRole]);
+  }, [broadcastSync, filterStateForPlayer]);
   
   // Manejar sincronización completa del estado
   const handleSync = useCallback((payload: RemoteSyncPayload) => {
