@@ -12,6 +12,7 @@ import {
 } from './history';
 import type { Action } from './types';
 import { initialState, reducer } from './engine';
+export { initialState, reducer } from './engine';
 /**
  * Envoltura del reductor real del juego. Solo observa: el `GameState` que
  * devuelve es exactamente el que produciría `reducer`.
