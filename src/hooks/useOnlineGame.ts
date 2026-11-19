@@ -6,6 +6,7 @@ import { isLegalAction } from '../game/legalActions';
 export type GameMode = 'local' | 'cpu' | 'online';
 
 type PlayerRole = 'player1' | 'player2' | 'spectator';
+type RoomPresence = { presence_ref: string; user_id?: string; role?: string };
 type LifecycleResponse = {
   roomId: string;
   role: 'player1' | 'player2';
@@ -117,19 +118,20 @@ export function useOnlineGame(): OnlineGameHook {
       config: { private: true, presence: { key: userId } },
     })
       .on('presence', { event: 'sync' }, () => {
-        const online = Object.values(presenceChannel.presenceState()).flat()
+        const presenceState = presenceChannel.presenceState() as Record<string, RoomPresence[]>;
+        const online = Object.values(presenceState).flat()
           .some((presence) => presence.user_id !== userId);
         setOpponentConnected(online);
         setWaitingForOpponent(role === 'player1' && !online);
       })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
-        if (newPresences.some((presence) => presence.user_id !== userId)) {
+        if ((newPresences as unknown as RoomPresence[]).some((presence) => presence.user_id !== userId)) {
           setOpponentConnected(true);
           setWaitingForOpponent(false);
         }
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        if (leftPresences.some((presence) => presence.user_id !== userId)) {
+        if ((leftPresences as unknown as RoomPresence[]).some((presence) => presence.user_id !== userId)) {
           setOpponentConnected(false);
           setWaitingForOpponent(role === 'player1');
         }
