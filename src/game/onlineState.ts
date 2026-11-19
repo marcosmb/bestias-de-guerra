@@ -56,7 +56,8 @@ function hidePendingCardSelection(
   if (selection.kind === 'place-trap') {
     return { ...selection, card: hiddenTrap(key) };
   }
-  if (selection.kind === 'place-magic' || selection.kind === 'magic-target-monster') {
+  if (selection.kind === 'place-magic' || selection.kind === 'magic-target-monster' ||
+      selection.kind === 'revive-choice') {
     return { ...selection, card: hiddenMagic(key) };
   }
   return selection;
