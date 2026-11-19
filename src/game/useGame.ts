@@ -1728,7 +1728,8 @@ export function reducer(state: GameState, action: Action): GameState {
         };
         log.push(`${action.card.name}: ${revived.name} revivido del cementerio al campo en posición ${position === 'attack' ? 'Ataque' : 'Defensa'}.`);
       }
-  consumeInstantMagic(players, me, action.card);
+      // La Mágica se consume solo después de recuperar correctamente el Monstruo.
+      consumeInstantMagic(players, me, action.card);
 
       const winResult = checkWinner(players);
       const newState: GameState = {
