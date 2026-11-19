@@ -58,7 +58,7 @@ export function useOnlineGame(): OnlineGameHook {
     stateRef.current = next;
     setGameState(next);
     if (typeof version === 'number') stateVersionRef.current = version;
-    else stateVersionRef.current = next.stateVersion ?? stateVersionRef.current;
+    else if (next) stateVersionRef.current = next.stateVersion ?? stateVersionRef.current;
   }, []);
 
   const ensureAuthenticated = useCallback(async (): Promise<string> => {
@@ -205,6 +205,7 @@ export function useOnlineGame(): OnlineGameHook {
       setIsConnected(false);
       setGameState(null);
       stateRef.current = null;
+      stateVersionRef.current = 0;
       setError(joinError instanceof Error ? joinError.message : 'Error uniéndose a la sala');
       return false;
     }
