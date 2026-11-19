@@ -5,7 +5,7 @@
 
 begin;
 
-create or replace function public.is_online_room_member(p_room_id text, p_user_id uuid)
+create or replace function public.is_online_room_member(p_room_id text)
 returns boolean
 language sql
 stable
@@ -16,27 +16,12 @@ as $$
     select 1
     from public.game_rooms r
     where r.id = p_room_id
-      and (r.player1_uid = p_user_id or r.player2_uid = p_user_id)
+      and (r.player1_uid = (select auth.uid()) or r.player2_uid = (select auth.uid()))
   );
 $$;
 
-revoke all on function public.is_online_room_member(text, uuid) from public, anon;
-grant execute on function public.is_online_room_member(text, uuid) to authenticated, service_role;
-
--- Replace policies that queried game_rooms directly: after this cutover its
--- client-facing RLS policies are intentionally removed.
-drop policy if exists "room members receive own private game state" on realtime.messages;
-create policy "room members receive own private game state"
-on realtime.messages
-for select
-to authenticated
-using (
-  split_part((select realtime.topic()), ':', 1) = 'room'
-  and split_part((select realtime.topic()), ':', 3) = 'player'
-  and split_part((select realtime.topic()), ':', 4) = (select auth.uid())::text
-  and realtime.messages.extension = 'broadcast'
-  and public.is_online_room_member(split_part((select realtime.topic()), ':', 2), (select auth.uid()))
-);
+revoke all on function public.is_online_room_member(text) from public, anon;
+grant execute on function public.is_online_room_member(text) to authenticated, service_role;
 
 drop policy if exists "room members receive shared presence" on realtime.messages;
 create policy "room members receive shared presence"
@@ -46,7 +31,7 @@ to authenticated
 using (
   split_part((select realtime.topic()), ':', 1) = 'room-presence'
   and realtime.messages.extension = 'broadcast'
-  and public.is_online_room_member(split_part((select realtime.topic()), ':', 2), (select auth.uid()))
+  and public.is_online_room_member(split_part((select realtime.topic()), ':', 2))
 );
 
 -- Presence metadata is readable/writable only by members of the room.
