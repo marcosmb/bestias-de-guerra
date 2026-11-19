@@ -174,6 +174,12 @@ Deno.serve(async (req: Request) => {
         updated_at: new Date().toISOString(),
       }).eq("room_id", roomId).eq("state_version", privateRow.state_version);
       if (saveError) return json({ error: "Could not initialize joined player" }, 409);
+      const presenceChannel = db.channel("room-presence:" + roomId, { config: { private: true } });
+      try {
+        await presenceChannel.send({ type: "broadcast", event: "room-status", payload: { status: "player-joined" } });
+      } finally {
+        await db.removeChannel(presenceChannel);
+      }
       return json({ roomId, role: "player2", state: filterOnlineState(updatedState, 1), stateVersion: privateRow.state_version + 1 });
     }
 
@@ -211,6 +217,12 @@ Deno.serve(async (req: Request) => {
         if (error) return json({ error: "Could not close room" }, 500);
       } else {
         return json({ error: "Not a room player" }, 403);
+      }
+      const presenceChannel = db.channel("room-presence:" + roomId, { config: { private: true } });
+      try {
+        await presenceChannel.send({ type: "broadcast", event: "room-status", payload: { status: room.player2_uid === user.id ? "player-left" : "room-closed" } });
+      } finally {
+        await db.removeChannel(presenceChannel);
       }
       return json({ ok: true });
     }
