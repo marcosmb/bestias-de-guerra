@@ -10,7 +10,9 @@ import type { Action, GameState } from "../../../src/game/types.ts";
 import type { Card } from "../../../src/game/cardData.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  // Set APP_ALLOWED_ORIGIN to the exact deployed frontend origin before deployment.
+  // Fail closed when unset; never expose authenticated endpoints with wildcard CORS.
+  "Access-Control-Allow-Origin": Deno.env.get("APP_ALLOWED_ORIGIN") ?? "null",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
