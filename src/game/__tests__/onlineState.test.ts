@@ -189,7 +189,7 @@ describe('filterOnlineState', () => {
 
   it('hides opponent revive-choice card details in current and queued selections', () => {
     const state = stateWithPlayers();
-    const selectedMagic = { ...MAGICS[4], instanceId: 'revive-choice-secret', owner: 0 as const };
+    const selectedMagic = { ...MAGICS[4], name: 'Mágica secreta exclusiva', instanceId: 'revive-choice-secret', owner: 0 as const };
     state.currentPlayer = 0;
     state.selection = { kind: 'revive-choice', card: selectedMagic };
     state.pendingTurnStartSelections = [{ kind: 'revive-choice', card: selectedMagic }];
