@@ -31,10 +31,12 @@ on realtime.messages
 for select
 to authenticated
 using (
-  split_part(realtime.topic(), ':', 1) = 'room'
-  and split_part(realtime.topic(), ':', 3) = 'player'
-  and split_part(realtime.topic(), ':', 4) = auth.uid()::text
-  and public.is_online_room_member(split_part(realtime.topic(), ':', 2), auth.uid())
+  split_part((select realtime.topic()), ':', 1) = 'room'
+  and split_part((select realtime.topic()), ':', 3) = 'player'
+  and split_part((select realtime.topic()), ':', 4) = (select auth.uid())::text
+  and realtime.messages.extension = 'broadcast'
+  and realtime.messages.extension = 'broadcast'
+  and public.is_online_room_member(split_part((select realtime.topic()), ':', 2), (select auth.uid()))
 );
 
 drop policy if exists "room members receive shared presence" on realtime.messages;
@@ -43,8 +45,8 @@ on realtime.messages
 for select
 to authenticated
 using (
-  split_part(realtime.topic(), ':', 1) = 'room-presence'
-  and public.is_online_room_member(split_part(realtime.topic(), ':', 2), auth.uid())
+  split_part((select realtime.topic()), ':', 1) = 'room-presence'
+  and public.is_online_room_member(split_part((select realtime.topic()), ':', 2), (select auth.uid()))
 );
 
 alter table public.game_rooms enable row level security;
