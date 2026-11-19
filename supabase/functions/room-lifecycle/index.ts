@@ -201,16 +201,19 @@ Deno.serve(async (req: Request) => {
 
     if (body.operation === "leave") {
       if (room.player2_uid === user.id) {
+        // Retain the seat identity so the same authenticated player can reconnect.
+        // Never recycle the old private state for a different anonymous user.
+        const player2 = isRecord(room.player2) ? room.player2 : {};
         const { error } = await db.from("game_rooms").update({
-          player2_uid: null,
-          player2: { id: null, name: null, connected: false },
-          status: "waiting",
+          player2: { ...player2, connected: false },
           updated_at: new Date().toISOString(),
         }).eq("id", roomId).eq("player2_uid", user.id);
         if (error) return json({ error: "Could not leave room" }, 500);
       } else if (room.player1_uid === user.id) {
-        // Keep the room row and private state for audit/legacy preservation.
+        // Keep room row, seat identity and private state for audit/legacy preservation.
+        const player1 = isRecord(room.player1) ? room.player1 : {};
         const { error } = await db.from("game_rooms").update({
+          player1: { ...player1, connected: false },
           status: "finished",
           updated_at: new Date().toISOString(),
         }).eq("id", roomId).eq("player1_uid", user.id);
