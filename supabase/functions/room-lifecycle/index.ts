@@ -31,7 +31,7 @@ function cleanName(value: unknown): string {
 }
 
 function newRoomCode(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(5));
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
   return Array.from(bytes, (byte) => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[byte % 32]).join("");
 }
 
@@ -123,7 +123,7 @@ Deno.serve(async (req: Request) => {
       return json({ roomId, role: "player1", state: filterOnlineState(state, 0), stateVersion: 0 });
     }
 
-    if (typeof body.roomId !== "string" || !/^[A-Z0-9]{5}$/.test(body.roomId.toUpperCase())) {
+    if (typeof body.roomId !== "string" || !/^[A-Z0-9]{6}$/.test(body.roomId.toUpperCase())) {
       return json({ error: "Invalid room code" }, 400);
     }
     const roomId = body.roomId.toUpperCase();
