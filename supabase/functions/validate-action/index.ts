@@ -6,7 +6,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { reducer } from "../../../src/game/engine.ts";
 import { isLegalAction } from "../../../src/game/legalActions.ts";
 import { filterOnlineState } from "../../../src/game/onlineState.ts";
-import type { Action, Card, GameState } from "../../../src/game/types.ts";
+import type { Action, GameState } from "../../../src/game/types.ts";
+import type { Card } from "../../../src/game/cardData.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
