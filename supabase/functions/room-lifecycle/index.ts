@@ -26,7 +26,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function cleanName(value: unknown): string {
   if (typeof value !== "string") return "Jugador";
-  // Control characters are intentionally stripped from player-visible names.\n  // eslint-disable-next-line no-control-regex\n  const name = value.trim().replace(/[<>\u0000-\u001f]/g, "").slice(0, 24);
+  // Control characters are intentionally stripped from player-visible names.
+  // eslint-disable-next-line no-control-regex
+  const name = value.trim().replace(/[<>\u0000-\u001f]/g, "").slice(0, 24);
   return name || "Jugador";
 }
 
