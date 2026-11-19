@@ -112,6 +112,11 @@ describe('filterOnlineState', () => {
     if (!attackerCard || attackerCard.type !== 'monster' || !defenderCard || defenderCard.type !== 'monster') {
       throw new Error('Expected monsters in hands');
     }
+    state.players[1].field[0] = fieldMonster(defenderCard, {
+      uid: 'd',
+      faceDown: true,
+      trap: defenderTrap,
+    });
     state.pendingTrap = {
       attackerUid: 'a',
       defenderUid: 'd',
@@ -126,6 +131,8 @@ describe('filterOnlineState', () => {
     const attackerView = filterOnlineState(state, 0).pendingTrap;
     expect(attackerView?.trap.name).toBe('Carta oculta');
     expect(attackerView?.trap.instanceId).not.toBe(defenderTrap.instanceId);
+    expect(attackerView?.defenderCard.name).toBe('Carta oculta');
+    expect(attackerView?.defenderCard.instanceId).not.toBe(defenderCard.instanceId);
     expect(JSON.stringify(attackerView)).not.toContain(TRAPS[4].name);
     expect(filterOnlineState(state, 1).pendingTrap?.trap).toEqual(defenderTrap);
   });
