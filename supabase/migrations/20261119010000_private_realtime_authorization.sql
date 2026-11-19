@@ -16,14 +16,15 @@ on realtime.messages
 for select
 to authenticated
 using (
-  split_part(realtime.topic(), ':', 1) = 'room'
-  and split_part(realtime.topic(), ':', 3) = 'player'
-  and split_part(realtime.topic(), ':', 4) = auth.uid()::text
+  split_part((select realtime.topic()), ':', 1) = 'room'
+  and split_part((select realtime.topic()), ':', 3) = 'player'
+  and split_part((select realtime.topic()), ':', 4) = (select auth.uid())::text
+  and realtime.messages.extension = 'broadcast'
   and exists (
     select 1
     from public.game_rooms r
-    where r.id = split_part(realtime.topic(), ':', 2)
-      and (r.player1_uid = auth.uid() or r.player2_uid = auth.uid())
+    where r.id = split_part((select realtime.topic()), ':', 2)
+      and (r.player1_uid = (select auth.uid()) or r.player2_uid = (select auth.uid()))
   )
 );
 
@@ -33,12 +34,12 @@ on realtime.messages
 for select
 to authenticated
 using (
-  split_part(realtime.topic(), ':', 1) = 'room-presence'
+  split_part((select realtime.topic()), ':', 1) = 'room-presence'
   and exists (
     select 1
     from public.game_rooms r
-    where r.id = split_part(realtime.topic(), ':', 2)
-      and (r.player1_uid = auth.uid() or r.player2_uid = auth.uid())
+    where r.id = split_part((select realtime.topic()), ':', 2)
+      and (r.player1_uid = (select auth.uid()) or r.player2_uid = (select auth.uid()))
   )
 );
 
