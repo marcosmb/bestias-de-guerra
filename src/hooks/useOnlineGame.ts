@@ -391,11 +391,10 @@ export function useOnlineGame(): OnlineGameHook {
           // Actualizar el estado REAL con el nombre real del jugador 2
           const updatedRealState = {
             ...realGameStateRef.current,
-      players: [
-        realGameStateRef.current.players[0],
-        { ...realGameStateRef.current.players[1], name: opponentName }
-      ] as [PlayerState, PlayerState],
-
+            players: [
+              realGameStateRef.current.players[0],
+              { ...realGameStateRef.current.players[1], name: opponentName },
+            ],
             log: realGameStateRef.current.turnCount === 0
               ? ['¡Empieza la partida! Empieza ' + (
                   realGameStateRef.current.currentPlayer === 0
