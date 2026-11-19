@@ -23,6 +23,19 @@ $$;
 revoke all on function public.is_online_room_member(text) from public, anon;
 grant execute on function public.is_online_room_member(text) to authenticated, service_role;
 
+drop policy if exists "room members receive own private game state" on realtime.messages;
+create policy "room members receive own private game state"
+on realtime.messages
+for select
+to authenticated
+using (
+  split_part((select realtime.topic()), ':', 1) = 'room'
+  and split_part((select realtime.topic()), ':', 3) = 'player'
+  and split_part((select realtime.topic()), ':', 4) = (select auth.uid())::text
+  and realtime.messages.extension = 'broadcast'
+  and public.is_online_room_member(split_part((select realtime.topic()), ':', 2))
+);
+
 drop policy if exists "room members receive shared presence" on realtime.messages;
 create policy "room members receive shared presence"
 on realtime.messages
@@ -43,7 +56,7 @@ to authenticated
 using (
   split_part((select realtime.topic()), ':', 1) = 'room-presence'
   and realtime.messages.extension = 'presence'
-  and public.is_online_room_member(split_part((select realtime.topic()), ':', 2), (select auth.uid()))
+  and public.is_online_room_member(split_part((select realtime.topic()), ':', 2))
 );
 
 drop policy if exists "room members publish shared presence state" on realtime.messages;
@@ -54,7 +67,7 @@ to authenticated
 with check (
   split_part((select realtime.topic()), ':', 1) = 'room-presence'
   and realtime.messages.extension = 'presence'
-  and public.is_online_room_member(split_part((select realtime.topic()), ':', 2), (select auth.uid()))
+  and public.is_online_room_member(split_part((select realtime.topic()), ':', 2))
 );
 
 alter table public.game_rooms enable row level security;
