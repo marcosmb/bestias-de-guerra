@@ -76,13 +76,22 @@ function hideFieldMonster(fm: FieldMonster, playerIndex: 0 | 1, slot: number): F
 }
 
 function hidePendingTrap(
-  pendingTrap: GameState['pendingTrap'],
+  state: GameState,
   viewerIndex: 0 | 1,
 ): GameState['pendingTrap'] {
+  const pendingTrap = state.pendingTrap;
   if (!pendingTrap || pendingTrap.defenderPlayer === viewerIndex) return pendingTrap;
+
+  const defender = state.players[pendingTrap.defenderPlayer].field.find(
+    (fieldMonster) => fieldMonster?.uid === pendingTrap.defenderUid,
+  );
   return {
     ...pendingTrap,
     trap: hiddenTrap(`hidden-${pendingTrap.defenderPlayer}-pending-trap`),
+    // A face-down defender is still secret while its trap response is pending.
+    defenderCard: defender?.faceDown
+      ? hiddenHandCard(`hidden-${pendingTrap.defenderPlayer}-pending-defender`)
+      : pendingTrap.defenderCard,
   };
 }
 
@@ -97,7 +106,7 @@ export function filterOnlineState(state: GameState, viewerIndex: 0 | 1): GameSta
         ? selection
         : hidePendingCardSelection(selection, state.currentPlayer),
     ),
-    pendingTrap: hidePendingTrap(state.pendingTrap, viewerIndex),
+    pendingTrap: hidePendingTrap(state, viewerIndex),
     players: state.players.map((player, index) => {
       if (index === viewerIndex) return player;
 
