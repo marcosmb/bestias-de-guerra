@@ -5,6 +5,7 @@ import { createPlayer, drawCards, shuffleDeck } from '../game/types';
 import { isLegalAction } from '../game/legalActions';
 import { buildDeck } from '../game/cardData';
 import { reducer } from '../game/useGame';
+import { filterOnlineState } from '../game/onlineState';
 
 export type GameMode = 'local' | 'cpu' | 'online';
 
@@ -98,34 +99,7 @@ export function useOnlineGame(): OnlineGameHook {
     };
   }, []);
   
-  // Filtrar estado para privacidad: cada jugador solo ve su mano
-  const filterStateForPlayer = useCallback((state: GameState, playerIndex: 0 | 1): GameState => ({
-      ...state,
-      players: state.players.map((p, i) => ({
-        ...p,
-        hand: i === playerIndex 
-          ? p.hand 
-          : p.hand.map((card) => ({
-              ...card, 
-              hidden: true, 
-              // Preservar campos necesarios para CardView (imagen) pero marcar como oculta
-              type: card.type || 'hidden',
-              suit: card.suit,
-              number: card.number,
-              name: card.name,
-            })),
-        deck: i === playerIndex 
-          ? p.deck 
-          : p.deck.map((card) => ({
-              ...card, 
-              hidden: true,
-              type: card.type || 'hidden',
-              suit: card.suit,
-              number: card.number,
-              name: card.name,
-            })),
-      })) as [PlayerState, PlayerState],
-    }), []);
+  const filterStateForPlayer = useCallback(filterOnlineState, []);
   
   // Función para enviar acción al oponente
   const broadcastAction = useCallback(async (action: Action) => {
