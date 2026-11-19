@@ -318,7 +318,7 @@ describe('HISTORIAL DE LA ÚLTIMA PARTIDA', () => {
 
     it('tirada de dado registra el número', () => {
       const g = estado({ phase: 'dice-roll' });
-      const conDado: GameState = { ...g, pendingDice: { reason: 'Mágica 11', onRoll: () => ({ type: 'END_TURN' }) } };
+      const conDado: GameState = { ...g, pendingDice: { reason: 'Mágica 11' } };
       const b = run(sobre(conDado), { type: 'ROLL_DICE', roll: 4 });
       const e = last(hist(b).entries);
       expect(e.actionType).toBe('ROLL_DICE');
