@@ -146,7 +146,7 @@ export function useOnlineGame(): OnlineGameHook {
       // para compatibilidad, pero solo la vista del destinatario.
       void broadcastSync(newState);
     } catch (e) {
-      console.error('Error procesando acciÃ³n remota:', e);
+      console.error('Error procesando acción remota:', e);
       if (realGameStateRef.current) void broadcastSync(realGameStateRef.current);
     } finally {
       isProcessingRef.current = false;
@@ -189,7 +189,7 @@ export function useOnlineGame(): OnlineGameHook {
       stateVersion: 0,
       players: [p1, p2] as [PlayerState, PlayerState],
       selection: { kind: 'none' },
-      log: ['Â¡Empieza la partida! Empieza ' + startingPlayerName + '.'],
+      log: ['¡Empieza la partida! Empieza ' + startingPlayerName + '.'],
       winner: null,
       isDraw: false,
       pendingTrap: null,
@@ -204,8 +204,8 @@ export function useOnlineGame(): OnlineGameHook {
     setError(null);
     const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
     if (authError || !authData?.user) {
-      setError(`Error de autenticaciÃ³n: ${authError?.message ?? 'sin usuario'}`);
-      throw authError ?? new Error('Sin usuario anÃ³nimo');
+      setError(`Error de autenticación: ${authError?.message ?? 'sin usuario'}`);
+      throw authError ?? new Error('Sin usuario anónimo');
     }
     const myPlayerId = authData.user.id;
     myPlayerIdRef.current = myPlayerId;
@@ -247,7 +247,7 @@ export function useOnlineGame(): OnlineGameHook {
           const updatedRealState = {
             ...realGameStateRef.current,
             players: [realGameStateRef.current.players[0], { ...realGameStateRef.current.players[1], name: opponentName }] as [PlayerState, PlayerState],
-            log: realGameStateRef.current.turnCount === 0 ? ['Â¡Empieza la partida! Empieza ' + (realGameStateRef.current.currentPlayer === 0 ? realGameStateRef.current.players[0].name : opponentName) + '.'] : realGameStateRef.current.log,
+            log: realGameStateRef.current.turnCount === 0 ? ['¡Empieza la partida! Empieza ' + (realGameStateRef.current.currentPlayer === 0 ? realGameStateRef.current.players[0].name : opponentName) + '.'] : realGameStateRef.current.log,
           };
           realGameStateRef.current = updatedRealState;
           void supabase.from('game_rooms').update({ game_state: updatedRealState, player2: { id: opponentId, name: opponentName, connected: true }, status: 'playing', updated_at: new Date().toISOString() }).eq('id', roomCode);
@@ -271,7 +271,7 @@ export function useOnlineGame(): OnlineGameHook {
           await channel.track({ user_id: myPlayerId, online_at: new Date().toISOString(), role: 'player1', name: playerName });
         } else if (status === 'CHANNEL_ERROR') {
           setIsConnected(false);
-          setError('Error de conexiÃ³n con la sala');
+          setError('Error de conexión con la sala');
         }
       });
 
@@ -292,7 +292,7 @@ export function useOnlineGame(): OnlineGameHook {
     setError(null);
     const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
     if (authError || !authData?.user) {
-      setError(`Error de autenticaciÃ³n: ${authError?.message ?? 'sin usuario'}`);
+      setError(`Error de autenticación: ${authError?.message ?? 'sin usuario'}`);
       return false;
     }
     const myPlayerId = authData.user.id;
@@ -302,7 +302,7 @@ export function useOnlineGame(): OnlineGameHook {
     const { data: roomData, error: roomError } = await supabase.from('game_rooms').select('*').eq('id', upperRoomId).single();
     if (roomError || !roomData) { setError('Sala no encontrada'); return false; }
     const room = roomData as OnlineGameState;
-    if (room.player2.id) { setError('La sala ya estÃ¡ completa'); return false; }
+    if (room.player2.id) { setError('La sala ya está completa'); return false; }
 
     const existingGameState = room.game_state;
     const { error: updateError } = await supabase.from('game_rooms').update({
@@ -311,12 +311,12 @@ export function useOnlineGame(): OnlineGameHook {
       status: 'playing',
       updated_at: new Date().toISOString(),
     }).eq('id', upperRoomId);
-    if (updateError) { setError(`Error uniÃ©ndose: ${updateError.message}`); return false; }
+    if (updateError) { setError(`Error uniéndose: ${updateError.message}`); return false; }
 
     const updatedGameState = {
       ...existingGameState,
       players: [existingGameState.players[0], { ...existingGameState.players[1], name: playerName }] as [PlayerState, PlayerState],
-      log: existingGameState.turnCount === 0 ? ['Â¡Empieza la partida! Empieza ' + (existingGameState.currentPlayer === 0 ? existingGameState.players[0].name : playerName) + '.'] : existingGameState.log,
+      log: existingGameState.turnCount === 0 ? ['¡Empieza la partida! Empieza ' + (existingGameState.currentPlayer === 0 ? existingGameState.players[0].name : playerName) + '.'] : existingGameState.log,
     };
     realGameStateRef.current = updatedGameState;
     await supabase.from('game_rooms').update({ game_state: updatedGameState, updated_at: new Date().toISOString() }).eq('id', upperRoomId);
@@ -341,7 +341,7 @@ export function useOnlineGame(): OnlineGameHook {
           await channel.send({ type: 'broadcast', event: 'player-joined', payload: { playerId: myPlayerId, playerName } });
         } else if (status === 'CHANNEL_ERROR') {
           setIsConnected(false);
-          setError('Error de conexiÃ³n con la sala');
+          setError('Error de conexión con la sala');
         }
       });
 
@@ -390,24 +390,24 @@ export function useOnlineGame(): OnlineGameHook {
 
   const dispatchAction = useCallback((action: Action) => {
     const currentViewState = gameStateRef.current;
-    if (!currentViewState) { console.warn('[ONLINE] AcciÃ³n ignorada: todavÃ­a no hay partida cargada.', action?.type); return; }
-    if (waitingForOpponent) { console.warn('[ONLINE] AcciÃ³n ignorada: esperando al rival.', action?.type); return; }
+    if (!currentViewState) { console.warn('[ONLINE] Acción ignorada: todavía no hay partida cargada.', action?.type); return; }
+    if (waitingForOpponent) { console.warn('[ONLINE] Acción ignorada: esperando al rival.', action?.type); return; }
     const role = playerRoleRef.current;
-    if (role !== 'player1' && role !== 'player2') { console.warn('[ONLINE] AcciÃ³n ignorada: no hay rol de jugador asignado.', action?.type); return; }
+    if (role !== 'player1' && role !== 'player2') { console.warn('[ONLINE] Acción ignorada: no hay rol de jugador asignado.', action?.type); return; }
     const myIndex = role === 'player1' ? 0 : 1;
     if (currentViewState.currentPlayer !== myIndex) {
-      console.warn('[ONLINE] AcciÃ³n ignorada: no es tu turno.', { actionType: action?.type, currentPlayer: currentViewState.currentPlayer, myIndex });
+      console.warn('[ONLINE] Acción ignorada: no es tu turno.', { actionType: action?.type, currentPlayer: currentViewState.currentPlayer, myIndex });
       return;
     }
-    if (!isLegalAction(currentViewState, myIndex, action)) { console.warn('[ONLINE] AcciÃ³n no legal:', action); return; }
+    if (!isLegalAction(currentViewState, myIndex, action)) { console.warn('[ONLINE] Acción no legal:', action); return; }
 
     const host = isHostRef.current;
     const authoritativeState = host ? realGameStateRef.current : currentViewState;
-    if (!authoritativeState) { console.warn('[ONLINE] AcciÃ³n ignorada: falta el estado autoritativo.', action?.type); return; }
+    if (!authoritativeState) { console.warn('[ONLINE] Acción ignorada: falta el estado autoritativo.', action?.type); return; }
 
     if (host) {
       const newState = reducer(authoritativeState, action);
-      if (newState === authoritativeState) { console.warn('[ONLINE] El reducer no aplicÃ³ la acciÃ³n:', action?.type); return; }
+      if (newState === authoritativeState) { console.warn('[ONLINE] El reducer no aplicó la acción:', action?.type); return; }
       newState.stateVersion = (newState.stateVersion ?? 0) + 1;
       const filteredState = filterStateForPlayer(newState, myIndex);
       realGameStateRef.current = newState;
