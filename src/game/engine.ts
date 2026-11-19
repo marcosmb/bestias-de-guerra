@@ -324,7 +324,7 @@ function applyTrapEffect(
     }
     case 'dice_count_field':
       // needs dice — set up pending dice
-      return { state: { ...state, phase: 'dice-roll', pendingDice: { reason: trap.name, onRoll: (roll: number) => ({ type: 'ROLL_DICE', roll }) } }, negateAttack: true, destroyAttacker: false, skipCombat: true };
+      return { state: { ...state, phase: 'dice-roll', pendingDice: { reason: trap.name } }, negateAttack: true, destroyAttacker: false, skipCombat: true };
     case 'reflect_damage':
       // handled in combat resolution — mark defender
       if (defender) {
@@ -371,7 +371,7 @@ function applyTrapEffect(
       break;
     }
     case 'dice_4plus_destroy':
-      return { state: { ...state, phase: 'dice-roll', pendingDice: { reason: trap.name, onRoll: (roll: number) => ({ type: 'ROLL_DICE', roll }) } }, negateAttack: true, destroyAttacker: false, skipCombat: true };
+      return { state: { ...state, phase: 'dice-roll', pendingDice: { reason: trap.name } }, negateAttack: true, destroyAttacker: false, skipCombat: true };
     case 'swap_attacker': {
       // Trampa 7: intercambia el Monstruo atacante por el Monstruo que recibió
       // el ataque. Cada uno ocupa la casilla del otro; ambos conservan sus
@@ -714,7 +714,6 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
         phase: 'dice-roll',
         pendingDice: {
           reason: card.name,
-          onRoll: (roll: number) => ({ type: 'ROLL_DICE', roll }),
           magicCardInstanceId: card.instanceId,
           magicPlayer: me,
         },
