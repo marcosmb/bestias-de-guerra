@@ -35,6 +35,7 @@ for select
 to authenticated
 using (
   split_part((select realtime.topic()), ':', 1) = 'room-presence'
+  and realtime.messages.extension = 'broadcast'
   and exists (
     select 1
     from public.game_rooms r
