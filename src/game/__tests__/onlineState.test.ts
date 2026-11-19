@@ -187,6 +187,31 @@ describe('filterOnlineState', () => {
     expect(filtered.players[0].hand).toBe(state.players[0].hand);
   });
 
+  it('hides opponent revive-choice card details in current and queued selections', () => {
+    const state = stateWithPlayers();
+    const selectedMagic = { ...MAGICS[4], instanceId: 'revive-choice-secret', owner: 0 as const };
+    state.currentPlayer = 0;
+    state.selection = { kind: 'revive-choice', card: selectedMagic };
+    state.pendingTurnStartSelections = [{ kind: 'revive-choice', card: selectedMagic }];
+
+    const opponentView = filterOnlineState(state, 1);
+    expect(opponentView.selection.kind).toBe('revive-choice');
+    if (opponentView.selection.kind !== 'revive-choice') throw new Error('Expected revive-choice selection');
+    expect(opponentView.selection.card.name).toBe('Carta oculta');
+    expect(opponentView.selection.card.instanceId).not.toBe(selectedMagic.instanceId);
+    const queued = opponentView.pendingTurnStartSelections?.[0];
+    expect(queued?.kind).toBe('revive-choice');
+    if (queued?.kind !== 'revive-choice') throw new Error('Expected queued revive-choice selection');
+    expect(queued.card.name).toBe('Carta oculta');
+    expect(queued.card.instanceId).not.toBe(selectedMagic.instanceId);
+    expect(JSON.stringify(opponentView)).not.toContain(selectedMagic.name);
+    expect(JSON.stringify(opponentView)).not.toContain(selectedMagic.instanceId);
+
+    const ownerView = filterOnlineState(state, 0);
+    expect(ownerView.selection).toEqual(state.selection);
+    expect(ownerView.pendingTurnStartSelections).toEqual(state.pendingTurnStartSelections);
+  });
+
   it('redacts hidden opponent card names from log and last combat without changing dice result', () => {
     const state = stateWithPlayers();
     const hidden = state.players[1].deck.find((card) => card.type === 'monster');
