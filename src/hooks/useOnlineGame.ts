@@ -113,7 +113,27 @@ export function useOnlineGame(): OnlineGameHook {
       });
     });
 
-    const presenceChannel = supabase.channel(`room-presence:${id}`, { config: { private: true } })
+    const presenceChannel = supabase.channel(`room-presence:${id}`, {
+      config: { private: true, presence: { key: userId } },
+    })
+      .on('presence', { event: 'sync' }, () => {
+        const online = Object.values(presenceChannel.presenceState()).flat()
+          .some((presence) => presence.user_id !== userId);
+        setOpponentConnected(online);
+        setWaitingForOpponent(role === 'player1' && !online);
+      })
+      .on('presence', { event: 'join' }, ({ newPresences }) => {
+        if (newPresences.some((presence) => presence.user_id !== userId)) {
+          setOpponentConnected(true);
+          setWaitingForOpponent(false);
+        }
+      })
+      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+        if (leftPresences.some((presence) => presence.user_id !== userId)) {
+          setOpponentConnected(false);
+          setWaitingForOpponent(role === 'player1');
+        }
+      })
       .on('broadcast', { event: 'room-status' }, async ({ payload }) => {
         if (payload?.status === 'player-joined') {
           setOpponentConnected(true);
@@ -139,6 +159,10 @@ export function useOnlineGame(): OnlineGameHook {
         }
       });
     });
+    const presenceStatus = await presenceChannel.track({ user_id: userId, role });
+    if (presenceStatus !== 'ok') {
+      throw new Error('No se pudo publicar la presencia en la sala');
+    }
   }, [closeChannels, invokeLifecycle, setCurrentState]);
 
   const createRoom = useCallback(async (playerName: string): Promise<string> => {
