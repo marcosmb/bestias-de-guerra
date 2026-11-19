@@ -1,6 +1,6 @@
 -- Bestias de Guerra: additive preparation for private online state.
--- This migration preserves legacy game_rooms rows and game_state data.
--- It is not the privacy cutover: public legacy policies remain unchanged.
+-- Preserves every legacy game_rooms row and its existing game_state.
+-- This is not the privacy cutover: legacy access policies remain unchanged.
 
 begin;
 
@@ -34,36 +34,14 @@ set
   end
 where player1_uid is null or player2_uid is null;
 
--- Copy every legacy state once; never overwrite a private state already present.
+-- Copy each non-null legacy state once; never overwrite an existing private row.
+-- Bound the textual version before casting so malformed/oversized values fall back to 0.
 insert into public.room_private_state (room_id, game_state, state_version, updated_at)
 select
   id,
   game_state,
   case
-    when coalesce(game_state->>'stateVersion', '') ~ '^[0-9]+
-    else 0
-  end,
-  coalesce(updated_at, now())
-from public.game_rooms
-where game_state is not null
-on conflict (room_id) do nothing;
-
-commit;
-
--- Post-migration checks:
--- select count(*) from public.game_rooms;
--- select count(*) from public.room_private_state;
--- select count(*) from public.game_rooms where player1_uid is null;
--- select count(*) from public.game_rooms where status = 'playing';
---
--- Do not deploy the action function or claim privacy until:
--- 1. Room lifecycle endpoints create/join/leave via trusted server code.
--- 2. Client uses per-player private Realtime topics only.
--- 3. Realtime RLS policies are installed and public channel access is disabled.
--- 4. Two-user privacy tests pass.
--- 5. A separate cutover migration removes legacy public table access.
-
-      and length(game_state->>'stateVersion') <= 10
+    when coalesce(game_state->>'stateVersion', '') ~ '^[0-9]{1,10}$'
       and (game_state->>'stateVersion')::numeric <= 2147483647
       then (game_state->>'stateVersion')::integer
     else 0
