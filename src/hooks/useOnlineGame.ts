@@ -394,7 +394,7 @@ export function useOnlineGame(): OnlineGameHook {
             players: [
               realGameStateRef.current.players[0],
               { ...realGameStateRef.current.players[1], name: opponentName },
-            ],
+            ] as [PlayerState, PlayerState],
             log: realGameStateRef.current.turnCount === 0
               ? ['¡Empieza la partida! Empieza ' + (
                   realGameStateRef.current.currentPlayer === 0
