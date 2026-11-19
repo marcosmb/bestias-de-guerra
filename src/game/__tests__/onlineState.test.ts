@@ -186,4 +186,31 @@ describe('filterOnlineState', () => {
     expect(opponentSerialized).not.toContain(hiddenName);
     expect(filtered.players[0].hand).toBe(state.players[0].hand);
   });
+
+  it('redacts hidden opponent card names from log and last combat without changing dice result', () => {
+    const state = stateWithPlayers();
+    const hidden = state.players[1].hand[0];
+    if (!hidden) throw new Error('Expected a hidden opponent card');
+
+    state.log = [`El rival prepara ${hidden.name}.`];
+    state.lastCombat = {
+      attackerDestroyed: false,
+      defenderDestroyed: false,
+      attackerDamage: 0,
+      defenderDamage: 0,
+      log: `La carta ${hidden.name} permanece oculta.`,
+      attackerCard: hidden.type === 'monster' ? hidden : undefined,
+      defenderCard: undefined,
+    };
+    state.diceResult = 4;
+
+    const filtered = filterOnlineState(state, 0);
+    expect(filtered.log.join(' ')).not.toContain(hidden.name);
+    expect(filtered.log.join(' ')).toContain('Carta oculta');
+    expect(filtered.lastCombat?.log).not.toContain(hidden.name);
+    expect(filtered.lastCombat?.log).toContain('Carta oculta');
+    expect(filtered.lastCombat?.attackerCard?.name).not.toBe(hidden.name);
+    expect(filtered.diceResult).toBe(4);
+  });
+
 });
