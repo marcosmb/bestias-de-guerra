@@ -48,7 +48,30 @@ insert into public.room_private_state (room_id, game_state, state_version, updat
 select
   id,
   game_state,
-  coalesce((game_state->>'stateVersion')::integer, 0),
+  case
+    when coalesce(game_state->>'stateVersion', '') ~ '^[0-9]+
+  coalesce(updated_at, now())
+from public.game_rooms
+where game_state is not null
+on conflict (room_id) do nothing;
+
+commit;
+
+-- Comprobaciones posteriores recomendadas:
+-- select count(*) from public.game_rooms;
+-- select count(*) from public.room_private_state;
+-- select count(*) from public.game_rooms where player1_uid is null;
+-- select count(*) from public.game_rooms where status = 'playing';
+--
+-- FASE 2 pendiente:
+-- 1. Cambiar create/join/leave/dispatchAction para operar vía Edge Functions.
+-- 2. Separar canales privados de cada jugador y autorizar Realtime por membresía.
+-- 3. Probar dos usuarios reales y comprobar que no reciben mano/mazo ajenos.
+-- 4. Solo entonces quitar las políticas públicas de game_rooms y limpiar game_state.
+
+      then (game_state->>'stateVersion')::integer
+    else 0
+  end,
   coalesce(updated_at, now())
 from public.game_rooms
 where game_state is not null
