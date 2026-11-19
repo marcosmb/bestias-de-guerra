@@ -225,24 +225,28 @@ export function useOnlineGame(): OnlineGameHook {
       console.log('[ONLINE-TRACE] A remote → reducer');
       const action = payload.payload;
       const newState = reducer(currentState, action);
-      // Filtrar el resultado para la vista del jugador actual
+      // Incrementar la versión ANTES de crear la vista filtrada. De lo contrario,
+      // la copia visible al anfitrión conserva la versión anterior mientras el
+      // estado autoritativo y el invitado avanzan, dejando las referencias locales
+      // incoherentes después de una acción remota.
+      newState.stateVersion = (newState.stateVersion ?? 0) + 1;
+
+      // Actualizar el estado real y la vista local con la misma versión.
       const myIndex = playerRoleRef.current === 'player1' ? 0 : 1;
-      setGameState(filterStateForPlayer(newState, myIndex));
-      
+      const filteredState = filterStateForPlayer(newState, myIndex);
+      realGameStateRef.current = newState;
+      gameStateRef.current = filteredState;
+      setGameState(filteredState);
+
       console.log('[ONLINE-TRACE] A remote reducer result', {
         currentPlayer: newState.currentPlayer,
         turnCount: newState.turnCount,
+        stateVersion: newState.stateVersion,
         player1Field: newState.players[0].field.map((f, i) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
         player2Field: newState.players[1].field.map((f, i) => f ? {slot: i, cardId: f.card?.id, cardName: f.card?.name, position: f.position, faceDown: f.faceDown} : null),
       });
       console.log('[ONLINE-TRACE] A setGameState called');
-      
-      // Actualizar estado real (usar newState directamente, no re-ejecutar reducer)
-      realGameStateRef.current = newState;
-      
-      // Incrementar stateVersion para la acción remota aceptada
-      newState.stateVersion = (newState.stateVersion ?? 0) + 1;
-      
+
       // Broadcast sync para el guest
       console.log('[ONLINE-TRACE] A → broadcastSync after remote');
       broadcastSync(newState);
