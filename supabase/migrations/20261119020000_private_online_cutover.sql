@@ -35,7 +35,6 @@ using (
   and split_part((select realtime.topic()), ':', 3) = 'player'
   and split_part((select realtime.topic()), ':', 4) = (select auth.uid())::text
   and realtime.messages.extension = 'broadcast'
-  and realtime.messages.extension = 'broadcast'
   and public.is_online_room_member(split_part((select realtime.topic()), ':', 2), (select auth.uid()))
 );
 
@@ -46,6 +45,7 @@ for select
 to authenticated
 using (
   split_part((select realtime.topic()), ':', 1) = 'room-presence'
+  and realtime.messages.extension = 'broadcast'
   and public.is_online_room_member(split_part((select realtime.topic()), ':', 2), (select auth.uid()))
 );
 
