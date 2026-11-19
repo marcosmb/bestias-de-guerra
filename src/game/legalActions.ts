@@ -4,7 +4,7 @@ import type {
   GameState,
   PlayerState,
   Position,
-} from './types';
+} from './types.ts';
 import {
   MAX_CARDS_PER_TURN,
   canActivateMagic,
@@ -15,8 +15,8 @@ import {
   hasTrapTarget,
   magicRequiredSide,
   cardInstanceKey,
-} from './types';
-import type { MagicCard } from './cardData';
+} from './types.ts';
+import type { MagicCard } from './cardData.ts';
 
 /**
  * ============================================================================
