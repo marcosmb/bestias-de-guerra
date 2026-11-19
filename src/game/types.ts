@@ -1,4 +1,4 @@
-import type { Card, CardInstanceId, MonsterCard, TrapCard, MagicCard } from './cardData';
+import type { Card, CardInstanceId, MonsterCard, TrapCard, MagicCard } from './cardData.ts';
 
 export type Position = 'attack' | 'defense';
 
