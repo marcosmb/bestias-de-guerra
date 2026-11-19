@@ -193,7 +193,9 @@ Deno.serve(async (req: Request) => {
       return json({
         roomId,
         role: playerIndex === 0 ? "player1" : "player2",
-        opponentConnected: playerIndex === 0 ? Boolean(room.player2_uid) : Boolean(room.player1_uid),
+        opponentConnected: playerIndex === 0
+          ? Boolean(isRecord(room.player2) && room.player2.connected)
+          : Boolean(isRecord(room.player1) && room.player1.connected),
         state: filterOnlineState(privateRow.game_state as GameState, playerIndex),
         stateVersion: privateRow.state_version,
       });
