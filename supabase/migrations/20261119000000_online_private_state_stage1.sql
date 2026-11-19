@@ -39,7 +39,31 @@ select
   id,
   game_state,
   case
-    when coalesce(game_state->>'stateVersion', '') ~ '^[0-9]+$'
+    when coalesce(game_state->>'stateVersion', '') ~ '^[0-9]+
+    else 0
+  end,
+  coalesce(updated_at, now())
+from public.game_rooms
+where game_state is not null
+on conflict (room_id) do nothing;
+
+commit;
+
+-- Post-migration checks:
+-- select count(*) from public.game_rooms;
+-- select count(*) from public.room_private_state;
+-- select count(*) from public.game_rooms where player1_uid is null;
+-- select count(*) from public.game_rooms where status = 'playing';
+--
+-- Do not deploy the action function or claim privacy until:
+-- 1. Room lifecycle endpoints create/join/leave via trusted server code.
+-- 2. Client uses per-player private Realtime topics only.
+-- 3. Realtime RLS policies are installed and public channel access is disabled.
+-- 4. Two-user privacy tests pass.
+-- 5. A separate cutover migration removes legacy public table access.
+
+      and length(game_state->>'stateVersion') <= 10
+      and (game_state->>'stateVersion')::numeric <= 2147483647
       then (game_state->>'stateVersion')::integer
     else 0
   end,
