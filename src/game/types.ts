@@ -56,7 +56,6 @@ export type SelectionMode =
 
 export interface PendingDice {
   reason: string;
-  onRoll: (roll: number) => Action;
   magicCardInstanceId?: CardInstanceId;
   magicPlayer?: 0 | 1;
 }
