@@ -1,12 +1,12 @@
-// Autoritative online action endpoint.
-// This function is intentionally not deployed until the additive schema migration
-// and the client migration to private per-player channels are complete.
+// Authoritative online action endpoint.
+// Not deployable until the private-state migration, room lifecycle endpoints,
+// and private Realtime authorization are installed and verified.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { reducer } from "../../../src/game/engine.ts";
 import { isLegalAction } from "../../../src/game/legalActions.ts";
 import { filterOnlineState } from "../../../src/game/onlineState.ts";
-import type { Action, GameState } from "../../../src/game/types.ts";
+import type { Action, Card, GameState } from "../../../src/game/types.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,6 +19,54 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function allCards(state: GameState): Card[] {
+  const cards: Card[] = [];
+  for (const player of state.players) {
+    cards.push(...player.hand, ...player.deck, ...player.graveyard);
+    for (const monster of player.field) {
+      if (!monster) continue;
+      cards.push(monster.card);
+      if (monster.trap) cards.push(monster.trap);
+      if (monster.magic) cards.push(monster.magic);
+    }
+  }
+  if (state.pendingTrap) cards.push(state.pendingTrap.trap);
+  if (state.selection.kind === "place-trap" || state.selection.kind === "place-magic" ||
+      state.selection.kind === "magic-target-monster" || state.selection.kind === "revive-choice") {
+    cards.push(state.selection.card);
+  }
+  return cards;
+}
+
+// Never pass a card object supplied by the browser to the game reducer.
+// Resolve every card-bearing action against the canonical server state.
+function canonicalizeAction(action: Record<string, unknown>, state: GameState): Action | null {
+  const type = action.type;
+  if (typeof type !== "string") return null;
+
+  const card = action.card;
+  let canonicalCard: Card | undefined;
+  if (card !== undefined) {
+    if (!isRecord(card) || typeof card.instanceId !== "string") return null;
+    canonicalCard = allCards(state).find((candidate) => candidate.instanceId === card.instanceId);
+    if (!canonicalCard) return null;
+  }
+
+  const safe = { ...action };
+  if (canonicalCard) safe.card = canonicalCard;
+
+  // The browser must not choose the result of a die roll.
+  if (type === "ROLL_DICE") {
+    safe.roll = crypto.getRandomValues(new Uint32Array(1))[0] % 6 + 1;
+  }
+
+  return safe as unknown as Action;
 }
 
 Deno.serve(async (req: Request) => {
@@ -42,15 +90,12 @@ Deno.serve(async (req: Request) => {
     const { data: authData, error: authError } = await authClient.auth.getUser(token);
     if (authError || !authData.user) return json({ error: "Unauthorized" }, 401);
 
-    const body = await req.json();
-    if (
-      !body || typeof body !== "object" ||
-      typeof body.roomId !== "string" ||
-      typeof body.expectedVersion !== "number" ||
-      !Number.isSafeInteger(body.expectedVersion) ||
-      !body.action || typeof body.action !== "object" ||
-      typeof body.action.type !== "string"
-    ) return json({ error: "Invalid request" }, 400);
+    const body: unknown = await req.json();
+    if (!isRecord(body) || typeof body.roomId !== "string" ||
+        typeof body.expectedVersion !== "number" || !Number.isSafeInteger(body.expectedVersion) ||
+        !isRecord(body.action) || typeof body.action.type !== "string") {
+      return json({ error: "Invalid request" }, 400);
+    }
 
     const db = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -66,7 +111,7 @@ Deno.serve(async (req: Request) => {
     if (room.status !== "playing") return json({ error: "Room is not active" }, 409);
 
     const userId = authData.user.id;
-    const playerIndex = room.player1_uid === userId ? 0 :
+    const playerIndex: 0 | 1 | null = room.player1_uid === userId ? 0 :
       room.player2_uid === userId ? 1 : null;
     if (playerIndex === null) return json({ error: "Not a room player" }, 403);
 
@@ -82,12 +127,13 @@ Deno.serve(async (req: Request) => {
     }
 
     const currentState = privateRow.game_state as GameState;
-    if (!currentState || currentState.currentPlayer !== playerIndex) {
-      return json({ error: "Not your turn" }, 403);
+    if (!isRecord(currentState) || !Array.isArray(currentState.players) ||
+        currentState.currentPlayer !== playerIndex) {
+      return json({ error: "Not your turn or invalid game state" }, 403);
     }
 
-    const action = body.action as Action;
-    if (!isLegalAction(currentState, playerIndex, action)) {
+    const action = canonicalizeAction(body.action, currentState);
+    if (!action || !isLegalAction(currentState, playerIndex, action)) {
       return json({ error: "Illegal action" }, 422);
     }
 
@@ -95,7 +141,7 @@ Deno.serve(async (req: Request) => {
     if (nextState === currentState) return json({ error: "Action was not applied" }, 422);
     nextState.stateVersion = privateRow.state_version + 1;
 
-    // Compare-and-swap prevents two concurrent requests from overwriting each other.
+    // Optimistic compare-and-swap: only one concurrent action can commit a version.
     const { data: saved, error: saveError } = await db
       .from("room_private_state")
       .update({
@@ -110,6 +156,30 @@ Deno.serve(async (req: Request) => {
 
     if (saveError) return json({ error: "Could not save game state" }, 500);
     if (!saved) return json({ error: "Concurrent action; refresh state" }, 409);
+
+    // Each player receives a separately filtered payload on a distinct topic.
+    // The corresponding private-channel RLS policies must be installed before
+    // this endpoint is deployed.
+    const deliveries = await Promise.all(([0, 1] as const).map(async (index) => {
+      const uid = index === 0 ? room.player1_uid : room.player2_uid;
+      if (!uid) return;
+      const channel = db.channel(`room:${body.roomId}:player:${uid}`, {
+        config: { private: true },
+      });
+      try {
+        await channel.send({
+          type: "broadcast",
+          event: "game-state",
+          payload: {
+            stateVersion: saved.state_version,
+            gameState: filterOnlineState(nextState, index),
+          },
+        });
+      } finally {
+        await db.removeChannel(channel);
+      }
+    }));
+    await Promise.all(deliveries);
 
     return json({
       ok: true,
