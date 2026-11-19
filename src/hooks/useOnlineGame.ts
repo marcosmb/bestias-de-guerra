@@ -4,7 +4,7 @@ import type { Action, GameState, PlayerState } from '../game/types';
 import { createPlayer, drawCards, shuffleDeck } from '../game/types';
 import { isLegalAction } from '../game/legalActions';
 import { buildDeck } from '../game/cardData';
-import { reducer } from '../game/useGame';
+import { reducer } from '../game/engine';
 import { filterOnlineState } from '../game/onlineState';
 
 export type GameMode = 'local' | 'cpu' | 'online';
