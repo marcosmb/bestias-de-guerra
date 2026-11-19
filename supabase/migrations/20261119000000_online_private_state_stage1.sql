@@ -17,6 +17,7 @@ create table if not exists public.room_private_state (
 
 alter table public.room_private_state enable row level security;
 revoke all on table public.room_private_state from anon, authenticated;
+grant all on table public.room_private_state to service_role;
 
 -- Backfill UUID identities only when legacy JSON contains valid UUID strings.
 update public.game_rooms
