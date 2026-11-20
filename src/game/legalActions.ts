@@ -91,6 +91,18 @@ import type { MagicCard } from './cardData.ts';
  * está en `knownDefects.test.ts` (DEFECTO 8).
  */
 
+/**
+ * Player who is currently allowed to submit an action.
+ * Trap 5 temporarily transfers the choice to the trap owner, who may not be
+ * the normal currentPlayer. Keep client and server turn checks on this helper.
+ */
+export function getActingPlayer(state: GameState): 0 | 1 {
+  if (state.phase === 'playing' && state.selection.kind === 'choose-destroy-associated-card') {
+    return state.selection.player;
+  }
+  return state.currentPlayer;
+}
+
 /** Posiciones en las que se puede invocar un Monstruo. */
 const POSITIONS: readonly Position[] = ['attack', 'defense'];
 
