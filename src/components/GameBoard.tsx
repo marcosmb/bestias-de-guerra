@@ -1110,6 +1110,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   };
 
   const handleOpponentFieldClick = (uid: string) => {
+    if (sel.kind === 'place-magic' && magicRequiredSide(sel.card) !== 'enemy') {
+      return;
+    }
     if (sel.kind === 'attack' || sel.kind === 'attack-or-direct') {
       const attackAction = {
         type: 'DECLARE_ATTACK' as const,
@@ -1173,6 +1176,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   };
 
   const handleMyFieldClick = (uid: string) => {
+    if (sel.kind === 'place-magic' && magicRequiredSide(sel.card) !== 'self') {
+      return;
+    }
     if (sel.kind === 'place-trap') {
       dispatch({ type: 'PLACE_TRAP_ON_MONSTER', card: sel.card, fieldUid: uid });
     } else if (sel.kind === 'place-magic') {
@@ -1206,6 +1212,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   const isOpponentSlotSelectable = (fm: FieldMonster | null): boolean => {
     if (!fm) return false;
     if (fm.uid !== opponentUidOf(fm)) return false;
+    // Una Mágica solo puede resaltar el campo indicado por su regla:
+    // M4/M9 -> campo propio; M8 -> campo rival.
+    if (sel.kind === 'place-magic' && magicSide !== 'enemy') return false;
     // Reglas 22/5/19 y el paso de la Trampa 9: en vez de reimplementar aquí la
     // Regla 22 y la Regla 5, se pregunta a `legalActions` si existe una jugada
     // que apunte a ESTA casilla concreta.
@@ -1220,6 +1229,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   const isMySlotSelectable = (fm: FieldMonster | null): boolean => {
     if (!fm) return false;
     if (fm.uid !== myUidOf(fm)) return false;
+    // No resaltar el campo propio si la Mágica seleccionada exige un objetivo rival.
+    if (sel.kind === 'place-magic' && magicSide !== 'self') return false;
     if (sel.kind === 'direct-attack' || sel.kind === 'attack-or-direct') {
       // Clic en un Monstruo propio para hacer el ataque directo.
       return legal.some((a) => a.type === 'DIRECT_ATTACK');
