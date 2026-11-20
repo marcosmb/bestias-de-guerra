@@ -4,7 +4,7 @@ import type {
   GameState,
   PlayerState,
   Position,
-} from './types';
+} from './types.ts';
 import {
   MAX_CARDS_PER_TURN,
   canActivateMagic,
@@ -15,8 +15,8 @@ import {
   hasTrapTarget,
   magicRequiredSide,
   cardInstanceKey,
-} from './types';
-import type { MagicCard } from './cardData';
+} from './types.ts';
+import type { MagicCard } from './cardData.ts';
 
 /**
  * ============================================================================
@@ -90,6 +90,18 @@ import type { MagicCard } from './cardData';
  * Cerrar el hueco en el reducer es F3; el test que fija el comportamiento actual
  * está en `knownDefects.test.ts` (DEFECTO 8).
  */
+
+/**
+ * Player who is currently allowed to submit an action.
+ * Trap 5 temporarily transfers the choice to the trap owner, who may not be
+ * the normal currentPlayer. Keep client and server turn checks on this helper.
+ */
+export function getActingPlayer(state: GameState): 0 | 1 {
+  if (state.phase === 'playing' && state.selection.kind === 'choose-destroy-associated-card') {
+    return state.selection.player;
+  }
+  return state.currentPlayer;
+}
 
 /** Posiciones en las que se puede invocar un Monstruo. */
 const POSITIONS: readonly Position[] = ['attack', 'defense'];
@@ -285,11 +297,10 @@ function selectionActions(state: GameState, player: 0 | 1, me: PlayerState, opp:
       // Mágica 5: recuperar del cementerio a la mano o al campo.
       const out: Action[] = [];
 
-      // A la mano: no hay límite de cantidad; solo se evita recuperar una carta
-      // que ya esté representada por OTRA COPIA PROPIA (la del rival no lo impide).
+      // A la mano: la Mágica 5 se sustituye por el Monstruo recuperado, sin
+      // límite de tamaño; solo se impide recuperar otra copia propia.
       const alCementerio = me.graveyard.filter((c) => c.type === 'monster');
-      const aLaManoPosible =
-        alCementerio.some((c) => !hasOwnCopy(me.hand, c));
+      const aLaManoPosible = alCementerio.some((c) => !hasOwnCopy(me.hand, c));
       if (aLaManoPosible) {
         out.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'hand' });
       }
@@ -489,9 +500,9 @@ export function sameAction(a: Action, b: Action): boolean {
     case 'SELECT_MAGIC':
       return b.type === 'SELECT_MAGIC' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
     case 'PLACE_MAGIC_ON_MONSTER':
-      return b.type === 'PLACE_MAGIC_ON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid;
+      return b.type === 'PLACE_MAGIC_ON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid && a.side === b.side;
     case 'MAGIC_TARGET_MONSTER':
-      return b.type === 'MAGIC_TARGET_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid;
+      return b.type === 'MAGIC_TARGET_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid && a.side === b.side;
     case 'MAGIC_INSTANT':
       return b.type === 'MAGIC_INSTANT' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
     case 'START_ATTACK':

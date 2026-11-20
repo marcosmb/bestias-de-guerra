@@ -380,32 +380,57 @@ export function checkCardConservation(
   initialInstances: Set<string>,
   cardNameOf: Map<string, string>,
   context: string,
+  previousState?: GameState,
+  actionDescription = 'desconocida',
 ): string[] {
-  const seen = new Map<string, number>();
-  const bump = (id: string | undefined) => {
-    if (id === undefined) return;
-    seen.set(id, (seen.get(id) ?? 0) + 1);
-  };
-  for (const p of state.players) {
-    for (const c of p.deck) bump(c.instanceId);
-    for (const c of p.hand) bump(c.instanceId);
-    for (const c of p.graveyard) bump(c.instanceId);
-    for (const fm of p.field) {
-      if (!fm) continue;
-      bump(fm.card.instanceId);
-      bump(fm.trap?.instanceId);
-      bump(fm.magic?.instanceId);
+  const locate = (game: GameState): Map<string, { zones: string[]; owner: string }> => {
+    const locations = new Map<string, { zones: string[]; owner: string }>();
+    const record = (card: Card | null | undefined, player: 0 | 1, zone: string) => {
+      if (!card?.instanceId) return;
+      const current = locations.get(card.instanceId) ?? {
+        zones: [],
+        owner: `Jugador ${(card.owner ?? player) + 1}`,
+      };
+      current.zones.push(`Jugador ${player + 1}:${zone}`);
+      locations.set(card.instanceId, current);
+    };
+    for (const player of game.players) {
+      for (const card of player.deck) record(card, player.index, 'mazo');
+      for (const card of player.hand) record(card, player.index, 'mano');
+      for (const card of player.graveyard) record(card, player.index, 'cementerio');
+      for (const monster of player.field) {
+        if (!monster) continue;
+        record(monster.card, player.index, 'campo');
+        record(monster.magic, player.index, 'mágica asociada');
+        record(monster.trap, player.index, 'trampa asociada');
+      }
     }
-  }
+    return locations;
+  };
 
-  const label = (id: string) => cardNameOf.get(id) ?? 'desconocida';
+  const before = previousState ? locate(previousState) : new Map<string, { zones: string[]; owner: string }>();
+  const after = locate(state);
   const problems: string[] = [];
-  for (const id of initialInstances) {
-    const n = seen.get(id) ?? 0;
-    if (n !== 1) problems.push(`${context}: la carta ${label(id)} aparece ${n} veces en el juego (debe aparecer exactamente 1)`);
-  }
-  for (const [id, n] of seen) {
-    if (n !== 1) problems.push(`${context}: la carta ${label(id)} aparece ${n} veces y no estaba en el mazo inicial`);
+  const allInstances = new Set([...initialInstances, ...after.keys()]);
+  for (const id of allInstances) {
+    const prior = before.get(id)?.zones ?? [];
+    const current = after.get(id)?.zones ?? [];
+    if (!initialInstances.has(id) && current.length > 0) {
+      problems.push(
+        `CARD_DUPLICATED: instanceId=${id}; carta=${cardNameOf.get(id) ?? 'desconocida'}; propietario=${after.get(id)?.owner ?? 'propietario desconocido'}; ` +
+        `zonaAnterior=${prior.join(', ') || 'ninguna'}; zonaPosterior=${current.join(', ') || 'ninguna'}; ` +
+        `acción=${actionDescription}; paso=${context}; instancia ausente del conjunto inicial`,
+      );
+      continue;
+    }
+    if (current.length === 1 || (current.length === 0 && prior.length !== 1)) continue;
+    const kind = current.length === 0 ? 'CARD_LOST' : 'CARD_DUPLICATED';
+    const owner = after.get(id)?.owner ?? before.get(id)?.owner ?? 'propietario desconocido';
+    problems.push(
+      `${kind}: instanceId=${id}; carta=${cardNameOf.get(id) ?? 'desconocida'}; propietario=${owner}; ` +
+      `zonaAnterior=${prior.join(', ') || 'ninguna'}; zonaPosterior=${current.join(', ') || 'ninguna'}; ` +
+      `acción=${actionDescription}; paso=${context}`,
+    );
   }
   return problems;
 }
@@ -430,8 +455,10 @@ export type FindingCode =
   | 'INVARIANT'
   /** Se ha superado la cuota de 3 cartas por turno (Regla 16). */
   | 'QUOTA_EXCEEDED'
-  /** Una copia de carta ha desaparecido del juego o se ha duplicado. */
+  /** Una copia de carta ha desaparecido de todas las zonas válidas. */
   | 'CARD_LOST'
+  /** Una copia física aparece simultáneamente en varias zonas. */
+  | 'CARD_DUPLICATED'
   /** Hay un dado pendiente en una fase que no es la de tirar dados. */
   | 'DICE_ORPHANED'
   /** Hay un ganador registrado pero la partida no ha pasado a 'game-over'. */
@@ -764,10 +791,17 @@ export function simulateGame(options: SimulateOptions): GameResult {
         const code = problem.split(': ')[1] as FindingCode;
         add(code, problem.replace(/^paso \d+: /, ''));
       }
-      if (steps % 5 === 0) {
-        for (const c of checkCardConservation(state, initialInstances, cardNameOf, `paso ${steps}`)) {
-          add('CARD_LOST', c.replace(/^paso \d+: /, ''));
-        }
+      for (const issue of checkCardConservation(
+        state,
+        initialInstances,
+        cardNameOf,
+        `paso ${steps}`,
+        before,
+        describeAction(chosen, before),
+      )) {
+        const separator = issue.indexOf(':');
+        const code = issue.slice(0, separator) as FindingCode;
+        add(code, issue.slice(separator + 1).trim());
       }
     }
 

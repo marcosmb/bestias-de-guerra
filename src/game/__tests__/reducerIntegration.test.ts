@@ -1015,7 +1015,10 @@ describe('Reducer integration â€” Trap 2 target selection', () => {
     if (state.selection.kind !== 'choose-trap-2-own') return;
     expect(state.selection.selectedUids).toEqual([]);
 
-    const firstUid = state.players[0].field.find((f) => f?.uid !== trapMonster.uid)?.uid!;
+    const firstMonster = state.players[0].field.find((f) => f?.uid !== trapMonster.uid);
+    expect(firstMonster).toBeDefined();
+    if (!firstMonster) return;
+    const firstUid = firstMonster.uid;
     state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: firstUid });
 
     expect(state.selection.kind).toBe('choose-trap-2-own');
@@ -1023,9 +1026,12 @@ describe('Reducer integration â€” Trap 2 target selection', () => {
     expect(state.selection.selectedUids).toEqual([firstUid]);
     expect(state.players[0].field.some((f) => f?.uid === firstUid)).toBe(true);
 
-    const secondUid = state.players[0].field.find(
+    const secondMonster = state.players[0].field.find(
       (f) => f !== null && f.uid !== firstUid,
-    )?.uid!;
+    );
+    expect(secondMonster).toBeDefined();
+    if (!secondMonster) return;
+    const secondUid = secondMonster.uid;
     state = dispatch(state, { type: 'TRAP_2_SELECT_OWN', fieldUid: secondUid });
 
     expect(state.selection.kind).toBe('none');

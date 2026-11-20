@@ -3,7 +3,7 @@ import { initialState, reducer } from '../useGame';
 import { nextCpuAction } from '../cpu';
 import { legalActions } from '../legalActions';
 import { changedTheGame } from './support/simulation';
-import type { Action, FieldMonster, GameState, PlayerState, Position } from '../types';
+import type { Action, FieldMonster, GameState, PlayerState } from '../types';
 import { MAX_CARDS_PER_TURN, createPlayer, indexOfCardInstance } from '../types';
 import type { Card, MagicCard, MonsterCard, TrapCard } from '../cardData';
 import { MAGICS, TRAPS, buildDeck } from '../cardData';
@@ -354,22 +354,14 @@ describe('ARREGLO Â· una MÃ¡gica que deja al rival a 0 PV termina la partida
   });
 });
 
-describe('DEFECTO 2 Â· una MÃ¡gica utilizada desaparece del juego', () => {
-  // Al resolverse, `playCardFromHand` retira la MÃ¡gica de la mano y no la envÃ­a a
-  // ninguna zona. El reglamento NO define el destino de una MÃ¡gica utilizada
-  // (Â§26 habla de cartas Â«retiradas del campoÂ»), asÃ­ que esto es un PUNTO ABIERTO
-  // del reglamento ademÃ¡s de un hecho observable del motor.
-  //
-  // CORRESPONDE A: decisiÃ³n del creador sobre el destino de las cartas usadas.
-  // NO se inventa ninguna regla aquÃ­.
-
-  it('la MÃ¡gica desaparece: sale de la mano y no aparece en el cementerio', () => {
+describe('Regla aprobada · las Mágicas instantáneas usadas van al cementerio propio', () => {
+  it('M10 termina en el cementerio después de resolver el robo', () => {
     const m = magic(10);
     const estado = scene({ me: { hand: [m], deck: buildDeck().slice(0, 6) } });
     const after = reducer(estado, { type: 'SELECT_MAGIC', card: m });
     expect(indexOfCardInstance(after.players[0].hand, m)).toBe(-1);
-    expect(after.players[0].graveyard.map((c) => c.id)).not.toContain(m.id);
-    expect(after.players[1].graveyard.map((c) => c.id)).not.toContain(m.id);
+    expect(after.players[0].graveyard).toContain(m);
+    expect(after.players[1].graveyard).not.toContain(m);
   });
 });
 
@@ -497,7 +489,7 @@ describe('REGRESIÃ“N Â· el dado solo admite resultados entre 1 y 6', () => 
   it('rechaza un resultado fuera del rango y no altera la partida', () => {
     const estado = scene({
       phase: 'dice-roll',
-      pendingDice: { reason: 'DaÃ±o por dado', onRoll: (roll: number) => ({ type: 'ROLL_DICE', roll }) as Action },
+      pendingDice: { reason: 'DaÃ±o por dado' },
     });
     expect(reducer(estado, { type: 'ROLL_DICE', roll: 999 })).toBe(estado);
     expect(reducer(estado, { type: 'ROLL_DICE', roll: 0 })).toBe(estado);

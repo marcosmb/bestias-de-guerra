@@ -6,7 +6,6 @@ import {
   getEffectiveDef,
   hasOwnCopy,
   magicRequiredSide,
-  MAX_HAND_SIZE,
 } from './types';
 import { canDirectAttack, isLegalAction, legalActions, legalTargets } from './legalActions';
 import { reducer } from './useGame';
@@ -36,18 +35,11 @@ const MAX_MONSTER_VALUE = 12;
  */
 const CPU_SEAT: 0 | 1 = 1;
 
-const MAX_CPU_ACTIONS_PER_TURN = 60;
-const CONSECUTIVE_IDENTICAL_LIMIT = 3;
-
-let cpuActionCount = 0;
-let lastCpuAction: Action | null = null;
-let consecutiveIdentical = 0;
-
 /**
  * Configuración por dificultad.
  * Cada nivel cambia SOLO la calidad de decisión, no las reglas.
  */
-interface DifficultyConfig {
+export interface DifficultyConfig {
   depth: number;
   moveOrdering: boolean;
   blunderRate: number;
@@ -58,7 +50,7 @@ interface DifficultyConfig {
  * Configuración de las 4 dificultades.
  * La calidad de decisión aumenta con cada nivel, no el tiempo de espera.
  */
-const DIFFICULTY_CONFIG: Record<Difficulty, DifficultyConfig> = {
+export const DIFFICULTY_CONFIG: Record<Difficulty, DifficultyConfig> = {
   easy:    { depth: 0, moveOrdering: false, blunderRate: 0.30, label: 'Fácil' },
   normal:  { depth: 1, moveOrdering: false, blunderRate: 0.00, label: 'Normal' },
   hard:    { depth: 2, moveOrdering: true,  blunderRate: 0.00, label: 'Difícil' },
@@ -144,12 +136,12 @@ function evaluate(state: GameState): number {
  * Búsqueda minimax con poda alfa-beta.
  * La CPU es MAX (quiere maximizar evaluate), el humano es MIN.
  */
-interface SearchResult {
+export interface SearchResult {
   score: number;
   bestAction: Action | null;
 }
 
-function search(
+export function search(
   state: GameState,
   depth: number,
   alpha: number,
@@ -379,12 +371,11 @@ function chooseInstantMagic(state: GameState, legal: Action[]): Action | null {
         return seleccion;
       }
       case 'revive_monster': {
-        // La Mágica 5 respeta el máximo específico de 9 cartas para recuperarla a mano.
+        // La Mágica 5 puede recuperar a la mano sin límite general de tamaño.
         const difuntos = cpu.graveyard.filter((c) => c.type === 'monster');
         if (difuntos.length === 0) break;
         const alCampo = cpu.field.some((slot) => slot === null);
-        const aLaMano = cpu.hand.length <= MAX_HAND_SIZE &&
-          difuntos.some((c) => !hasOwnCopy(cpu.hand, c));
+        const aLaMano = difuntos.some((c) => !hasOwnCopy(cpu.hand, c));
         if (alCampo || aLaMano) return seleccion;
         break;
       }

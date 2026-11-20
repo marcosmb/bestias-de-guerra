@@ -3,7 +3,7 @@ import { nextCpuAction } from '../cpu';
 import { legalTargets, canDirectAttack } from '../legalActions';
 import type { GameState, FieldMonster, PlayerState, Action } from '../types';
 import { createPlayer, shuffleDeck } from '../types';
-import { buildDeck } from '../cardData';
+import { buildDeck, MAGICS } from '../cardData';
 import type { Card, MonsterCard } from '../cardData';
 
 // ---------- Helpers de construcción de estado ----------
@@ -282,6 +282,27 @@ describe('CPU — uso de las 3 cartas por turno', () => {
     });
 
     expect(nextCpuAction(state).type).toBe('SUMMON_MONSTER');
+  });
+});
+
+describe('CPU — Mágica 5 sin límite general de mano', () => {
+  it('usa la Mágica 5 para recuperar a la mano con 10 cartas y el campo lleno', () => {
+    const revive = MAGICS.find((card) => card.id === 'm5');
+    if (!revive) throw new Error('No se encontró la Mágica 5');
+    const fullField = Array.from({ length: 6 }, (_, i) =>
+      fieldMonster(monster({ atk: i + 1 }), { uid: `cpu-full-${i}` }),
+    );
+    const hand = [
+      revive,
+      ...Array.from({ length: 9 }, (_, i) => monster({ atk: i + 1, id: `hand-${i}` })),
+    ];
+    const recovered = { ...monster({ atk: 12, id: 'grave-monster' }), owner: 1 as const };
+    const state = makeState(fullField, emptyField(), {
+      cpuHand: hand,
+      cpuGraveyard: [recovered],
+    });
+
+    expect(nextCpuAction(state)).toEqual({ type: 'SELECT_MAGIC', card: revive });
   });
 });
 

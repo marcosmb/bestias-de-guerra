@@ -3,7 +3,8 @@
 ## Estado y alcance
 
 - Rama revisada: `fusion-de-ramas`
-- Commit de referencia: `78faba8a67dd5295c74cd77ee423894e922b4cf7`
+- Commit inicial revisado: `049cac37439c10f0464a948aeb646daee7c35e62`
+- Las correcciones descritas en «Defectos reproducidos y corregidos» están en el árbol de trabajo local y aún no tienen commit.
 - Fuente funcional: `REGLAS_JUEGO_DEFINITIVAS_v1.0_OFICIAL_CORREGIDA.md`
 - Alcance realizado: revisión estática de reglas, flujo del reducer, efectos de cartas, propiedad/control, selección de acciones, pruebas de regresión y simulaciones.
 - **No equivale a una prueba manual completa del navegador.** Esa fase queda pendiente para OpenCode.
@@ -22,6 +23,18 @@
 | Trampas 1 y 2 | Sus efectos de inicio de turno se resuelven según el propietario original de la Trampa aunque el portador haya cambiado de campo. |
 | Mágica 5 | No tiene límite de 9 cartas para recuperar a la mano: la Mágica se consume y el Monstruo recuperado sustituye a la Mágica en la mano. |
 | Puntos de vida | Se elimina el límite artificial de 999 LP; el reglamento no establece un máximo. |
+
+## Defectos reproducidos y corregidos en la revisión del 2026-11-16
+
+| Defecto | Reproducción y corrección |
+|---|---|
+| Mágica 5 con 9 o más cartas | La disponibilidad en `canActivateMagic` y `legalActions` aún imponía el umbral del robo automático. Se quitó el límite solo para recuperar a la mano; se conserva la restricción de copias propias y no se alteró la condición para recuperar al campo. La Mágica se consume y el Monstruo la reemplaza, manteniendo el tamaño de la mano. |
+| Trampa 7 con campo defensor lleno | Una comprobación previa desviaba el ataque al combate normal. Se eliminó: la trampa resuelve el intercambio directamente en las casillas ocupadas, conservando posición y cartas asociadas, e intercambiando control sin destruir monstruos. |
+| Trampa 5 y copias del mismo tipo | El filtro por `trap.id` confundía identidad de tipo con identidad física. Ahora se excluye la instancia activada (por `instanceId`, o por referencia cuando no está sellada), permitiendo otras copias y manteniendo la elección a cargo del atacante. El objetivo destruido se envía al cementerio de su propietario. |
+
+Las pruebas automatizadas dirigidas añadidas en `src/game/__tests__/ruleCorrections.test.ts` ejercitan la legalidad de interfaz (`legalActions`) y la resolución del reducer. En la verificación local, `npm run test` terminó con **437/437 pruebas superadas**; `npm run typecheck`, `npm run build` y `git diff --check` también pasaron. `npm run lint` sigue fallando con 60 errores y 9 advertencias repartidos por el proyecto; los errores reportados incluyen archivos ajenos a esta corrección (por ejemplo `src/App.tsx`, `src/hooks/useOnlineGame.ts` y `src/game/cpu.ts`). El lint dirigido de `src/game/useGame.ts`, `src/game/legalActions.ts` y los dos archivos de pruebas nuevos/actualizados pasó; `src/game/types.ts` no se incluyó en esa pasada dirigida.
+
+**NO PROBADO EN NAVEGADOR:** se abrió el preview local, pero el navegador mostró una página vacía y no se pudo ejercitar la partida desde la interfaz. No se presenta la verificación automatizada como evidencia visual.
 
 ## Integraciones
 

@@ -1,4 +1,4 @@
-import type { Card, CardInstanceId, MonsterCard, TrapCard, MagicCard } from './cardData';
+import type { Card, CardInstanceId, MonsterCard, TrapCard, MagicCard } from './cardData.ts';
 
 export type Position = 'attack' | 'defense';
 
@@ -56,7 +56,8 @@ export type SelectionMode =
 
 export interface PendingDice {
   reason: string;
-  onRoll: (roll: number) => Action;
+  magicCardInstanceId?: CardInstanceId;
+  magicPlayer?: 0 | 1;
 }
 
 export type Action =
@@ -570,9 +571,7 @@ export function checkStalemate(players: [PlayerState, PlayerState]): 0 | 1 | nul
  */
 export function legalActions(state: GameState, player: 0 | 1): Action[] {
   const me = state.players[player];
-  const opp = state.players[player === 0 ? 1 : 0];
   const meField = me.field.filter((f): f is FieldMonster => f !== null);
-  const oppField = state.players[player === 0 ? 1 : 0].field.filter((f: FieldMonster | null): f is FieldMonster => f !== null);
   const out: Action[] = [];
 
   if (state.phase === 'start' || state.phase === 'game-over') return [];
