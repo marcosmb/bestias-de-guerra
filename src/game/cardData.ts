@@ -140,7 +140,7 @@ export const MAGICS: MagicCard[] = [
   { id: 'm7', type: 'magic', suit: 'oros', number: 7, name: 'Cambio posición rival', description: 'Todas las cartas del rival cambian de posición.', effect: { kind: 'switch_all_opp_position' }, placement: 'instant' },
   { id: 'm8', type: 'magic', suit: 'oros', number: 8, name: '-2 de defensa', description: 'Se coloca sobre un Monstruo rival, esté en Ataque o en Defensa. Mientras esté colocada, ese Monstruo tiene -2 de defensa.', effect: { kind: 'def_reduce', amount: 2 }, placement: 'field' },
   { id: 'm9', type: 'magic', suit: 'oros', number: 9, name: 'Protección por dado', description: 'Este Monstruo solo puede ser eliminado en una tirada de dados.', effect: { kind: 'dice_protection' }, placement: 'field' },
-  { id: 'm10', type: 'magic', suit: 'oros', number: 10, name: 'Robar dos cartas', description: 'Roba 2 cartas y destruye esta carta.', effect: { kind: 'draw_cards', amount: 2 }, placement: 'instant' },
+  { id: 'm10', type: 'magic', suit: 'oros', number: 10, name: 'Robar dos cartas', description: 'Roba 2 cartas del mazo ignorando el límite de 9 cartas en mano. Después, elimina esta Mágica. No descartas cartas por superar el límite.', effect: { kind: 'draw_cards', amount: 2 }, placement: 'instant' },
   { id: 'm11', type: 'magic', suit: 'oros', number: 11, name: 'Daño por dado', description: 'Tira el dado y el resultado se resta a los PV del rival.', effect: { kind: 'dice_damage' }, placement: 'instant' },
   { id: 'm12', type: 'magic', suit: 'oros', number: 12, name: 'Limpieza del campo rival', description: 'Quita todos los Monstruos, Trampas y Mágicas del rival del campo.', effect: { kind: 'clean_opp_field' }, placement: 'instant' },
 ];

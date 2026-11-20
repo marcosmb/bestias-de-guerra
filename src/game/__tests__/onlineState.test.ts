@@ -1,0 +1,241 @@
+import { describe, expect, it } from 'vitest';
+import { buildDeck, MAGICS, TRAPS, type Card } from '../cardData';
+import { initialState } from '../useGame';
+import { createPlayer, type FieldMonster, type GameState } from '../types';
+import { filterOnlineState } from '../onlineState';
+
+function stateWithPlayers(): GameState {
+  const player0 = createPlayer(0, 'Jugador 1', buildDeck());
+  const player1 = createPlayer(1, 'Jugador 2', buildDeck());
+  player0.hand = player0.deck.slice(0, 2);
+  player0.deck = player0.deck.slice(2);
+  player1.hand = player1.deck.slice(0, 3);
+  player1.deck = player1.deck.slice(3);
+  return { ...initialState(), phase: 'playing', players: [player0, player1] };
+}
+
+function fieldMonster(card: Card, overrides: Partial<FieldMonster> = {}): FieldMonster {
+  if (card.type !== 'monster') throw new Error('Expected a monster card');
+  return {
+    uid: 'field-monster-1',
+    card,
+    position: 'defense',
+    faceDown: true,
+    trap: null,
+    magic: null,
+    hasAttacked: false,
+    hasChangedPosition: false,
+    summonedThisTurn: false,
+    pendingTurns: 0,
+    pendingEffect: null,
+    controlledBy: null,
+    tempAtkModifier: 0,
+    tempDefModifier: 0,
+    diceProtection: false,
+    ...overrides,
+  };
+}
+
+describe('filterOnlineState', () => {
+  it('preserves the viewer hand and deck while masking opponent hand and deck contents', () => {
+    const state = stateWithPlayers();
+    const opponentCards = [...state.players[1].hand, ...state.players[1].deck];
+    const filtered = filterOnlineState(state, 0);
+    const filteredOpponentCards = [...filtered.players[1].hand, ...filtered.players[1].deck];
+
+    expect(filtered.players[0].hand).toBe(state.players[0].hand);
+    expect(filtered.players[0].deck).toBe(state.players[0].deck);
+    expect(filtered.players[1].hand).toHaveLength(state.players[1].hand.length);
+    expect(filtered.players[1].deck).toHaveLength(state.players[1].deck.length);
+    const serializedOpponentCards = JSON.stringify(filteredOpponentCards);
+    for (const card of opponentCards) {
+      expect(serializedOpponentCards).not.toContain(card.id);
+      expect(serializedOpponentCards).not.toContain(card.name);
+      if (card.instanceId) expect(serializedOpponentCards).not.toContain(card.instanceId);
+    }
+    expect(filteredOpponentCards.every((card) => card.name === 'Carta oculta')).toBe(true);
+
+    const filteredForPlayer2 = filterOnlineState(state, 1);
+    expect(filteredForPlayer2.players[1].hand).toBe(state.players[1].hand);
+    expect(filteredForPlayer2.players[1].deck).toBe(state.players[1].deck);
+    expect(JSON.stringify(filteredForPlayer2.players[0].hand)).not.toContain(state.players[0].hand[0].name);
+  });
+
+  it('hides face-down opponent monsters and unrevealed traps and magic', () => {
+    const state = stateWithPlayers();
+    const originalMonster = state.players[1].deck.find((card) => card.type === 'monster');
+    if (!originalMonster || originalMonster.type !== 'monster') throw new Error('Expected a monster in deck');
+    const trap = { ...TRAPS[4], instanceId: 'trap-instance-secret', owner: 1 as const };
+    const magic = { ...MAGICS[4], instanceId: 'magic-instance-secret', owner: 1 as const };
+    const opponent = state.players[1];
+    opponent.field[0] = fieldMonster(originalMonster, { trap, magic });
+
+    const filteredMonster = filterOnlineState(state, 0).players[1].field[0];
+    if (!filteredMonster) throw new Error('Expected a field monster');
+
+    expect(filteredMonster.card.name).toBe('Carta oculta');
+    expect(filteredMonster.card.id).not.toBe(originalMonster.id);
+    expect(filteredMonster.trap?.name).toBe('Carta oculta');
+    expect(filteredMonster.trap?.instanceId).not.toBe(trap.instanceId);
+    expect(filteredMonster.magic?.name).toBe('Carta oculta');
+    expect(filteredMonster.magic?.instanceId).not.toBe(magic.instanceId);
+  });
+
+  it('masks unplaced opponent trap and magic selections but preserves the owner view', () => {
+    const state = stateWithPlayers();
+    const selectedTrap = { ...TRAPS[4], instanceId: 'selected-trap-secret', owner: 1 as const };
+    const selectedMagic = { ...MAGICS[4], instanceId: 'selected-magic-secret', owner: 1 as const };
+    state.currentPlayer = 1;
+    state.selection = { kind: 'place-trap', card: selectedTrap };
+
+    const opponentView = filterOnlineState(state, 0);
+    const ownerView = filterOnlineState(state, 1);
+    expect(opponentView.selection.kind).toBe('place-trap');
+    if (opponentView.selection.kind !== 'place-trap') throw new Error('Expected a trap placement selection');
+    expect(opponentView.selection.card.name).toBe('Carta oculta');
+    expect(opponentView.selection.card.instanceId).not.toBe(selectedTrap.instanceId);
+    expect(ownerView.selection).toEqual(state.selection);
+
+    state.selection = { kind: 'place-magic', card: selectedMagic };
+    const hiddenMagicSelection = filterOnlineState(state, 0).selection;
+    expect(hiddenMagicSelection.kind).toBe('place-magic');
+    if (hiddenMagicSelection.kind !== 'place-magic') throw new Error('Expected a magic placement selection');
+    expect(hiddenMagicSelection.card.name).toBe('Carta oculta');
+    expect(hiddenMagicSelection.card.instanceId).not.toBe(selectedMagic.instanceId);
+  });
+
+  it('hides the defender trap in a pending trap from the attacker', () => {
+    const state = stateWithPlayers();
+    const defenderTrap = { ...TRAPS[4], instanceId: 'pending-trap-secret', owner: 1 as const };
+    const attackerCard = state.players[0].hand.find((card) => card.type === 'monster');
+    const defenderCard = state.players[1].hand.find((card) => card.type === 'monster');
+    if (!attackerCard || attackerCard.type !== 'monster' || !defenderCard || defenderCard.type !== 'monster') {
+      throw new Error('Expected monsters in hands');
+    }
+    state.players[1].field[0] = fieldMonster(defenderCard, {
+      uid: 'd',
+      faceDown: true,
+      trap: defenderTrap,
+    });
+    state.pendingTrap = {
+      attackerUid: 'a',
+      defenderUid: 'd',
+      trap: defenderTrap,
+      defenderPlayer: 1,
+      attackerPlayer: 0,
+      attackerCard,
+      defenderCard,
+      defenderPosition: 'defense',
+    };
+
+    const attackerView = filterOnlineState(state, 0).pendingTrap;
+    expect(attackerView?.trap.name).toBe('Carta oculta');
+    expect(attackerView?.trap.instanceId).not.toBe(defenderTrap.instanceId);
+    expect(attackerView?.defenderCard.name).toBe('Carta oculta');
+    expect(attackerView?.defenderCard.instanceId).not.toBe(defenderCard.instanceId);
+    expect(JSON.stringify(attackerView)).not.toContain(TRAPS[4].name);
+    expect(filterOnlineState(state, 1).pendingTrap?.trap).toEqual(defenderTrap);
+  });
+
+  it('hides opponent cards in turn-start selections', () => {
+    const state = stateWithPlayers();
+    const ownTrap = { ...TRAPS[4], instanceId: 'turn-start-secret', owner: 0 as const };
+    state.currentPlayer = 0;
+    state.pendingTurnStartSelections = [{ kind: 'place-trap', card: ownTrap }];
+
+    const opponentView = filterOnlineState(state, 1).pendingTurnStartSelections?.[0];
+    expect(opponentView?.kind).toBe('place-trap');
+    if (opponentView?.kind !== 'place-trap') throw new Error('Expected a trap selection');
+    expect(opponentView.card.name).toBe('Carta oculta');
+    expect(opponentView.card.instanceId).not.toBe(ownTrap.instanceId);
+    expect(filterOnlineState(state, 0).pendingTurnStartSelections).toEqual(state.pendingTurnStartSelections);
+  });
+
+  it('retains revealed information but does not disclose the underlying owner or instance id for hidden cards', () => {
+    const state = stateWithPlayers();
+    const opponent = state.players[1];
+    const visibleMonster = opponent.deck.find((card) => card.type === 'monster');
+    if (!visibleMonster || visibleMonster.type !== 'monster') throw new Error('Expected a monster in deck');
+    const trap = { ...TRAPS[4], instanceId: 'revealed-trap-instance', owner: 1 as const };
+    opponent.field[0] = fieldMonster(visibleMonster, {
+      faceDown: false,
+      trap,
+      trapRevealed: true,
+    });
+
+    const filteredMonster = filterOnlineState(state, 0).players[1].field[0];
+    if (!filteredMonster) throw new Error('Expected a field monster');
+
+    expect(filteredMonster.card.name).toBe(visibleMonster.name);
+    expect(filteredMonster.trap?.name).toBe(trap.name);
+    expect(filteredMonster.trap?.instanceId).toBe(trap.instanceId);
+  });
+
+  it('no filtra identificadores ni nombres de cartas ocultas del rival en ninguna zona', () => {
+    const state = stateWithPlayers();
+    const opponent = state.players[1];
+    const hiddenCard = opponent.hand[0];
+    if (!hiddenCard || !hiddenCard.instanceId) throw new Error('Expected a hidden card');
+    const hiddenInstanceId = hiddenCard.instanceId;
+    const hiddenName = hiddenCard.name;
+
+    const filtered = filterOnlineState(state, 0);
+    const opponentSerialized = JSON.stringify(filtered.players[1]);
+
+    expect(opponentSerialized).not.toContain(hiddenInstanceId);
+    expect(opponentSerialized).not.toContain(hiddenName);
+    expect(filtered.players[0].hand).toBe(state.players[0].hand);
+  });
+
+  it('hides opponent revive-choice card details in current and queued selections', () => {
+    const state = stateWithPlayers();
+    const selectedMagic = { ...MAGICS[4], name: 'Mágica secreta exclusiva', instanceId: 'revive-choice-secret', owner: 0 as const };
+    state.currentPlayer = 0;
+    state.selection = { kind: 'revive-choice', card: selectedMagic };
+    state.pendingTurnStartSelections = [{ kind: 'revive-choice', card: selectedMagic }];
+
+    const opponentView = filterOnlineState(state, 1);
+    expect(opponentView.selection.kind).toBe('revive-choice');
+    if (opponentView.selection.kind !== 'revive-choice') throw new Error('Expected revive-choice selection');
+    expect(opponentView.selection.card.name).toBe('Carta oculta');
+    expect(opponentView.selection.card.instanceId).not.toBe(selectedMagic.instanceId);
+    const queued = opponentView.pendingTurnStartSelections?.[0];
+    expect(queued?.kind).toBe('revive-choice');
+    if (queued?.kind !== 'revive-choice') throw new Error('Expected queued revive-choice selection');
+    expect(queued.card.name).toBe('Carta oculta');
+    expect(queued.card.instanceId).not.toBe(selectedMagic.instanceId);
+    expect(JSON.stringify(opponentView)).not.toContain(selectedMagic.name);
+    expect(JSON.stringify(opponentView)).not.toContain(selectedMagic.instanceId);
+
+    const ownerView = filterOnlineState(state, 0);
+    expect(ownerView.selection).toEqual(state.selection);
+    expect(ownerView.pendingTurnStartSelections).toEqual(state.pendingTurnStartSelections);
+  });
+
+  it('redacts hidden opponent card names from log and last combat without changing dice result', () => {
+    const state = stateWithPlayers();
+    const hidden = state.players[1].deck.find((card) => card.type === 'monster');
+    if (!hidden || hidden.type !== 'monster') throw new Error('Expected a hidden opponent monster');
+
+    state.log = [`El rival prepara ${hidden.name}.`];
+    state.lastCombat = {
+      attackerDestroyed: false,
+      defenderDestroyed: false,
+      attackerDamage: 0,
+      defenderDamage: 0,
+      log: `La carta ${hidden.name} permanece oculta.`,
+      attackerCard: hidden,
+      defenderCard: undefined,
+    };
+    state.diceResult = 4;
+
+    const filtered = filterOnlineState(state, 0);
+    expect(filtered.log.join(' ')).not.toContain(hidden.name);
+    expect(filtered.log.join(' ')).toContain('Carta oculta');
+    expect(filtered.lastCombat?.log).not.toContain(hidden.name);
+    expect(filtered.lastCombat?.log).toContain('Carta oculta');
+    expect(filtered.lastCombat?.attackerCard?.name).not.toBe(hidden.name);
+    expect(filtered.diceResult).toBe(4);
+  });
+
+});

@@ -1,0 +1,467 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Inter:wght@500;600;700;800&display=swap');
+
+/* Tema 3: Luz de Guerra — estilos aislados de presentación. No fija ni sustituye fondos. */
+html[data-appearance="tema3"] {
+  color-scheme: light;
+  --tema3-bg: #F5F2E9;
+  --tema3-panel: #FFFEFA;
+  --tema3-border: #D5CDBD;
+  --tema3-gold: #B8892E;
+  --tema3-gold-light: #E8C66A;
+  --tema3-text: #202838;
+  --tema3-muted: #657084;
+}
+html[data-appearance="tema3"] body {
+  background: var(--tema3-bg);
+  color: var(--tema3-text);
+}
+html[data-appearance="tema3"] .theme-tema3-menu {
+  background-color: transparent !important;
+  color: var(--tema3-text) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-menu::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 12% 18%, rgba(255,255,255,.60), transparent 30%),
+              radial-gradient(circle at 88% 78%, rgba(232,198,106,.16), transparent 34%),
+              linear-gradient(145deg, rgba(245,242,233,.60), rgba(255,254,250,.60));
+}
+html[data-appearance="tema3"] .theme-tema3-menu > div[class*="relative z-10"] {
+  isolation: isolate;
+  max-width: 900px !important;
+  padding: clamp(18px, 4vw, 36px);
+  border: 1px solid var(--tema3-border);
+  border-radius: 24px;
+  background: rgba(255,254,250,.60);
+  box-shadow: 0 24px 60px rgba(52,42,20,.08);
+  backdrop-filter: blur(10px);
+}
+html[data-appearance="tema3"] .theme-tema3-menu h1 {
+  color: var(--tema3-text) !important;
+  font-family: "Cinzel Decorative", Georgia, serif !important;
+  letter-spacing: .025em;
+  text-shadow: none !important;
+}
+html[data-appearance="tema3"] .theme-tema3-menu p,
+html[data-appearance="tema3"] .theme-tema3-menu span {
+  color: var(--tema3-muted) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-menu button {
+  color: var(--tema3-text) !important;
+  background-color: rgba(255,254,250,.82) !important;
+  background-image: none;
+  border-color: var(--tema3-border) !important;
+  box-shadow: 0 5px 16px rgba(52,42,20,.07);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+html[data-appearance="tema3"] .theme-tema3-menu button:hover {
+  border-color: var(--tema3-gold) !important;
+  box-shadow: 0 10px 24px rgba(52,42,20,.11);
+}
+html[data-appearance="tema3"] .theme-tema3-menu button[class*="bg-gold-400"],
+html[data-appearance="tema3"] .theme-tema3-menu button[class*="from-gold-"] {
+  background: linear-gradient(135deg,var(--tema3-gold-light),var(--tema3-gold)) !important;
+  color: #2B1D0A !important;
+  border-color: #a67c2a !important;
+}
+html[data-appearance="tema3"] .theme-tema3-menu button svg { color: var(--tema3-gold) !important; }
+html[data-appearance="tema3"] .theme-tema3-menu button[class*="bg-gold-400"] svg { color: #2B1D0A !important; }
+
+/* Selector de tema: panel claro por encima del tablero; conserva las imágenes reales del selector. */
+html[data-appearance="tema3"] .theme-picker-tema3 {
+  z-index: 9999 !important;
+  /* Igual que Tema 4: la capa exterior no debe crear un velo blanco sobre el fondo. */
+  background: rgba(0,0,0,.15) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+html[data-appearance="tema3"] .theme-picker-tema3 .theme-picker-panel {
+  position: relative;
+  z-index: 2;
+  border: 1px solid var(--tema3-border) !important;
+  border-radius: 20px !important;
+  background: rgba(255,254,250,.50) !important;
+  color: var(--tema3-text) !important;
+  box-shadow: 0 24px 60px rgba(52,42,20,.16) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+html[data-appearance="tema3"] .theme-picker-tema3 h2,
+html[data-appearance="tema3"] .theme-picker-tema3 h3 { color: var(--tema3-text) !important; }
+html[data-appearance="tema3"] .theme-picker-tema3 p { color: var(--tema3-muted) !important; }
+html[data-appearance="tema3"] .theme-picker-tema3 section {
+  background: rgba(247,243,233,.50) !important;
+  border-color: var(--tema3-border) !important;
+}
+html[data-appearance="tema3"] .theme-picker-tema3 button {
+  color: var(--tema3-text) !important;
+  border-color: var(--tema3-border) !important;
+  background-color: rgba(255,254,250,.50) !important;
+}
+html[data-appearance="tema3"] .theme-picker-tema3 button[aria-pressed="true"] {
+  border-color: var(--tema3-gold) !important;
+  box-shadow: 0 0 0 3px rgba(184,137,46,.15);
+}
+html[data-appearance="tema3"] .theme-picker-tema3 button[class*="bg-gold-400"],
+html[data-appearance="tema3"] .theme-picker-tema3 button[class*="bg-gold-300"] {
+  background: linear-gradient(135deg,var(--tema3-gold-light),var(--tema3-gold)) !important;
+  color: #2B1D0A !important;
+}
+
+/* Tablero: superficies claras y contraste legible, sin cambiar acciones, slots ni fondos seleccionados. */
+html[data-appearance="tema3"] .theme-tema3-board {
+  color: var(--tema3-text) !important;
+  /* Quita los degradados oscuros de .board-bg para dejar visible el JPG del tablero. */
+  background: transparent !important;
+  background-image: none !important;
+  background-blend-mode: normal;
+}
+/* El tablero y sus zonas dejan ver el JPG; las superficies siguen claras y legibles. */
+html[data-appearance="tema3"] .theme-tema3-board,
+html[data-appearance="tema3"] .theme-tema3-board::before,
+html[data-appearance="tema3"] .theme-tema3-board::after {
+  background: transparent !important;
+  background-image: none !important;
+}
+/* Tema 3: franja de cartas rivales separada de la barra superior de CPU. */
+html[data-appearance="tema3"] .theme-tema3-board .tema3-opponent-hand-strip {
+  /* Conserva la transparencia original de bg-ink-800/30, como en los otros tableros. */
+  background-color: rgba(255,254,250,.30) !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-appearance="tema3"] .theme-tema3-board .field-zone {
+  border: 1px solid rgba(213,205,189,.95) !important;
+  border-radius: 14px !important;
+  /* Las zonas recuperan la transparencia del 20 % que ya indican sus clases Tailwind. */
+  background-color: rgba(255,254,250,.20) !important;
+  box-shadow: 0 8px 24px rgba(52,42,20,.08);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-appearance="tema3"] .theme-tema3-board .field-zone:first-of-type {
+  background-color: rgba(230,238,246,.20) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board .field-zone:last-of-type {
+  background-color: rgba(241,238,223,.20) !important;
+}
+
+/* Mantiene el color marfil de Luz de Guerra, pero respeta la opacidad
+   que define cada clase del tablero original (en vez de igualarlas todas al 72 %). */
+html[data-appearance="tema3"] .theme-tema3-board [class~="bg-ink-800"],
+html[data-appearance="tema3"] .theme-tema3-board [class~="bg-ink-700"],
+html[data-appearance="tema3"] .theme-tema3-board [class~="bg-ink-900"],
+html[data-appearance="tema3"] .theme-tema3-board [class~="bg-ink-950"],
+html[data-appearance="tema3"] .theme-tema3-board [class~="bg-ink-600"] {
+  background-color: var(--tema3-panel) !important;
+  background-image: none !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-800/40"] {
+  background-color: rgba(255,254,250,.40) !important;
+  background-image: none !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-800/60"] {
+  background-color: rgba(255,254,250,.60) !important;
+  background-image: none !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-800/90"] {
+  background-color: rgba(255,254,250,.90) !important;
+  background-image: none !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-800/95"] {
+  background-color: rgba(255,254,250,.95) !important;
+  background-image: none !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-700/80"] {
+  background-color: rgba(255,254,250,.80) !important;
+  background-image: none !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board [class*="bg-ink-700/90"] {
+  background-color: rgba(255,254,250,.90) !important;
+  background-image: none !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-white"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-slate-100"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-slate-200"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-ink-100"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-ink-200"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-ink-300"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-gold-300"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-gold-400"] {
+  color: var(--tema3-text) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board [class*="border-ink-"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="border-gold-"] {
+  border-color: var(--tema3-border) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board [data-field-slot]:not([data-field-uid]) {
+  border-color: rgba(213,205,189,.95) !important;
+  background-color: rgba(255,254,250,.02) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board [data-field-slot][data-playable],
+html[data-appearance="tema3"] .theme-tema3-board [class*="ring-gold-"] {
+  box-shadow: 0 0 0 3px rgba(232,198,106,.34);
+}
+html[data-appearance="tema3"] .theme-tema3-board button {
+  border-color: var(--tema3-border);
+}
+html[data-appearance="tema3"] .theme-tema3-board button[class*="bg-gold-400"],
+html[data-appearance="tema3"] .theme-tema3-board button[class*="from-gold-"] {
+  background: linear-gradient(135deg,var(--tema3-gold-light),var(--tema3-gold)) !important;
+  color: #2B1D0A !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board [data-lp-player] > div {
+  background-color: #E8E0CF;
+  border-color: var(--tema3-border);
+}
+html[data-appearance="tema3"] .theme-tema3-board [data-lp-player] > div > div {
+  background-image: linear-gradient(90deg,#2F855A,#E8C66A);
+}
+
+/* Biblioteca de cartas: mantiene CardView y los datos reales de cada carta. */
+html[data-appearance="tema3"] .theme-tema3-cards {
+  background: transparent !important;
+  color: var(--tema3-text) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-cards header,
+html[data-appearance="tema3"] .theme-tema3-cards > div {
+  background: rgba(255,254,250,.50) !important;
+  border-color: var(--tema3-border) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+html[data-appearance="tema3"] .theme-tema3-cards article {
+  background: rgba(255,254,250,.50) !important;
+  color: var(--tema3-text) !important;
+  border: 1px solid var(--tema3-border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 24px rgba(52,42,20,.07);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+@media (hover:hover) {
+  html[data-appearance="tema3"] .theme-tema3-cards article:hover {
+    transform: translateY(-3px);
+    border-color: var(--tema3-gold) !important;
+    box-shadow: 0 14px 30px rgba(52,42,20,.12);
+  }
+}
+html[data-appearance="tema3"] .theme-tema3-cards h1,
+html[data-appearance="tema3"] .theme-tema3-cards h2,
+html[data-appearance="tema3"] .theme-tema3-cards h3 { color: var(--tema3-text) !important; }
+html[data-appearance="tema3"] .theme-tema3-cards p,
+html[data-appearance="tema3"] .theme-tema3-cards span { color: var(--tema3-muted); }
+html[data-appearance="tema3"] .theme-tema3-cards button {
+  background: rgba(255,254,250,.50) !important;
+  color: var(--tema3-text) !important;
+  border-color: var(--tema3-border) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+html[data-appearance="tema3"] .theme-tema3-cards button[aria-pressed="true"] {
+  background: rgba(248,232,184,.72) !important;
+  border-color: var(--tema3-gold) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-appearance="tema3"] .theme-tema3-menu button,
+  html[data-appearance="tema3"] .theme-tema3-cards article { transition: none; }
+}
+
+
+/* Refinamiento a partir de los mockups HTML de «Luz de Guerra».
+   Se adapta a los componentes React existentes: no se sustituyen datos ni fondos. */
+
+html[data-appearance="tema3"] .theme-tema3-menu {
+  font-family: Inter, system-ui, sans-serif;
+}
+html[data-appearance="tema3"] .theme-tema3-menu h1 {
+  font-family: "Cinzel Decorative", Georgia, serif !important;
+  font-weight: 900 !important;
+  letter-spacing: .035em;
+  background: linear-gradient(90deg, #202838 0%, #202838 47%, #B8892E 64%, #E8C66A 78%, #B8892E 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,.8));
+}
+html[data-appearance="tema3"] .theme-tema3-menu > div[class*="relative z-10"]::after {
+  content: "";
+  display: block;
+  height: 2px;
+  width: min(72%, 420px);
+  margin: 18px auto 0;
+  background: linear-gradient(90deg, transparent, #E8C66A, #B8892E, transparent);
+  border-radius: 99px;
+  pointer-events: none;
+}
+html[data-appearance="tema3"] .theme-tema3-menu button {
+  border-radius: 14px !important;
+}
+html[data-appearance="tema3"] .theme-tema3-menu button:focus-visible,
+html[data-appearance="tema3"] .theme-picker-tema3 button:focus-visible {
+  outline: 3px solid rgba(184,137,46,.55);
+  outline-offset: 3px;
+}
+html[data-appearance="tema3"] .theme-picker-tema3 .theme-picker-panel {
+  width: min(100%, 940px);
+  max-height: 92dvh;
+  overflow-y: auto;
+}
+html[data-appearance="tema3"] .theme-picker-tema3 .theme-picker-panel > section:first-of-type {
+  background: linear-gradient(180deg, rgba(255,254,250,.50), rgba(247,243,233,.50)) !important;
+}
+html[data-appearance="tema3"] .theme-picker-tema3 button img {
+  filter: saturate(.96);
+}
+html[data-appearance="tema3"] .theme-picker-tema3 button[aria-pressed="true"] {
+  background: linear-gradient(180deg, rgba(255,254,250,.72), rgba(255,246,214,.72)) !important;
+  border-color: var(--tema3-gold) !important;
+}
+/* Reglas: deja visible el fondo igual que en «Temas y fondos». */
+html[data-appearance="tema3"] .theme-tema3-rules {
+  background: transparent !important;
+}
+html[data-appearance="tema3"] .theme-tema3-rules header {
+  background: rgba(255,254,250,.50) !important;
+  border-color: var(--tema3-border) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+html[data-appearance="tema3"] .theme-tema3-rules header h1 {
+  color: var(--tema3-text) !important;
+  font-family: "Cinzel Decorative", Georgia, serif !important;
+}
+html[data-appearance="tema3"] .theme-tema3-rules header p {
+  /* «Guía completa · lectura visual»: negro oscuro para que se lea sobre la
+     cabecera clara. */
+  color: #111827 !important;
+}
+html[data-appearance="tema3"] .theme-tema3-rules main {
+  background: transparent !important;
+}
+html[data-appearance="tema3"] .theme-tema3-rules main > div > div {
+  border-color: transparent !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+html[data-appearance="tema3"] .theme-tema3-cards {
+  font-family: Inter, system-ui, sans-serif;
+}
+html[data-appearance="tema3"] .theme-tema3-cards header h1 {
+  font-family: "Cinzel Decorative", Georgia, serif !important;
+}
+html[data-appearance="tema3"] .theme-tema3-cards article [class*="text-white"],
+html[data-appearance="tema3"] .theme-tema3-cards article [class*="text-ink-400"],
+html[data-appearance="tema3"] .theme-tema3-cards article [class*="text-ink-300"] {
+  color: var(--tema3-muted) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-cards article [class*="text-gold-300"] {
+  color: #8B651D !important;
+}
+html[data-appearance="tema3"] .theme-tema3-cards article [class*="border-ink-"] {
+  border-color: var(--tema3-border) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board {
+  font-family: Inter, system-ui, sans-serif;
+}
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-white"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-slate-100"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-slate-200"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-ink-100"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-ink-200"],
+html[data-appearance="tema3"] .theme-tema3-board [class*="text-ink-300"] {
+  color: #354052 !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board button[class*="bg-gold-400"],
+html[data-appearance="tema3"] .theme-tema3-board button[class*="bg-gold-500"] {
+  background: linear-gradient(135deg, #E8C66A, #B8892E) !important;
+  color: #2B1D0A !important;
+}
+@media (max-width: 600px) {
+  html[data-appearance="tema3"] .theme-tema3-menu > div[class*="relative z-10"] {
+    padding: 18px !important;
+  }
+}
+
+
+
+/* Tema 3: permitir desplazamiento vertical si el menú supera la altura de pantalla. */
+html[data-appearance="tema3"] .theme-tema3-menu {
+  display: block !important;
+  height: 100dvh;
+  min-height: 100dvh !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain;
+  box-sizing: border-box;
+  padding-top: max(18px, env(safe-area-inset-top)) !important;
+  padding-bottom: max(24px, env(safe-area-inset-bottom)) !important;
+}
+html[data-appearance="tema3"] .theme-tema3-menu > div[class*="relative z-10"] {
+  margin: 0 auto !important;
+}
+
+
+/* Mantener las capas JPG fijadas al viewport mientras se desplaza el menú. */
+html[data-appearance="tema3"] .theme-tema3-menu > div[aria-hidden="true"] {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  pointer-events: none !important;
+}
+
+
+/* Panel de Temas y fondos: mismo aspecto desde el menú y desde el tablero. */
+html[data-appearance="tema3"] .theme-picker-tema3 { color: var(--tema3-text) !important; }
+html[data-appearance="tema3"] .theme-picker-tema3 p,
+html[data-appearance="tema3"] .theme-picker-tema3 span { color: var(--tema3-muted) !important; }
+html[data-appearance="tema3"] .theme-picker-tema3 button {
+  color: var(--tema3-text) !important;
+  background-color: rgba(255,254,250,.50) !important;
+  background-image: none;
+  border-color: var(--tema3-border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 5px 16px rgba(52,42,20,.07);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+html[data-appearance="tema3"] .theme-picker-tema3 button:hover {
+  border-color: var(--tema3-gold) !important;
+  box-shadow: 0 10px 24px rgba(52,42,20,.11);
+}
+html[data-appearance="tema3"] .theme-picker-tema3 button[class*="bg-gold-400"],
+html[data-appearance="tema3"] .theme-picker-tema3 button[class*="from-gold-"] {
+  background: linear-gradient(135deg,var(--tema3-gold-light),var(--tema3-gold)) !important;
+  color: #2B1D0A !important;
+  border-color: #a67c2a !important;
+}
+html[data-appearance="tema3"] .theme-picker-tema3 button svg { color: var(--tema3-gold) !important; }
+html[data-appearance="tema3"] .theme-picker-tema3 button[class*="bg-gold-400"] svg { color: #2B1D0A !important; }
+html[data-appearance="tema3"] .theme-picker-tema3 button[aria-pressed="true"] {
+  background: linear-gradient(180deg, rgba(255,254,250,.72), rgba(255,246,214,.72)) !important;
+  border-color: var(--tema3-gold) !important;
+  box-shadow: 0 0 0 3px rgba(184,137,46,.15);
+}
+
+/* Boton Finalizar del tablero: fondo negro para que el texto rojo se lea bien. */
+html[data-appearance="tema3"] .theme-tema3-board .tema3-exit-btn {
+  background-color: #000 !important;
+  border-color: rgba(248,113,113,.55) !important;
+  color: #f87171 !important;
+}
+html[data-appearance="tema3"] .theme-tema3-board .tema3-exit-btn:hover {
+  background-color: #16161f !important;
+  border-color: rgba(248,113,113,.85) !important;
+  color: #fca5a5 !important;
+}
+/* Boton "Si" de la confirmacion: texto blanco sobre el rojo (el tema lo volvia gris). */
+html[data-appearance="tema3"] .theme-tema3-board .tema3-exit-confirm-yes {
+  color: #fff !important;
+}

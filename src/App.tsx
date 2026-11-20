@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Difficulty, GameMode } from '@/game/types';
-import { Swords, ChevronRight, History, Wifi, Cpu, User, Link2, Copy, X, ArrowLeft, BookOpen, Layers3, Music, VolumeX } from 'lucide-react';
+import { Swords, ChevronRight, History, Wifi, Cpu, User, Link2, Copy, X, ArrowLeft, BookOpen, Layers3, Music, VolumeX, Palette } from 'lucide-react';
 import { useGame } from '@/game/useGame';
 import { useOnlineGame } from '@/hooks/useOnlineGame';
 import { PassDeviceScreen } from '@/components/PassDeviceScreen';
@@ -11,6 +11,9 @@ import { loadHistoryFrom, getDefaultStorage, type MatchHistory } from '@/game/hi
 import { CardReferenceScreen } from '@/components/CardReferenceScreen';
 import { RulesScreen } from '@/components/RulesScreen';
 import { getMusicPreferences, initAudio, setMusicEnabled, setMusicTrack, setMusicVolume } from '@/game/audio';
+import { ThemePicker, type AppearanceMode, type BackgroundMode } from '@/components/ThemePicker';
+import { menuBackgrounds } from '@/generated/backgrounds';
+import './tema3.css';
 
 type FlowPhase = 'menu' | 'pass' | 'play' | 'history' | 'online-setup' | 'cards' | 'rules';
 
@@ -22,6 +25,16 @@ function StartScreen({
   hasHistory,
   musicEnabled,
   onToggleMusic,
+  menuBackgroundIndex,
+  setMenuBackgroundIndex,
+  menuBackgroundMode,
+  setMenuBackgroundMode,
+  gameBackgroundIndex,
+  setGameBackgroundIndex,
+  gameBackgroundMode,
+  setGameBackgroundMode,
+  appearanceMode,
+  setAppearanceMode,
 }: {
   onStart: (mode: GameMode, difficulty: Difficulty) => void;
   onOpenHistory: () => void;
@@ -30,39 +43,105 @@ function StartScreen({
   hasHistory: boolean;
   musicEnabled: boolean;
   onToggleMusic: () => void;
+  menuBackgroundIndex: number;
+  setMenuBackgroundIndex: (index: number) => void;
+  menuBackgroundMode: BackgroundMode;
+  setMenuBackgroundMode: (mode: BackgroundMode) => void;
+  gameBackgroundIndex: number;
+  setGameBackgroundIndex: (index: number) => void;
+  gameBackgroundMode: BackgroundMode;
+  setGameBackgroundMode: (mode: BackgroundMode) => void;
+  appearanceMode: AppearanceMode;
+  setAppearanceMode: (mode: AppearanceMode) => void;
 }) {
   const [mode, setMode] = useState<GameMode>('local');
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
+  const [showThemePicker, setShowThemePicker] = useState(false);
+  const [showCardsOverlay, setShowCardsOverlay] = useState(false);
+  const [showRulesOverlay, setShowRulesOverlay] = useState(false);
+
+  const [backgroundIndex, setBackgroundIndex] = useState(menuBackgroundIndex);
+  const [nextBackgroundIndex, setNextBackgroundIndex] = useState(1);
+  const [showNextBackground, setShowNextBackground] = useState(false);
 
   useEffect(() => {
-    const debugPointer = (event: PointerEvent) => {
-      const button = document.querySelector('[data-music-toggle]') as HTMLButtonElement | null;
-      const underPointer = document.elementFromPoint(event.clientX, event.clientY);
-      const rect = button?.getBoundingClientRect();
-      console.log('[MUSICA][POINTER]', {
-        target: event.target instanceof Element ? event.target.tagName + '.' + event.target.className : event.target,
-        underPointer: underPointer instanceof Element ? underPointer.tagName + '.' + underPointer.className : underPointer,
-        isOverMusicButton: !!rect && event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom,
-        pointerEvents: button ? getComputedStyle(button).pointerEvents : 'button-not-found',
-        zIndex: button ? getComputedStyle(button).zIndex : 'button-not-found',
-      });
-    };
+    setBackgroundIndex(menuBackgroundIndex);
+    setNextBackgroundIndex((menuBackgroundIndex + 1) % menuBackgrounds.length);
+    setShowNextBackground(false);
+  }, [menuBackgroundIndex]);
 
-    document.addEventListener('pointerdown', debugPointer, true);
-    return () => document.removeEventListener('pointerdown', debugPointer, true);
-  }, []);
+  useEffect(() => {
+    if (menuBackgroundMode !== 'slideshow') {
+      setShowNextBackground(false);
+      return;
+    }
+    let fadeTimer: number | undefined;
+    const changeTimer = window.setTimeout(() => {
+      const nextIndex = (backgroundIndex + 1) % menuBackgrounds.length;
+      setNextBackgroundIndex(nextIndex);
+      setShowNextBackground(true);
+
+      fadeTimer = window.setTimeout(() => {
+        setBackgroundIndex(nextIndex);
+        setShowNextBackground(false);
+      }, 3200);
+    }, 12000);
+
+    return () => {
+      window.clearTimeout(changeTimer);
+      if (fadeTimer !== undefined) window.clearTimeout(fadeTimer);
+    };
+  }, [backgroundIndex, menuBackgroundMode]);
+
+  useEffect(() => {
+    if (menuBackgroundMode !== 'slideshow' || showNextBackground) return;
+    const timer = window.setTimeout(() => {
+      setNextBackgroundIndex((backgroundIndex + 1) % menuBackgrounds.length);
+    }, 3300);
+    return () => window.clearTimeout(timer);
+  }, [backgroundIndex, showNextBackground, menuBackgroundMode]);
 
   return (
-    <div className="bg-ink-900 min-h-[100dvh] flex items-center justify-center px-3 sm:px-6 py-6">
-      <div className="w-full max-w-md mx-auto">
+    <>
+    <div className={`relative isolate min-h-[100dvh] overflow-hidden bg-ink-900 flex items-center justify-center px-3 sm:px-6 py-6 ${appearanceMode === 'tema4' ? 'theme-tema4-menu' : appearanceMode === 'tema3' ? 'theme-tema3-menu' : ''}`}>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
+        style={{
+          backgroundImage: `url('${menuBackgrounds[menuBackgroundMode === 'fixed' ? menuBackgroundIndex : backgroundIndex]}')`,
+          opacity: showNextBackground ? 0 : 1,
+          transform: 'scale(1.025)',
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
+        style={{
+          backgroundImage: `url('${menuBackgrounds[nextBackgroundIndex]}')`,
+          opacity: menuBackgroundMode === 'slideshow' && showNextBackground ? 1 : 0,
+          transform: 'scale(1.025)',
+        }}
+      />
+      <div className={`relative z-10 w-full max-w-md mx-auto ${(appearanceMode === "dark" || appearanceMode === "tema4" || appearanceMode === "tema3") && (showThemePicker || showCardsOverlay || showRulesOverlay) ? "invisible" : ""}`}>
         <div className="mb-6 w-full flex items-center justify-between gap-3">
-          <div className="animate-pulse-glow w-[clamp(4rem,18vw,5rem)] h-[clamp(4rem,18vw,5rem)] shrink-0 rounded-2xl border-2 border-gold-500/40 flex items-center justify-center">
-            <Swords size={36} className="text-gold-400" />
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="animate-pulse-glow w-[clamp(4rem,18vw,5rem)] h-[clamp(4rem,18vw,5rem)] shrink-0 rounded-2xl border-2 border-gold-500/40 flex items-center justify-center">
+              <Swords size={36} className="text-gold-400" />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowThemePicker(true)}
+              className="group min-w-[4.3rem] h-[clamp(4rem,18vw,5rem)] rounded-2xl border-2 border-gold-500/40 bg-ink-800/70 hover:border-gold-300 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-1 text-gold-300 shadow-lg px-2"
+              aria-label="Cambiar temas y fondos"
+            >
+              <Palette size={26} strokeWidth={1.8} className="group-hover:scale-110 transition-transform" />
+              <span className="font-display font-bold uppercase text-[10px] leading-none tracking-wide">Temas</span>
+            </button>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               type="button"
-              onClick={onOpenCards}
+              onClick={() => (appearanceMode === 'tema4' || appearanceMode === 'tema3') ? setShowCardsOverlay(true) : onOpenCards()}
               aria-label="Ver cartas"
               className="group w-[clamp(4rem,18vw,5rem)] h-[clamp(4rem,18vw,5rem)] shrink-0 rounded-2xl border-2 border-gold-500/40 bg-ink-800/70 hover:border-azure-400/70 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-1 text-gold-400 hover:text-gold-300 shadow-lg"
             >
@@ -71,7 +150,7 @@ function StartScreen({
             </button>
             <button
               type="button"
-              onClick={onOpenRules}
+              onClick={() => (appearanceMode === 'tema4' || appearanceMode === 'tema3') ? setShowRulesOverlay(true) : onOpenRules()}
               aria-label="Ver reglas"
               className="group w-[clamp(4rem,18vw,5rem)] h-[clamp(4rem,18vw,5rem)] shrink-0 rounded-2xl border-2 border-gold-500/40 bg-ink-800/70 hover:border-gold-400/70 hover:bg-ink-800 transition-all flex flex-col items-center justify-center gap-1 text-gold-400 hover:text-gold-300 shadow-lg"
             >
@@ -81,15 +160,15 @@ function StartScreen({
           </div>
         </div>
       <h1 className="font-display text-3xl sm:text-4xl font-black text-gold-300 mb-2 text-center" style={{ fontSize: 'clamp(1.5rem, 5vw, 2.5rem)' }}>Bestias de Guerra</h1>
-      <p className="text-sm text-ink-300 text-center mb-1">Juego de cartas con baraja española</p>
-      <p className="text-xs text-ink-400 text-center mb-6 max-w-xs mx-auto">
-        2 jugadores · 48 cartas cada uno · 100 PV · 6 espacios · máx. 9 cartas en mano
+      <p className="text-sm text-slate-100 text-center mb-1">Juego de cartas con baraja española</p>
+      <p className="text-xs text-slate-200 text-center mb-6 max-w-xs mx-auto">
+        2 jugadores · 48 cartas cada uno · 100 PV · 6 espacios · robo automático hasta 9 cartas
       </p>
       <div className="w-full max-w-md mx-auto mb-5">
-        <p className="text-[10px] uppercase tracking-widest text-ink-400 mb-2">Modo de juego</p>
+        <p className="text-[10px] uppercase tracking-widest text-slate-200 mb-2">Modo de juego</p>
         <div className="grid grid-cols-3 gap-2">
           {([['local', '2 jugadores', User], ['cpu', 'Contra CPU', Cpu], ['online', '1v1 Online', Wifi]] as const).map(([value, label, Icon]) => (
-            <button key={value} onClick={() => setMode(value as GameMode)} className={`rounded-lg border px-3 py-3 text-sm font-display font-bold transition-colors flex flex-col items-center gap-1 ${mode === value ? 'border-gold-400 bg-gold-400/15 text-gold-300' : 'border-ink-600 text-ink-300 hover:border-ink-400'}`}>
+            <button key={value} onClick={() => setMode(value as GameMode)} className={`rounded-lg border px-3 py-3 text-sm font-display font-bold transition-colors flex flex-col items-center gap-1 ${mode === value ? 'border-gold-400 bg-gold-400/15 text-gold-300' : 'border-slate-400/70 text-slate-100 hover:border-slate-300'}`}>
               <Icon size={16} className="mx-auto" />
               <span className="font-display font-bold">{label}</span>
             </button>
@@ -115,7 +194,7 @@ function StartScreen({
           className={`relative z-50 pointer-events-auto rounded-lg border px-4 py-2 text-xs font-display font-bold transition-colors flex items-center justify-center gap-2 ${
             musicEnabled
               ? 'border-gold-400 bg-gold-400/15 text-gold-300'
-              : 'border-ink-600 bg-ink-800 text-ink-400 hover:border-ink-400'
+              : 'border-ink-600 bg-ink-800 text-slate-200 hover:border-slate-300'
           }`}
           title={musicEnabled ? 'Desactivar música' : 'Activar música'}
           aria-label={musicEnabled ? 'Desactivar música' : 'Activar música'}
@@ -127,7 +206,7 @@ function StartScreen({
       {mode === 'cpu' ? (
         <>
         <div className="w-full max-w-md mx-auto mb-3">
-          <p className="text-[10px] uppercase tracking-widest text-ink-400 mb-2">Dificultad</p>
+          <p className="text-[10px] uppercase tracking-widest text-slate-200 mb-2">Dificultad</p>
           <div className="grid grid-cols-4 gap-2">
             {(['easy', 'normal', 'hard', 'expert'] as Difficulty[]).map((d) => (
               <button
@@ -135,8 +214,8 @@ function StartScreen({
                 onClick={() => setDifficulty(d)}
                 className={`rounded-lg border px-3 py-2 text-xs font-display font-bold transition-colors ${
                   difficulty === d
-                    ? 'border-azure-400 bg-azure-400/15 text-azure-300'
-                    : 'border-ink-600 text-ink-300 hover:border-ink-400'
+                    ? 'border-gold-400 bg-gold-400/15 text-gold-300'
+                    : 'border-slate-400/70 text-slate-100 hover:border-slate-300'
                 }`}
               >
                 {d === 'easy' && 'Fácil'}
@@ -205,7 +284,37 @@ function StartScreen({
         </>
       ) : null}
       </div>
+      {showRulesOverlay && (
+        <RulesScreen
+          onBack={() => setShowRulesOverlay(false)}
+          appearanceMode={appearanceMode}
+          overlay
+        />
+      )}
+      {showCardsOverlay && (
+        <CardReferenceScreen
+          onBack={() => setShowCardsOverlay(false)}
+          appearanceMode={appearanceMode}
+          overlay
+        />
+      )}
     </div>
+    {/* Selector montado fuera del menú para mantener el mismo diseño en ambos contextos. */}
+    <ThemePicker
+      open={showThemePicker}
+      onClose={() => setShowThemePicker(false)}
+      menuIndex={menuBackgroundIndex}
+      setMenuIndex={setMenuBackgroundIndex}
+      menuMode={menuBackgroundMode}
+      setMenuMode={setMenuBackgroundMode}
+      gameIndex={gameBackgroundIndex}
+      setGameIndex={setGameBackgroundIndex}
+      gameMode={gameBackgroundMode}
+      setGameMode={setGameBackgroundMode}
+      appearanceMode={appearanceMode}
+      setAppearanceMode={setAppearanceMode}
+    />
+    </>
   );
 }
 
@@ -271,21 +380,36 @@ function App() {
     roomId, 
     playerRole, 
     isHost, 
-    opponentConnected, 
-    createRoom, 
-    joinRoom, 
-    leaveRoom, 
-    dispatchAction, 
-    sendRematch, 
-    isConnected, 
-    error: onlineError,
-    waitingForOpponent
+    createRoom,
+    joinRoom,
+    leaveRoom,
+    dispatchAction,
+    waitingForOpponent,
   } = useOnlineGame();
   const [flow, setFlow] = useState<FlowPhase>('menu');
   const [onlineRoomId, setOnlineRoomId] = useState<string>('');
   const [onlinePlayerName, setOnlinePlayerName] = useState<string>('');
   const [storedHistory, setStoredHistory] = useState<MatchHistory | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [menuBackgroundIndex, setMenuBackgroundIndex] = useState(() => Number(window.localStorage.getItem('bg-menu-index') ?? 0));
+  const [menuBackgroundMode, setMenuBackgroundMode] = useState<BackgroundMode>(() => window.localStorage.getItem('bg-menu-mode') === 'fixed' ? 'fixed' : 'slideshow');
+  const [gameBackgroundIndex, setGameBackgroundIndex] = useState(() => Number(window.localStorage.getItem('bg-game-index') ?? 0));
+  const [gameBackgroundMode, setGameBackgroundMode] = useState<BackgroundMode>(() => window.localStorage.getItem('bg-game-mode') === 'fixed' ? 'fixed' : 'slideshow');
+  const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>(() => {
+    const saved = window.localStorage.getItem('game-appearance');
+    return saved === 'tema3' || saved === 'tema4' ? saved : 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.appearance = appearanceMode;
+    window.localStorage.setItem('game-appearance', appearanceMode);
+  }, [appearanceMode]);
+
+  useEffect(() => {
+    window.localStorage.setItem('bg-menu-index', String(menuBackgroundIndex));
+    window.localStorage.setItem('bg-menu-mode', menuBackgroundMode);
+    window.localStorage.setItem('bg-game-index', String(gameBackgroundIndex));
+    window.localStorage.setItem('bg-game-mode', gameBackgroundMode);
+  }, [menuBackgroundIndex, menuBackgroundMode, gameBackgroundIndex, gameBackgroundMode]);
 
   const toggleMusic = () => {
     setMusicEnabledState((current) => {
@@ -352,11 +476,11 @@ function App() {
   }
 
   if (flow === 'cards') {
-    return <CardReferenceScreen onBack={() => setFlow('menu')} />;
+    return <CardReferenceScreen onBack={() => setFlow('menu')} appearanceMode={appearanceMode} />;
   }
 
   if (flow === 'rules') {
-    return <RulesScreen onBack={() => setFlow('menu')} />;
+    return <RulesScreen onBack={() => setFlow('menu')} appearanceMode={appearanceMode} />;
   }
 
   if (flow === 'menu') {
@@ -365,6 +489,16 @@ function App() {
         hasHistory={Boolean(liveHistory ?? storedHistory)}
         musicEnabled={musicEnabled}
         onToggleMusic={toggleMusic}
+        menuBackgroundIndex={menuBackgroundIndex}
+        setMenuBackgroundIndex={setMenuBackgroundIndex}
+        menuBackgroundMode={menuBackgroundMode}
+        setMenuBackgroundMode={setMenuBackgroundMode}
+        gameBackgroundIndex={gameBackgroundIndex}
+        setGameBackgroundIndex={setGameBackgroundIndex}
+        gameBackgroundMode={gameBackgroundMode}
+        setGameBackgroundMode={setGameBackgroundMode}
+        appearanceMode={appearanceMode}
+        setAppearanceMode={setAppearanceMode}
         onOpenHistory={openHistory}
         onOpenCards={() => setFlow('cards')}
         onOpenRules={() => setFlow('rules')}
@@ -406,51 +540,53 @@ function App() {
     };
 
     return (
-      <div className="bg-ink-900 flex flex-col items-center justify-center px-6 py-8 min-h-[100dvh] relative">
-        <div className="w-full max-w-md">
-          <h2 className="font-display text-2xl font-bold text-gold-300 mb-6 text-center">Jugar Online</h2>
-          <p className="text-ink-300 text-center mb-6">
-            Escribe tu nombre y crea una partida o únete a una existente con un código.
-          </p>
-          <div className="space-y-4">
-            <input
-              type="text"
-              placeholder="Tu nombre"
-              value={onlinePlayerName}
-              onChange={(e) => setOnlinePlayerName(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-ink-800 border border-ink-600 text-ink-100 placeholder-ink-400 focus:border-azure-400 focus:outline-none"
-              maxLength={16}
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={handleCreateRoom}
-                className="px-4 py-3 rounded-lg bg-gradient-to-r from-azure-500 to-azure-600 text-white font-display font-bold hover:from-azure-600 hover:to-azure-700 transition-colors"
-              >
-                <Link2 size={18} className="mr-2" /> Crear partida
-              </button>
-              <button
-                onClick={handleJoinRoom}
-                className="px-4 py-3 rounded-lg bg-ink-800 border border-ink-600 text-ink-300 font-display font-bold hover:border-ink-400 hover:bg-ink-700 transition-colors"
-              >
-                Unirse a partida
-              </button>
+      <div className="bg-ink-900 relative h-[100dvh] overflow-hidden">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="glass-chip absolute top-4 left-4 px-3 py-2 rounded-lg bg-ink-800 border border-ink-600 text-ink-200 font-display font-bold hover:border-ink-400 hover:bg-ink-700 transition-colors flex items-center gap-1.5 z-20"
+        >
+          <ArrowLeft size={18} />
+          Atrás
+        </button>
+        <div className="glass-scroll h-full overflow-y-auto flex flex-col items-center px-4 sm:px-6 py-8">
+          <div className="glass-panel w-full max-w-md px-5 py-7 sm:px-7 sm:py-8 m-auto">
+            <h2 className="font-display text-2xl font-bold text-gold-300 mb-6 text-center">Jugar Online</h2>
+            <p className="text-ink-300 text-center mb-6">
+              Escribe tu nombre y crea una partida o únete a una existente con un código.
+            </p>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Tu nombre"
+                value={onlinePlayerName}
+                onChange={(e) => setOnlinePlayerName(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-ink-800 border border-ink-600 text-ink-100 placeholder-ink-400 focus:border-azure-400 focus:outline-none"
+                maxLength={16}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={handleCreateRoom}
+                  className="px-4 py-3 rounded-lg bg-gradient-to-r from-azure-500 to-azure-600 text-white font-display font-bold hover:from-azure-600 hover:to-azure-700 transition-colors"
+                >
+                  <Link2 size={18} className="mr-2" /> Crear partida
+                </button>
+                <button
+                  onClick={handleJoinRoom}
+                  className="px-4 py-3 rounded-lg bg-ink-800 border border-ink-600 text-ink-300 font-display font-bold hover:border-ink-400 hover:bg-ink-700 transition-colors"
+                >
+                  Unirse a partida
+                </button>
+              </div>
+              <input
+                type="text"
+                placeholder="Código de partida (ej: A1B2C3)"
+                value={onlineRoomId}
+                onChange={(e) => setOnlineRoomId(e.target.value.toUpperCase())}
+                className="w-full px-4 py-3 rounded-lg bg-ink-800 border border-ink-600 text-ink-100 placeholder-ink-400 focus:border-azure-400 focus:outline-none text-center text-lg tracking-widest"
+                maxLength={6}
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Código de partida (ej: A1B2C3)"
-              value={onlineRoomId}
-              onChange={(e) => setOnlineRoomId(e.target.value.toUpperCase())}
-              className="w-full px-4 py-3 rounded-lg bg-ink-800 border border-ink-600 text-ink-100 placeholder-ink-400 focus:border-azure-400 focus:outline-none text-center text-lg tracking-widest"
-              maxLength={6}
-            />
-          <button
-            type="button"
-            onClick={handleBack}
-            className="absolute top-4 left-4 px-3 py-2 rounded-lg bg-ink-800 border border-ink-600 text-ink-200 font-display font-bold hover:border-ink-400 hover:bg-ink-700 transition-colors flex items-center gap-1.5 z-10"
-          >
-            <ArrowLeft size={18} />
-            Atrás
-          </button>
           </div>
         </div>
       </div>
@@ -490,6 +626,16 @@ function App() {
           }}
           musicEnabled={musicEnabled}
           onToggleMusic={toggleMusic}
+          gameBackgroundIndex={gameBackgroundIndex}
+          setGameBackgroundIndex={setGameBackgroundIndex}
+          gameBackgroundMode={gameBackgroundMode}
+          setGameBackgroundMode={setGameBackgroundMode}
+          appearanceMode={appearanceMode}
+          setAppearanceMode={setAppearanceMode}
+          menuBackgroundIndex={menuBackgroundIndex}
+          setMenuBackgroundIndex={setMenuBackgroundIndex}
+          menuBackgroundMode={menuBackgroundMode}
+          setMenuBackgroundMode={setMenuBackgroundMode}
           localPlayerIndex={playerRole === 'player1' ? 0 : 1}
         />
         {waitingForOpponent && isHost && roomId && playerRole === 'player1' && (
@@ -498,8 +644,6 @@ function App() {
             roomUrl={roomUrl}
             onCopyLink={() => {
               navigator.clipboard.writeText(roomUrl);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
             }}
             onClose={() => {
               leaveRoom();
@@ -521,6 +665,16 @@ function App() {
       }}
       musicEnabled={musicEnabled}
       onToggleMusic={toggleMusic}
+      gameBackgroundIndex={gameBackgroundIndex}
+      setGameBackgroundIndex={setGameBackgroundIndex}
+      gameBackgroundMode={gameBackgroundMode}
+      setGameBackgroundMode={setGameBackgroundMode}
+      appearanceMode={appearanceMode}
+      setAppearanceMode={setAppearanceMode}
+      menuBackgroundIndex={menuBackgroundIndex}
+      setMenuBackgroundIndex={setMenuBackgroundIndex}
+      menuBackgroundMode={menuBackgroundMode}
+      setMenuBackgroundMode={setMenuBackgroundMode}
     />
   );
 }

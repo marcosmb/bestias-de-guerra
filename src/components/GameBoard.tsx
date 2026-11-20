@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Swords,
   Shield,
@@ -18,14 +18,17 @@ import {
   Copy,
   Check,
   Music,
+  Palette,
 } from 'lucide-react';
 import type { Card, MonsterCard, TrapCard, MagicCard } from '@/game/cardData';
 import type { Action, GameState, FieldMonster, PlayerState } from '@/game/types';
-import { canActivateMagic, canAttack, hasOwnCopy, magicRequiredSide, cardInstanceKey, MAX_HAND_SIZE, MAX_CARDS_PER_TURN, getEffectiveAtk, getEffectiveDef } from '@/game/types';
+import { canActivateMagic, canAttack, hasOwnCopy, magicRequiredSide, cardInstanceKey, MAX_CARDS_PER_TURN, getEffectiveAtk, getEffectiveDef } from '@/game/types';
 import { legalActions, sameAction } from '@/game/legalActions';
 import { CardView, CardBack } from './CardView';
 import { playSound, vibrate, getAudioPreferences, setSoundEnabled, setVolume, initAudio } from '@/game/audio';
 import { getTrap3CountingOrder } from '@/game/trapCounting';
+import { ThemePicker, type AppearanceMode, type BackgroundMode } from '@/components/ThemePicker';
+import { menuBackgrounds as gameBackgrounds } from '@/generated/backgrounds';
 
 interface GameBoardProps {
   state: GameState;
@@ -33,6 +36,16 @@ interface GameBoardProps {
   onExit: () => void;
   musicEnabled: boolean;
   onToggleMusic: () => void;
+  gameBackgroundIndex: number;
+  setGameBackgroundIndex: (index: number) => void;
+  gameBackgroundMode: BackgroundMode;
+  setGameBackgroundMode: (mode: BackgroundMode) => void;
+  appearanceMode: AppearanceMode;
+  setAppearanceMode: (mode: AppearanceMode) => void;
+  menuBackgroundIndex: number;
+  setMenuBackgroundIndex: (index: number) => void;
+  menuBackgroundMode: BackgroundMode;
+  setMenuBackgroundMode: (mode: BackgroundMode) => void;
   // Para modo online: índice del jugador local (0 = host/player1, 1 = guest/player2)
   // En modo local/CPU no se usa (se determina por currentPlayer)
   localPlayerIndex?: 0 | 1;
@@ -96,8 +109,8 @@ function CardZoomModal({
               <span className="text-gold-500/40 font-display text-2xl">B</span>
             </div>
           </div>
-          <p className="text-ink-300 text-sm">Carta oculta</p>
-          <p className="text-ink-400 text-xs mt-1">No puedes ver esta carta</p>
+          <p className="text-slate-100 text-sm">Carta oculta</p>
+          <p className="text-slate-200 text-xs mt-1">No puedes ver esta carta</p>
           <button
             onClick={onClose}
             className="mt-4 px-6 py-2 rounded-lg bg-ink-600 text-ink-200 font-display font-bold hover:bg-ink-500 btn-press"
@@ -118,7 +131,7 @@ function CardZoomModal({
       <div className="bg-ink-700 rounded-2xl border-2 border-gold-500/50 p-4 max-w-sm w-full shadow-glow animate-scale-in" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-3">
           <h3 className="font-display font-bold text-gold-300">Vista ampliada</h3>
-          <button onClick={onClose} className="text-ink-300 hover:text-white btn-press">
+          <button onClick={onClose} className="text-slate-100 hover:text-white btn-press">
             <X size={20} />
           </button>
         </div>
@@ -137,7 +150,7 @@ function CardZoomModal({
 
         <div className="space-y-2 text-center">
           <p className="text-white font-display font-bold text-lg">{card.name}</p>
-          <p className="text-ink-300 text-sm">
+          <p className="text-slate-100 text-sm">
             {isMonster && (
               fieldMonster
                 ? `Monstruo · ATQ ${getEffectiveAtk(fieldMonster)} / DEF ${getEffectiveDef(fieldMonster)}`
@@ -150,7 +163,7 @@ function CardZoomModal({
             <div className="mt-2 text-left rounded-lg border border-gold-500/20 bg-gold-900/10 px-3 py-2">
               <p className="text-gold-300 text-xs font-bold">Mágica asociada</p>
               <p className="text-white text-sm font-semibold mt-0.5">{fieldMonster.magic.name}</p>
-              <p className="text-ink-300 text-xs mt-0.5">{fieldMonster.magic.description}</p>
+              <p className="text-slate-100 text-xs mt-0.5">{fieldMonster.magic.description}</p>
             </div>
           )}
           {fieldMonster?.trap && (
@@ -158,17 +171,17 @@ function CardZoomModal({
               <div className="mt-2 text-left rounded-lg border border-crimson-500/20 bg-crimson-900/10 px-3 py-2">
                 <p className="text-crimson-300 text-xs font-bold">Trampa asociada</p>
                 <p className="text-white text-sm font-semibold mt-0.5">{fieldMonster.trap.name}</p>
-                <p className="text-ink-300 text-xs mt-0.5">{fieldMonster.trap.description}</p>
+                <p className="text-slate-100 text-xs mt-0.5">{fieldMonster.trap.description}</p>
               </div>
             ) : (
               <div className="mt-2 text-left rounded-lg border border-ink-500/30 bg-ink-800/40 px-3 py-2">
-                <p className="text-ink-300 text-xs font-bold">Trampa asociada</p>
-                <p className="text-ink-400 text-xs mt-0.5">Trampa oculta · solo se revela al activarse o al ser descubierta por un ataque.</p>
+                <p className="text-slate-100 text-xs font-bold">Trampa asociada</p>
+                <p className="text-slate-200 text-xs mt-0.5">Trampa oculta · solo se revela al activarse o al ser descubierta por un ataque.</p>
               </div>
             )
           )}
           {isOpponentCard && (
-            <p className="text-ink-400 text-xs mt-2">Carta del rival</p>
+            <p className="text-slate-200 text-xs mt-2">Carta del rival</p>
           )}
         </div>
 
@@ -207,7 +220,7 @@ function LPBar({ player, isCurrent, animateDamage }: { player: PlayerState; isCu
         <div className="flex-shrink-0 w-3 h-3 rounded-full bg-gold-400 animate-pulse shadow-glow border-2 border-gold-300/50" />
       )}
       <span className="font-display font-bold whitespace-nowrap" style={{ fontSize: 'var(--ui-text-sm)' }}>
-        <span className={isCurrent ? 'text-gold-300' : 'text-ink-300'}>{player.name}</span>
+        <span className={isCurrent ? 'text-gold-300' : 'text-slate-100'}>{player.name}</span>
         {isCurrent && (
           <span className="ml-1 text-[10px] text-gold-400/80">(Tu turno)</span>
         )}
@@ -309,7 +322,7 @@ function FieldSlot({
             e.stopPropagation();
             onZoom(fm.card, fm, isOpponent, Boolean(isOpponent && fm.faceDown));
           }}
-          className="absolute -top-1 -right-1 w-4 h-4 bg-ink-700/90 rounded-full hidden md:flex items-center justify-center text-ink-300 hover:text-white hover:bg-ink-600 z-30 border border-ink-500/50"
+          className="absolute -top-1 -right-1 w-4 h-4 bg-ink-700/90 rounded-full hidden md:flex items-center justify-center text-slate-100 hover:text-white hover:bg-ink-600 z-30 border border-ink-500/50"
           title={isOpponent ? "Ver carta rival" : "Ampliar carta"}
         >
           <ZoomIn size={8} />
@@ -336,20 +349,9 @@ function TurnBanner({ playerName, turnCount }: { playerName: string; turnCount: 
         <p className="font-display font-bold text-gold-300 text-xl text-center">
           {turnCount === 0 ? 'Empieza ' + playerName : 'Turno de ' + playerName}
         </p>
-        <p className="text-ink-400 text-sm text-center mt-1">
+        <p className="text-slate-200 text-sm text-center mt-1">
           {turnCount === 0 ? 'Primer turno' : 'Turno ' + (turnCount + 1)}
         </p>
-      </div>
-    </div>
-  );
-}
-
-function DamageFloat({ damage, playerIdx }: { damage: number; playerIdx: 0 | 1 }) {
-  if (damage <= 0) return null;
-  return (
-    <div className={`fixed z-50 pointer-events-none ${playerIdx === 0 ? 'bottom-[35%] left-1/2 -translate-x-1/2' : 'top-[15%] left-1/2 -translate-x-1/2'}`}>
-      <div className="animate-float-damage font-display font-black text-red-400 text-4xl text-shadow-strong">
-        -{damage} PV
       </div>
     </div>
   );
@@ -509,22 +511,40 @@ function CombatAnimation({
         </div>
       )}
 
-      {phase === 'result' && (
+      {phase === 'result' && combatState.result === 'both-destroyed' && (
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40">
-          <div className={
-            'px-6 py-3 rounded-xl font-display font-black text-xl sm:text-2xl whitespace-nowrap animate-combat-result border-2 ' +
-            (
-              combatState.result === 'both-destroyed' ||
-              combatState.result === 'attacker-destroyed' ||
-              combatState.result === 'defender-destroyed'
-                ? 'bg-crimson-950/95 text-crimson-100 border-crimson-400/70 shadow-[0_0_35px_rgba(248,113,113,0.55)]'
-                : 'bg-ink-800/95 text-ink-100 border-ink-400/60 shadow-xl'
-            )
-          }>
-            {combatState.result === 'both-destroyed' && '¡Ambos destruidos!'}
-            {combatState.result === 'attacker-destroyed' && '¡Atacante destruido!'}
-            {combatState.result === 'defender-destroyed' && '¡Defensor destruido!'}
-            {combatState.result === 'none-destroyed' && '¡Sin destrucción!'}
+          <div className="px-6 py-3 rounded-xl font-display font-black text-xl sm:text-2xl whitespace-nowrap animate-combat-result border-2 bg-crimson-950/95 text-crimson-100 border-crimson-400/70 shadow-[0_0_35px_rgba(248,113,113,0.55)]">
+            ¡Ambos destruidos!
+          </div>
+        </div>
+      )}
+
+      {phase === 'result' && combatState.result === 'attacker-destroyed' && (
+        <div
+          className="absolute z-40 -translate-x-1/2 -translate-y-full pb-3"
+          style={{ left: from.x, top: from.y }}
+        >
+          <div className="px-4 py-2 rounded-xl font-display font-black text-base sm:text-xl whitespace-nowrap animate-combat-result border-2 bg-crimson-950/95 text-crimson-100 border-crimson-400/70 shadow-[0_0_35px_rgba(248,113,113,0.55)]">
+            ¡Atacante destruido!
+          </div>
+        </div>
+      )}
+
+      {phase === 'result' && combatState.result === 'defender-destroyed' && (
+        <div
+          className="absolute z-40 -translate-x-1/2 -translate-y-full pb-3"
+          style={{ left: to.x, top: to.y }}
+        >
+          <div className="px-4 py-2 rounded-xl font-display font-black text-base sm:text-xl whitespace-nowrap animate-combat-result border-2 bg-crimson-950/95 text-crimson-100 border-crimson-400/70 shadow-[0_0_35px_rgba(248,113,113,0.55)]">
+            ¡Defensor destruido!
+          </div>
+        </div>
+      )}
+
+      {phase === 'result' && combatState.result === 'none-destroyed' && combatState.isDirectAttack && (
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40">
+          <div className="px-6 py-3 rounded-xl font-display font-black text-xl sm:text-2xl whitespace-nowrap animate-combat-result border-2 bg-ink-800/95 text-ink-100 border-ink-400/60 shadow-xl">
+            ¡Ataque directo!
           </div>
         </div>
       )}
@@ -532,8 +552,51 @@ function CombatAnimation({
   );
 }
 
-export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic, localPlayerIndex }: GameBoardProps) {
+export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic, localPlayerIndex, gameBackgroundIndex: selectedGameBackgroundIndex, setGameBackgroundIndex, gameBackgroundMode, setGameBackgroundMode, appearanceMode, setAppearanceMode, menuBackgroundIndex, setMenuBackgroundIndex, menuBackgroundMode, setMenuBackgroundMode }: GameBoardProps) {
   const [showLog, setShowLog] = useState(false);
+  const [showThemePicker, setShowThemePicker] = useState(false);
+
+  const [gameBackgroundIndex, setLocalGameBackgroundIndex] = useState(selectedGameBackgroundIndex);
+  const [nextGameBackgroundIndex, setNextGameBackgroundIndex] = useState(1);
+  const [showNextGameBackground, setShowNextGameBackground] = useState(false);
+
+  useEffect(() => {
+    setLocalGameBackgroundIndex(selectedGameBackgroundIndex);
+    setNextGameBackgroundIndex((selectedGameBackgroundIndex + 1) % gameBackgrounds.length);
+    setShowNextGameBackground(false);
+  }, [selectedGameBackgroundIndex]);
+
+  useEffect(() => {
+    if (gameBackgroundMode !== 'slideshow') {
+      setShowNextGameBackground(false);
+      return;
+    }
+    let fadeTimer: number | undefined;
+    const changeTimer = window.setTimeout(() => {
+      const nextIndex = (gameBackgroundIndex + 1) % gameBackgrounds.length;
+      setNextGameBackgroundIndex(nextIndex);
+      setShowNextGameBackground(true);
+
+      fadeTimer = window.setTimeout(() => {
+        setGameBackgroundIndex(nextIndex);
+        setShowNextGameBackground(false);
+      }, 3200);
+    }, 12000);
+
+    return () => {
+      window.clearTimeout(changeTimer);
+      if (fadeTimer !== undefined) window.clearTimeout(fadeTimer);
+    };
+  }, [gameBackgroundIndex, gameBackgroundMode, setGameBackgroundIndex]);
+
+  useEffect(() => {
+    if (gameBackgroundMode !== 'slideshow' || showNextGameBackground) return;
+    const timer = window.setTimeout(() => {
+      setNextGameBackgroundIndex((gameBackgroundIndex + 1) % gameBackgrounds.length);
+    }, 3300);
+    return () => window.clearTimeout(timer);
+  }, [gameBackgroundIndex, showNextGameBackground, gameBackgroundMode]);
+
   const [logCopied, setLogCopied] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   /*
@@ -547,8 +610,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   const [selectedHandCard, setSelectedHandCard] = useState<string | null>(null);
   const selectedCardPanelRef = useRef<HTMLDivElement>(null);
   const [selectedFieldUid, setSelectedFieldUid] = useState<string | null>(null);
+  const [pendingTrap5Choice, setPendingTrap5Choice] = useState<string | null>(null);
+  const [, setLastCombat] = useState<{ damage: number; player: 0 | 1 } | null>(null);
   const [summonedUids, setSummonedUids] = useState<Set<string>>(new Set());
-  const [lastCombat, setLastCombat] = useState<{ damage: number; player: 0 | 1 } | null>(null);
   const [zoomCard, setZoomCard] = useState<{
     card: Card | null;
     fieldMonster?: FieldMonster | null;
@@ -773,16 +837,13 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
 
     switch (card.effect.kind) {
       case 'steal_hand_card':
-        if (me.hand.length >= MAX_HAND_SIZE) return 'Tu mano está llena.';
         return 'El rival no tiene cartas en la mano.';
       case 'revive_monster': {
         const ownGraveMonsters = me.graveyard.filter((c) => c.type === 'monster');
-        if (ownGraveMonsters.length === 0) return 'No tienes Monstruos en el cementerio.';
-        const canGoToHand =
-          me.hand.length < MAX_HAND_SIZE &&
-          ownGraveMonsters.some((c) => !hasOwnCopy(me.hand, c));
+        if (ownGraveMonsters.length === 0) return 'No puedes utilizar la Mágica 5 porque no tienes ningún Monstruo en tu cementerio.';
+        const canGoToHand = ownGraveMonsters.some((c) => !hasOwnCopy(me.hand, c));
         const canGoToField = me.field.some((fm) => fm === null);
-        if (!canGoToHand && !canGoToField) return 'No tienes espacio en la mano ni en el campo.';
+        if (!canGoToHand && !canGoToField) return 'No tienes ningún Monstruo recuperable: ya tienes las copias propias en la mano y no hay espacio en el campo.';
         return 'Ya tienes esas cartas en tu mano.';
       }
       case 'direct_attack':
@@ -803,7 +864,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     if (newUids.size > 0) {
       setSummonedUids(currentUids);
     }
-  }, [me.field]);
+  }, [me.field, summonedUids]);
 
   // Sonido de inicio de turno — se dispara una sola vez por cambio de turno.
   // Se usa un ref para no depender de re-renders (evita sonidos duplicados).
@@ -846,6 +907,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   // aumentar. Comparar el array garantiza que un efecto pasivo posterior no
   // quede sin aviso.
   const passiveLogRef = useRef(state.log);
+  const player0Lp = state.players[0].lp;
+  const player1Lp = state.players[1].lp;
+  const currentPlayer = state.currentPlayer;
   useEffect(() => {
     if (state.log !== passiveLogRef.current) {
       const latestEntry = state.log[state.log.length - 1] ?? '';
@@ -854,35 +918,48 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         latestEntry.includes('Una Trampa activa te hace recuperar') ||
         latestEntry.includes('Una Trampa activa hace perder') ||
         latestEntry.includes('Su efecto empieza inmediatamente: el rival pierde');
+      const drewTwoCards = latestEntry.includes('Robar dos cartas: Robas');
+
+      if (drewTwoCards) {
+        addToast(
+          viewer === currentPlayer
+            ? 'Robar dos cartas: has robado 2 cartas.'
+            : 'El rival usa Robar dos cartas y roba 2 cartas.',
+          'info',
+        );
+      }
 
       if (passiveEffectHappened) {
-        const viewerLp = state.players[viewer].lp;
+        const viewerLp = viewer === 0 ? player0Lp : player1Lp;
         const rivalIndex = viewer === 0 ? 1 : 0;
-        const rivalLp = state.players[rivalIndex].lp;
+        const rivalLp = rivalIndex === 0 ? player0Lp : player1Lp;
         const previousViewerLp = passiveLpRef.current[viewer];
         const previousRivalLp = passiveLpRef.current[rivalIndex];
         const viewerDelta = viewerLp - previousViewerLp;
         const rivalDelta = rivalLp - previousRivalLp;
 
-        // Avisamos de cada cambio relevante desde la perspectiva del jugador,
-        // sin revelar la identidad de la Trampa mientras siga oculta.
+        // La entrada del registro identifica la Trampa; el aviso se adapta
+        // a la perspectiva de cada jugador y aparece en ambos dispositivos.
+        const trapName = latestEntry.includes(':')
+          ? latestEntry.slice(0, latestEntry.indexOf(':'))
+          : 'Trampa activa';
         if (viewerDelta > 0) {
-          addToast(`Has ganado ${viewerDelta} PV por un efecto continuo.`, 'info');
+          addToast(`${trapName}: recuperas +${viewerDelta} PV.`, 'info');
         } else if (viewerDelta < 0) {
-          addToast(`Pierdes ${Math.abs(viewerDelta)} PV por un efecto continuo.`, 'combat');
+          addToast(`${trapName}: pierdes -${Math.abs(viewerDelta)} PV.`, 'combat');
         }
 
         if (rivalDelta > 0) {
-          addToast(`El rival gana ${rivalDelta} PV por un efecto continuo.`, 'info');
+          addToast(`${trapName}: el rival recupera +${rivalDelta} PV.`, 'info');
         } else if (rivalDelta < 0) {
-          addToast(`El rival pierde ${Math.abs(rivalDelta)} PV por un efecto continuo.`, 'combat');
+          addToast(`${trapName}: el rival pierde -${Math.abs(rivalDelta)} PV.`, 'combat');
         }
       }
     }
 
     passiveLogRef.current = state.log;
-    passiveLpRef.current = [state.players[0].lp, state.players[1].lp];
-  }, [state.log, state.players[0].lp, state.players[1].lp, viewer]);
+    passiveLpRef.current = [player0Lp, player1Lp];
+  }, [state.log, player0Lp, player1Lp, currentPlayer, viewer]);
 
   // Deduplicar efectos visuales, sonidos y mensajes para cada ataque real.
   const processedCombatIdsRef = useRef<Set<string>>(new Set());
@@ -946,41 +1023,13 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         setTimeout(() => playSound('damage'), 600);
       }
 
-      // Mensaje de combate contextualizado según quién controla cada Monstruo.
-      // El jugador local se determina por el índice real del atacante, no por
-      // palabras como "Pierdes" dentro del texto.
+      // El daño se indica únicamente en la barra central; no mostrar avisos duplicados.
+
       const combatAttackerPlayer = state.lastCombat.attackerPlayer ?? state.currentPlayer;
       const attackerIsMe = combatAttackerPlayer === viewer;
       const defenderIsMe = !attackerIsMe;
-      const attackerName = state.lastCombat.attackerCard?.name ?? 'Monstruo';
-      const defenderName = state.lastCombat.defenderCard?.name ?? 'Monstruo';
-      let contextualCombatLog = state.lastCombat.log;
-      contextualCombatLog = contextualCombatLog.replace(
-        attackerName,
-        attackerIsMe ? `Tu ${attackerName}` : `El ${attackerName} rival`,
-      );
-      if (state.lastCombat.defenderCard?.name) {
-        contextualCombatLog = contextualCombatLog.replace(
-          defenderName,
-          defenderIsMe ? `tu ${defenderName}` : `el ${defenderName} rival`,
-        );
-      }
-      addToast(contextualCombatLog, 'combat');
 
-      // Mensajes de daño usando los índices reales de atacante/defensor.
-      if (defenderDamage > 0) {
-        addToast(
-          defenderIsMe ? `¡-${defenderDamage} PV! Has perdido vida` : `¡-${defenderDamage} PV al rival!`,
-          'combat',
-        );
-      }
-      if (attackerDamage > 0) {
-        addToast(
-          attackerIsMe ? `¡-${attackerDamage} PV! Has perdido vida` : `¡-${attackerDamage} PV al rival!`,
-          'combat',
-        );
-      }
-            // Show damage for the player who received it
+      // Show damage for the player who received it
       if (defenderDamage > 0) {
         // Defender received damage
         setLastCombat({ damage: defenderDamage, player: defenderIsMe ? viewer : (viewer === 0 ? 1 : 0) as 0 | 1 });
@@ -991,7 +1040,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         setTimeout(() => setLastCombat(null), 1000);
       }
     }
-  }, [state.lastCombat, state.turnCount, viewer]);
+  }, [state.lastCombat, state.turnCount, state.currentPlayer, viewer]);
 
   const handleHandCardClick = (card: Card) => {
     setSelectedFieldUid(null);
@@ -1062,8 +1111,6 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
 
   const handleOpponentFieldClick = (uid: string) => {
     if (sel.kind === 'attack' || sel.kind === 'attack-or-direct') {
-      const target = opp.field.find((fm) => fm?.uid === uid) ?? null;
-      const attacker = me.field.find((fm) => fm?.uid === sel.attackerUid) ?? null;
       const attackAction = {
         type: 'DECLARE_ATTACK' as const,
         attackerUid: sel.attackerUid,
@@ -1091,8 +1138,12 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       }
       dispatch(action);
     } else if (sel.kind === 'choose-destroy-associated-card') {
-      const target = opp.field.find((fm) => fm?.uid === uid) ?? me.field.find((fm) => fm?.uid === uid);
+      const target = opp.field.find((fm) => fm?.uid === uid) ?? null;
       if (!target) return;
+      if (target.trap && target.magic) {
+        setPendingTrap5Choice(uid);
+        return;
+      }
       const cardType: 'trap' | 'magic' | null = target.trap ? 'trap' : target.magic ? 'magic' : null;
       if (!cardType) return;
       const action = { type: 'DESTROY_ASSOCIATED_CARD' as const, fieldUid: uid, cardType };
@@ -1161,7 +1212,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     return legal.some(
       (a) =>
         (a.type === 'DECLARE_ATTACK' && a.defenderUid === fm.uid) ||
-        ((a.type === 'PLACE_MAGIC_ON_MONSTER' || a.type === 'MAGIC_TARGET_MONSTER') && a.fieldUid === fm.uid),
+        ((a.type === 'PLACE_MAGIC_ON_MONSTER' || a.type === 'MAGIC_TARGET_MONSTER') && a.fieldUid === fm.uid) ||
+        (a.type === 'DESTROY_ASSOCIATED_CARD' && a.fieldUid === fm.uid),
     );
   };
 
@@ -1194,7 +1246,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   const opponentUidOf = (fm: FieldMonster): string | null =>
     opp.field.some((f) => f?.uid === fm.uid) ? fm.uid : null;
 
-  const startTrap3CountAnimation = () => {
+  const startTrap3CountAnimation = useCallback(() => {
     if (!state.pendingTrap || !state.pendingDice || trapCountAnimation) return;
 
     const pt = state.pendingTrap;
@@ -1217,26 +1269,31 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     );
 
     setTrapCountAnimation({ roll, sequence, step: 0 });
-  };
+  }, [state.pendingTrap, state.pendingDice, trapCountAnimation, state.players]);
 
-  const trapPrompt = state.phase === 'trap-response' && state.pendingTrap;
+  const trapPrompt = false; // Las trampas se activan automáticamente; no hay confirmación manual.
   const dicePrompt = state.phase === 'dice-roll' && state.pendingDice;
-
-  // La etiqueta identifica al propietario original de la carta, no al atacante.
-  // En partidas online usamos el nombre real; en local/CPU distinguimos propio y rival.
-  const pendingTrapOwner = state.pendingTrap
-    ? (state.pendingTrap.trap.owner ?? state.pendingTrap.defenderPlayer)
-    : null;
-  const trapOwnerName = pendingTrapOwner === null
-    ? ''
-    : (state.players[pendingTrapOwner]?.name || `Jugador ${pendingTrapOwner + 1}`);
-  const trapHeader = pendingTrapOwner === null
-    ? 'Trampa'
-    : state.mode === 'online'
-      ? `Trampa de ${trapOwnerName}`
-      : pendingTrapOwner === viewer
-        ? `Trampa del Jugador ${pendingTrapOwner + 1}`
-        : 'Trampa del rival';
+  const autoDiceKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!dicePrompt || state.diceResult !== null) {
+      if (!dicePrompt) autoDiceKeyRef.current = null;
+      return;
+    }
+    const key = `${dicePrompt.reason}:${state.turnCount}:${state.log.length}`;
+    if (autoDiceKeyRef.current === key) return;
+    autoDiceKeyRef.current = key;
+    const isTrap3 =
+      state.pendingTrap?.trap.effect.kind === 'dice_count_field' ||
+      dicePrompt.reason.includes('Dado y conteo');
+    if (isTrap3) {
+      startTrap3CountAnimation();
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      dispatch({ type: 'ROLL_DICE', roll: Math.floor(Math.random() * 6) + 1 });
+    }, 450);
+    return () => window.clearTimeout(timer);
+  }, [dicePrompt, state.diceResult, state.pendingTrap, state.turnCount, state.log.length, dispatch, startTrap3CountAnimation]);
 
   const selectionPromptText = (): string => {
     switch (sel.kind) {
@@ -1244,13 +1301,12 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       case 'attack-or-direct': return 'Elige un Monstruo enemigo para atacar o realiza un ataque directo a sus LP';
       case 'place-trap': return 'Elige tu monstruo para colocar la trampa';
       case 'place-magic':
-        // Regla 5: la Mágica 8 es la única que va sobre un Monstruo rival.
         return magicSide === 'enemy'
           ? 'Elige un monstruo rival para colocar la mágica'
           : 'Elige uno de tus monstruos para colocar la mágica';
       case 'direct-attack': return 'Elige tu monstruo para atacar directamente';
-      case 'choose-destroy-target': return 'Jugador 1: Tres turnos: ¡elige un Monstruo rival para destruir!';
-      case 'choose-destroy-associated-card': return 'Trampa 5: elige qué Trampa o Mágica asociada destruir';
+      case 'choose-destroy-target': return 'Trampa 9: ¡elige cualquier Monstruo del campo para destruir!';
+      case 'choose-destroy-associated-card': return 'Trampa 5: elige una Trampa o Mágica del campo rival para destruir';
       case 'choose-trap-2-own':
         return sel.selectedUids.length === 0
           ? 'Trampa: elige los 2 Monstruos propios que quieres destruir'
@@ -1280,8 +1336,10 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   const uiBase = { fontSize: 'var(--ui-text-base)' } as const;
 
   return (
+    <>
     <div
-      className="board-bg flex flex-col w-full overflow-y-auto overflow-x-hidden lg:overflow-x-visible"
+      className={`board-bg relative isolate flex flex-col w-full overflow-y-auto overflow-x-hidden lg:overflow-x-visible ${appearanceMode === 'tema3' ? 'theme-tema3-board' : appearanceMode === 'tema4' ? 'theme-tema4-board' : ''}`}
+      data-theme-picker-open={showThemePicker ? 'true' : undefined}
       style={{
         height: '100dvh',
         paddingTop: 'env(safe-area-inset-top)',
@@ -1295,11 +1353,29 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         handleBoardClickOutside();
       }}
     >
+      <div
+        aria-hidden="true"
+        className="board-bg-layer pointer-events-none fixed inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
+        style={{
+          backgroundImage: `url('${gameBackgrounds[gameBackgroundMode === 'fixed' ? selectedGameBackgroundIndex : gameBackgroundIndex]}')`,
+          opacity: showNextGameBackground ? 0 : 1,
+          transform: 'scale(1.025)',
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="board-bg-layer pointer-events-none fixed inset-0 z-[-1] bg-cover bg-center bg-no-repeat transition-opacity duration-[3200ms] ease-in-out"
+        style={{
+          backgroundImage: `url('${gameBackgrounds[nextGameBackgroundIndex]}')`,
+          opacity: gameBackgroundMode === 'slideshow' && showNextGameBackground ? 1 : 0,
+          transform: 'scale(1.025)',
+        }}
+      />
+
       {/* Turn banner */}
       <TurnBanner playerName={state.players[cp].name} turnCount={state.turnCount} />
 
       {/* Damage float */}
-      {lastCombat && <DamageFloat damage={lastCombat.damage} playerIdx={lastCombat.player} />}
 
       {/* Opponent info */}
       <div className="px-2 sm:px-3 pt-1.5 pb-1 bg-ink-800/60 flex-none backdrop-blur-sm" data-no-cancel>
@@ -1309,31 +1385,34 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             {/* Deck */}
             <div className="flex items-center gap-1">
               <div className="w-4 h-5 rounded-sm bg-gradient-to-br from-ink-600 to-ink-800 border border-ink-500/50 flex items-center justify-center">
-                <span className="text-[8px] text-ink-300 font-bold">{opp.deck.length}</span>
+                <span className="text-[8px] text-slate-100 font-bold">{opp.deck.length}</span>
               </div>
-              <span className="text-ink-400" style={uiXs}>Mazo</span>
+              <span className="text-slate-200" style={uiXs}>Mazo</span>
             </div>
             {/* Hand */}
             <div className="flex items-center gap-1">
-              <span className="text-ink-400" style={uiXs}>Mano {opp.hand.length}/{MAX_HAND_SIZE}</span>
+              <span className="text-slate-200" style={uiXs} title="El robo automático al inicio del turno solo se realiza si tienes menos de 9 cartas.">Mano {opp.hand.length}</span>
             </div>
             {/* Graveyard */}
             <div className="flex items-center gap-1">
               <div className="w-4 h-5 rounded-sm bg-gradient-to-br from-ink-700 to-ink-900 border border-ink-600/50 flex items-center justify-center">
-                <span className="text-[8px] text-ink-300 font-bold">{opp.graveyard.length}</span>
+                <span className="text-[8px] text-slate-100 font-bold">{opp.graveyard.length}</span>
               </div>
-              <span className="text-ink-400" style={uiXs}>Cem.</span>
+              <span className="text-slate-200" style={uiXs}>Cem.</span>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-none">
-            <span className="text-ink-400 whitespace-nowrap" style={uiXs}>T{state.turnCount + 1}</span>
+            <span className="text-slate-200 whitespace-nowrap" style={uiXs} aria-label={`Turno ${state.turnCount + 1}`}>
+              <span className="hidden sm:inline">Turno {state.turnCount + 1}</span>
+              <span className="sm:hidden">T{state.turnCount + 1}</span>
+            </span>
             {confirmExit ? (
               <div className="flex items-center gap-1" role="group" aria-label="Confirmar finalizar partida">
-                <span className="text-ink-300" style={uiXs}>¿Seguro?</span>
+                <span className="text-slate-100" style={uiXs}>¿Seguro?</span>
                 <button
                   type="button"
                   onClick={onExit}
-                  className="rounded font-bold bg-red-600 text-white hover:bg-red-500 btn-press"
+                  className="tema3-exit-confirm-yes rounded font-bold bg-red-600 text-white hover:bg-red-500 btn-press"
                   style={{ ...uiXs, padding: '0.3em 0.7em' }}
                 >
                   Sí
@@ -1351,7 +1430,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               <button
                 type="button"
                 onClick={() => setConfirmExit(true)}
-                className="flex items-center gap-1 rounded font-bold whitespace-nowrap border border-red-500/60 text-red-400 hover:bg-red-500/10 btn-press"
+                className="tema3-exit-btn flex items-center gap-1 rounded font-bold whitespace-nowrap border border-red-500/60 text-red-400 hover:bg-red-500/10 btn-press"
                 style={{ ...uiXs, padding: '0.3em 0.6em' }}
               >
                 <LogOut style={{ width: '1em', height: '1em' }} aria-hidden="true" />
@@ -1363,7 +1442,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       </div>
 
       {/* Opponent hand */}
-      <div className="flex justify-center py-1 bg-ink-800/30 flex-none" data-no-cancel aria-label={`El rival tiene ${opp.hand.length} cartas en mano`}>
+      <div className={`flex justify-center py-1 bg-ink-800/30 flex-none ${appearanceMode === 'tema3' ? 'tema3-opponent-hand-strip' : ''}`} data-no-cancel aria-label={`El rival tiene ${opp.hand.length} cartas en mano`}>
         <div className="flex" style={{ gap: 'calc(var(--card-back-w) * -0.3)' }}>
           {/* La clave es la identidad de instancia de cada carta del rival, no
               el índice: así los dorsos no se reutilizan al reordenarse la mano
@@ -1377,7 +1456,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       {/* Opponent field */}
       <div className="px-1 sm:px-2 py-1 bg-red-950/20 border border-red-900/30 rounded-lg mx-1 flex-none field-zone" data-no-cancel>
         <div className="text-center mb-0.5">
-          <span className="text-[9px] uppercase tracking-widest text-red-400/60 font-display font-bold">Campo Rival</span>
+          <span className="field-tag field-tag-rival text-[9px] uppercase tracking-widest text-red-400/60 font-display font-bold">Campo Rival</span>
         </div>
         <div className="grid grid-cols-6 place-items-center w-full" style={{ gap: 'var(--field-gap)' }}>
           {opp.field.map((fm, i) => (
@@ -1409,7 +1488,38 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       <div className="px-3 py-1 flex items-center justify-center min-h-[2rem] flex-none bg-ink-800/40 border-y border-ink-700/50" data-no-cancel>
         {state.lastCombat && !trapPrompt && !dicePrompt && (
           <div className="text-center animate-fade-in">
-            <span className="text-gold-200 text-shadow-strong font-medium" style={uiSm}>{state.lastCombat.log}</span>
+            <span className="text-gold-200 text-shadow-strong font-medium" style={uiSm}>
+              {(() => {
+                const combatAttackerPlayer = state.lastCombat!.attackerPlayer ?? state.currentPlayer;
+                const attackerIsMe = combatAttackerPlayer === viewer;
+                const defenderIsMe = !attackerIsMe;
+                const attackerName = state.lastCombat!.attackerCard?.name ?? 'Monstruo';
+                const defenderName = state.lastCombat!.defenderCard?.name ?? 'Monstruo';
+                let contextualCombatLog = state.lastCombat!.log;
+                contextualCombatLog = contextualCombatLog.replace(
+                  attackerName,
+                  attackerIsMe ? `Tu ${attackerName}` : `El ${attackerName} rival`,
+                );
+                if (state.lastCombat!.defenderCard?.name) {
+                  contextualCombatLog = contextualCombatLog.replace(
+                    defenderName,
+                    defenderIsMe ? `tu ${defenderName}` : `el ${defenderName} rival`,
+                  );
+                }
+                // Mostrar siempre con signo negativo cualquier pérdida de PV mencionada en el combate.
+                contextualCombatLog = contextualCombatLog.replace(
+                  /\b(pierde|pierdes|pierden)\s+(\d+)\s+PV\b/gi,
+                  '$1 -$2 PV',
+                );
+                // El daño directo también debe mostrar el signo negativo, independientemente
+                // de cómo esté redactada la frase del registro.
+                contextualCombatLog = contextualCombatLog.replace(
+                  /(^|[.\s])(?<!-)\b(\d+)\s+PV al rival\b/gi,
+                  '$1-$2 PV al rival',
+                );
+                return contextualCombatLog;
+              })()}
+            </span>
           </div>
         )}
         {trapPrompt && (
@@ -1431,7 +1541,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       {/* Player field */}
       <div className="px-1 sm:px-2 py-1 bg-azure-950/20 border border-azure-900/30 rounded-lg mx-1 flex-none field-zone relative z-10" data-no-cancel>
         <div className="text-center mb-0.5">
-          <span className="text-[9px] uppercase tracking-widest text-azure-400/60 font-display font-bold">Tu Campo</span>
+          <span className="field-tag field-tag-own text-[9px] uppercase tracking-widest text-azure-400/60 font-display font-bold">Tu Campo</span>
         </div>
         <div className="grid grid-cols-6 place-items-center w-full" style={{ gap: 'var(--field-gap)' }}>
           {me.field.map((fm, i) => (
@@ -1471,36 +1581,6 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         </div>
       </div>
 
-      {/* Trap response modal */}
-      {trapPrompt && (
-        <div className={`fixed inset-0 ${trapCountAnimation ? 'bg-black/35' : 'bg-black/70'} flex items-center justify-center z-50 px-4 animate-backdrop-fade`} data-no-cancel>
-          <div className="bg-ink-700 rounded-2xl border-2 border-crimson-500/50 p-5 max-w-xs w-full shadow-glow-crimson animate-scale-in">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-10 h-10 rounded-full bg-crimson-500/20 flex items-center justify-center">
-                <AlertTriangle size={20} className="text-crimson-400" />
-              </div>
-              <h3 className="font-display font-bold text-crimson-300" style={uiBase}>{trapHeader}</h3>
-            </div>
-            <p className="text-white mb-1 font-semibold" style={uiSm}>{state.pendingTrap!.trap.name}</p>
-            <p className="text-ink-300 mb-4" style={uiXs}>{state.pendingTrap!.trap.description}</p>
-            <p className="text-ink-400 mb-4" style={uiXs}>
-              Tu {state.pendingTrap!.attackerCard.name} ataca a {state.pendingTrap!.defenderCard.name}.
-            </p>
-            <button
-              onClick={() => {
-                playSound('activate-trap');
-                vibrate(40);
-                dispatch({ type: 'RESOLVE_TRAP', activate: true });
-              }}
-              className="w-full rounded-lg bg-gradient-to-r from-gold-500 to-gold-400 text-white font-display font-bold hover:from-gold-400 hover:to-gold-300 btn-press flex items-center justify-center gap-1.5"
-              style={{ ...uiSm, padding: '0.7em 0' }}
-            >
-              <Zap size={16} /> Aceptar
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Dice roll modal */}
       {dicePrompt && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4 animate-backdrop-fade" data-no-cancel>
@@ -1511,7 +1591,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               title="Cerrar"
               onClick={() => dispatch({ type: 'CLOSE_DICE_RESULT' })}
               disabled={state.diceResult === null}
-              className="absolute right-3 top-3 w-9 h-9 rounded-full border border-gold-500/40 text-ink-300 hover:text-white hover:bg-ink-600 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center"
+              className="absolute right-3 top-3 w-9 h-9 rounded-full border border-gold-500/40 text-slate-100 hover:text-white hover:bg-ink-600 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center"
             >
               <X size={18} />
             </button>
@@ -1519,7 +1599,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               <Dices size={32} className="text-gold-400" />
             </div>
             <h3 className="font-display font-bold text-gold-300 mb-1" style={uiBase}>Tira el dado</h3>
-            <p className="text-ink-300 mb-4" style={uiXs}>{state.pendingDice!.reason}</p>
+            <p className="text-slate-100 mb-4" style={uiXs}>{state.pendingDice!.reason}</p>
             {state.diceResult !== null ? (
               <>
                 <div className="font-display font-black text-gold-300 mb-4 animate-burst" style={{ fontSize: 'clamp(3rem, 10vw, 4rem)' }}>
@@ -1540,32 +1620,17 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                   {trapCountAnimation.step + 1}
                 </div>
                 <p className="text-gold-200 font-display font-bold mb-1" style={uiSm}>Contando...</p>
-                <p className="text-ink-300 mb-3 truncate" style={uiXs}>
+                <p className="text-slate-100 mb-3 truncate" style={uiXs}>
                   {trapCountAnimation.sequence[trapCountAnimation.step]?.name}
                 </p>
-                <div className="text-ink-400" style={uiXs}>
+                <div className="text-slate-200" style={uiXs}>
                   Ruleta de la Trampa · {trapCountAnimation.step + 1} / {trapCountAnimation.roll}
                 </div>
               </>
             ) : (
-              <button
-                onClick={() => {
-                  const isTrap3 =
-                    state.pendingTrap?.trap.effect.kind === 'dice_count_field' ||
-                    state.pendingDice?.reason.includes('Dado y conteo') === true;
-
-                  if (isTrap3) {
-                    startTrap3CountAnimation();
-                  } else {
-                    const roll = Math.floor(Math.random() * 6) + 1;
-                    dispatch({ type: 'ROLL_DICE', roll });
-                  }
-                }}
-                className="rounded-xl bg-gradient-to-r from-gold-500 to-gold-400 text-ink-900 font-display font-bold hover:from-gold-400 hover:to-gold-300 shadow-glow btn-press flex items-center gap-2 mx-auto"
-                style={{ ...uiSm, padding: '0.6em 1.5em' }}
-              >
-                <Dices size={20} /> Tirar
-              </button>
+              <p className="text-gold-200 font-semibold" style={uiSm}>
+                El efecto se está resolviendo automáticamente…
+              </p>
             )}
           </div>
         </div>
@@ -1576,7 +1641,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4 animate-backdrop-fade" data-no-cancel>
           <div className="bg-ink-700 rounded-2xl border-2 border-gold-500/50 p-5 max-w-xs w-full shadow-glow animate-scale-in">
             <h3 className="font-display font-bold text-gold-300 mb-1" style={uiBase}>Mágica 5: Recuperar Monstruo</h3>
-            <p className="text-ink-300 mb-4" style={uiXs}>Elige dónde revivir el Monstruo más fuerte del cementerio:</p>
+            <p className="text-slate-100 mb-4" style={uiXs}>Elige dónde revivir el Monstruo más fuerte del cementerio:</p>
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => dispatch({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'hand' })}
@@ -1635,7 +1700,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             {!state.turnStartSelectionActive && (
             <button
               onClick={() => dispatch({ type: 'CANCEL_SELECTION' })}
-              className="flex items-center gap-1 px-3 py-1 rounded-lg bg-ink-700/80 text-ink-300 hover:text-white hover:bg-ink-600 btn-press border border-ink-500/50"
+              className="flex items-center gap-1 px-3 py-1 rounded-lg bg-ink-700/80 text-slate-100 hover:text-white hover:bg-ink-600 btn-press border border-ink-500/50"
               style={uiXs}
             >
               <X size={12} /> Cancelar
@@ -1655,12 +1720,12 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               <div className="w-5 h-6 rounded-sm bg-gradient-to-br from-ink-600 to-ink-800 border border-ink-500/50 flex items-center justify-center shadow-sm">
                 <span className="text-[9px] text-ink-200 font-bold">{me.deck.length}</span>
               </div>
-              <span className="text-ink-400" style={uiXs}>Mazo</span>
+              <span className="text-slate-200" style={uiXs}>Mazo</span>
             </div>
             {/* Hand */}
             <div className="flex items-center gap-1">
-              <span className={`text-ink-400 ${me.hand.length >= MAX_HAND_SIZE ? 'text-crimson-400 font-semibold' : ''}`} style={uiXs}>
-                Mano {me.hand.length}/{MAX_HAND_SIZE}
+              <span className="text-slate-200" style={uiXs} title="El robo automático al inicio del turno solo se realiza si tienes menos de 9 cartas.">
+                Mano {me.hand.length}
               </span>
             </div>
             {/* Graveyard */}
@@ -1668,7 +1733,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               <div className="w-5 h-6 rounded-sm bg-gradient-to-br from-ink-700 to-ink-900 border border-ink-600/50 flex items-center justify-center shadow-sm">
                 <span className="text-[9px] text-ink-200 font-bold">{me.graveyard.length}</span>
               </div>
-              <span className="text-ink-400" style={uiXs}>Cem.</span>
+              <span className="text-slate-200" style={uiXs}>Cem.</span>
             </div>
           </div>
           <span className="text-gold-400 font-semibold whitespace-nowrap" style={uiXs}>
@@ -1682,23 +1747,26 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         {/* Hand header with counter */}
         <div className="flex items-center justify-between px-2 py-0.5 bg-ink-800/60 border-b border-ink-700/50">
           <div className="flex items-center gap-1">
-            <span className="text-[9px] uppercase tracking-widest text-ink-400 font-display font-bold">Mano</span>
-            <span className={`font-display font-bold ${me.hand.length >= MAX_HAND_SIZE ? 'text-crimson-400' : 'text-gold-300'}`} style={uiXs}>
-              {me.hand.length} / {MAX_HAND_SIZE}
+            <span className="text-[9px] uppercase tracking-widest text-slate-200 font-display font-bold">Mano</span>
+            <span className="font-display font-bold text-gold-300" style={uiXs}>
+              {me.hand.length}
+            </span>
+            <span className="text-[8px] text-slate-300" title="Si tienes 9 cartas o más, no recibes el robo automático al comienzo del turno.">
+              Robo automático hasta 9
             </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-azure-400"></div>
-              <span className="text-[8px] text-ink-400">Monstruos</span>
+              <span className="text-[8px] text-slate-200">Monstruos</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-crimson-400"></div>
-              <span className="text-[8px] text-ink-400">Trampas</span>
+              <span className="text-[8px] text-slate-200">Trampas</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-gold-400"></div>
-              <span className="text-[8px] text-ink-400">Mágicas</span>
+              <span className="text-[8px] text-slate-200">Mágicas</span>
             </div>
           </div>
         </div>
@@ -1713,7 +1781,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-ink-800/80 to-transparent pointer-events-none z-10"></div>
           <div className="flex items-end w-max mx-auto px-3 py-0" style={{ gap: 'var(--field-gap)' }}>
             {me.hand.length === 0 && (
-              <span className="text-ink-400" style={uiSm}>No tienes cartas en mano</span>
+              <span className="text-slate-200" style={uiSm}>No tienes cartas en mano</span>
             )}
             {me.hand.map((card) => (
               <div
@@ -1734,7 +1802,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                       e.stopPropagation();
                       handleCardZoom(card);
                     }}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-ink-700/90 rounded-full hidden md:flex items-center justify-center text-ink-300 hover:text-white hover:bg-ink-600 z-30 border border-ink-500/50"
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-ink-700/90 rounded-full hidden md:flex items-center justify-center text-slate-100 hover:text-white hover:bg-ink-600 z-30 border border-ink-500/50"
                     title="Ampliar carta"
                   >
                     <ZoomIn size={10} />
@@ -1764,10 +1832,10 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             <CardView card={selectedField.card} size="lg" fieldMonster={selectedField} isField />
             <div className="flex-1 min-w-0">
               <h3 className="font-display font-bold text-white" style={uiBase}>{selectedField.card.name}</h3>
-              <p className="text-ink-300 mt-1" style={{ fontSize: '20px' }}>
+              <p className="text-slate-100 mt-1" style={{ fontSize: '20px' }}>
                 Monstruo · ATQ {selectedField.card.atk + selectedField.tempAtkModifier} / DEF {selectedField.card.def + selectedField.tempDefModifier}
               </p>
-              <p className="text-ink-400 mt-0.5" style={uiXs}>
+              <p className="text-slate-200 mt-0.5" style={uiXs}>
                 Posicion: {selectedField.position === 'attack' ? 'Ataque' : 'Defensa'}
                 {selectedField.hasChangedPosition && ' · Ya cambiada este turno'}
                 {selectedField.hasAttacked && ' · Ya atacó'}
@@ -1779,7 +1847,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                 <p className="text-gold-300 mt-0.5" style={uiXs}>Magica: {selectedField.magic.name}</p>
               )}
             </div>
-            <button onClick={() => setSelectedFieldUid(null)} className="text-ink-300 hover:text-white btn-press">
+            <button onClick={() => setSelectedFieldUid(null)} className="text-slate-100 hover:text-white btn-press">
               <X size={20} />
             </button>
           </div>
@@ -1813,7 +1881,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               </button>
             )}
             {!isLegal({ type: 'CHANGE_POSITION', fieldUid: selectedField.uid }) && (
-              <p className="flex-1 text-ink-400 text-center" style={uiXs}>Ya has cambiado la posicion de este monstruo este turno</p>
+              <p className="flex-1 text-slate-200 text-center" style={uiXs}>Ya has cambiado la posicion de este monstruo este turno</p>
             )}
           </div>
         </div>
@@ -1830,13 +1898,13 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             <CardView card={selectedCard} size="lg" />
             <div className="flex-1 min-w-0">
               <h3 className="font-display font-bold text-white" style={uiBase}>{selectedCard.name}</h3>
-              <p className="text-ink-300 mt-1" style={{ fontSize: '20px' }}>
+              <p className="text-slate-100 mt-1" style={{ fontSize: '20px' }}>
                 {selectedCard.type === 'monster' && `Monstruo · ATQ ${selectedCard.atk} / DEF ${selectedCard.def}`}
                 {selectedCard.type === 'trap' && `Trampa · ${selectedCard.description}`}
                 {selectedCard.type === 'magic' && `Magica · ${selectedCard.description}`}
               </p>
             </div>
-            <button onClick={() => setSelectedHandCard(null)} className="text-ink-300 hover:text-white btn-press">
+            <button onClick={() => setSelectedHandCard(null)} className="text-slate-100 hover:text-white btn-press">
               <X size={20} />
             </button>
           </div>
@@ -1901,13 +1969,13 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             )}
           </div>
           {cp !== viewer && (
-            <p className="text-ink-400 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>Ahora no es tu turno</p>
+            <p className="text-slate-200 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>Ahora no es tu turno</p>
           )}
           {cp === viewer && !canPlayMore && (
             <p className="text-crimson-400 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>Ya has jugado {MAX_CARDS_PER_TURN} cartas este turno</p>
           )}
           {cp === viewer && canPlayMore && !canPlayCard && (
-            <p className="text-ink-400 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>Ahora mismo no puedes jugar ninguna carta</p>
+            <p className="text-slate-200 text-center mt-1.5" onClick={(e) => e.stopPropagation()} style={uiXs}>Ahora mismo no puedes jugar ninguna carta</p>
           )}
         </div>
       )}
@@ -1926,7 +1994,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
         </button>
         <div className="flex-1 min-w-0 text-center">
           <div className="flex items-center justify-center gap-2">
-            <span className="text-ink-300 leading-tight" style={uiXs}>
+            <span className="text-slate-100 leading-tight" style={uiXs}>
               {attackAllowed ? 'Puedes atacar' : 'Sin ataque este turno'}
             </span>
             <span className={`font-display font-bold ${me.cardsPlayedThisTurn >= 3 ? 'text-crimson-400' : 'text-gold-300'}`} style={uiXs}>
@@ -1948,7 +2016,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           <button
             onClick={toggleSound}
             className={`rounded-lg btn-press flex items-center justify-center ${
-              soundEnabled ? 'bg-ink-600 text-ink-200 hover:bg-ink-500' : 'bg-ink-700 text-ink-400 hover:bg-ink-600'
+              soundEnabled ? 'bg-ink-600 text-ink-200 hover:bg-ink-500' : 'bg-ink-700 text-slate-200 hover:bg-ink-600'
             }`}
             style={{ ...uiXs, padding: '0.4em' }}
             title={soundEnabled ? 'Desactivar sonido' : 'Activar sonido'}
@@ -1959,13 +2027,24 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
           <button
             onClick={onToggleMusic}
             className={`rounded-lg btn-press flex items-center justify-center ${
-              musicEnabled ? 'bg-ink-600 text-ink-200 hover:bg-ink-500' : 'bg-ink-700 text-ink-400 hover:bg-ink-600'
+              musicEnabled ? 'bg-ink-600 text-ink-200 hover:bg-ink-500' : 'bg-ink-700 text-slate-200 hover:bg-ink-600'
             }`}
             style={{ ...uiXs, padding: '0.4em' }}
             title={musicEnabled ? 'Desactivar música' : 'Activar música'}
             aria-label={musicEnabled ? 'Desactivar música' : 'Activar música'}
           >
             {musicEnabled ? <Music size={14} /> : <VolumeX size={14} />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowThemePicker(true)}
+            className="rounded-lg btn-press flex items-center gap-1 bg-ink-600 text-gold-300 hover:bg-ink-500"
+            style={{ ...uiXs, padding: '0.4em 0.55em' }}
+            title="Cambiar temas y fondos"
+            aria-label="Cambiar temas y fondos"
+          >
+            <Palette size={14} />
+            Temas
           </button>
           <button
             onClick={() => {
@@ -1986,7 +2065,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       {/* Control de volumen */}
       {showVolumeControl && (
         <div className="flex items-center gap-2 px-3 py-1.5 bg-ink-800/95 border-t border-ink-600 flex-none animate-fade-in" data-no-cancel>
-          <VolumeX size={13} className="text-ink-400 flex-none" aria-hidden="true" />
+          <VolumeX size={13} className="text-slate-200 flex-none" aria-hidden="true" />
           <input
             type="range"
             min={0}
@@ -1997,8 +2076,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
             aria-label="Volumen"
             disabled={!soundEnabled}
           />
-          <Volume2 size={13} className="text-ink-300 flex-none" aria-hidden="true" />
-          <span className="text-ink-300 tabular-nums flex-none" style={uiXs}>
+          <Volume2 size={13} className="text-slate-100 flex-none" aria-hidden="true" />
+          <span className="text-slate-100 tabular-nums flex-none" style={uiXs}>
             {Math.round(volume * 100)}%
           </span>
         </div>
@@ -2034,7 +2113,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                   {logCopied ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
                   <span style={uiXs}>{logCopied ? 'Copiado' : 'Copiar'}</span>
                 </button>
-                <button onClick={() => setShowLog(false)} className="text-ink-300 hover:text-white btn-press">
+                <button onClick={() => setShowLog(false)} className="text-slate-100 hover:text-white btn-press">
                   <X size={18} />
                 </button>
               </div>
@@ -2049,7 +2128,28 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                   {entry}
                 </div>
               ))}
-              {state.log.length === 0 && <p className="text-ink-400" style={uiXs}>Sin eventos todavía</p>}
+              {state.log.length === 0 && <p className="text-slate-200" style={uiXs}>Sin eventos todavía</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingTrap5Choice && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 px-4" data-no-cancel>
+          <div className="w-full max-w-sm rounded-2xl border border-gold-500/50 bg-ink-800 p-5 shadow-2xl">
+            <h3 className="mb-2 text-center font-display text-lg font-bold text-gold-300">Trampa 5</h3>
+            <p className="mb-4 text-center text-sm text-slate-200">El Monstruo elegido tiene una Trampa y una Mágica asociadas. ¿Cuál quieres destruir?</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button className="rounded-lg bg-crimson-700 px-3 py-3 font-display font-bold text-white hover:bg-crimson-600" onClick={() => {
+                const action = { type: 'DESTROY_ASSOCIATED_CARD' as const, fieldUid: pendingTrap5Choice, cardType: 'trap' as const };
+                if (isLegal(action)) dispatch(action);
+                setPendingTrap5Choice(null);
+              }}>Destruir Trampa</button>
+              <button className="rounded-lg bg-azure-700 px-3 py-3 font-display font-bold text-white hover:bg-azure-600" onClick={() => {
+                const action = { type: 'DESTROY_ASSOCIATED_CARD' as const, fieldUid: pendingTrap5Choice, cardType: 'magic' as const };
+                if (isLegal(action)) dispatch(action);
+                setPendingTrap5Choice(null);
+              }}>Destruir Mágica</button>
             </div>
           </div>
         </div>
@@ -2078,5 +2178,21 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       />
 
       </div>
+      {/* Selector montado fuera del tablero para compartir el diseño del menú. */}
+      <ThemePicker
+        open={showThemePicker}
+        onClose={() => setShowThemePicker(false)}
+        menuIndex={menuBackgroundIndex}
+        setMenuIndex={setMenuBackgroundIndex}
+        menuMode={menuBackgroundMode}
+        setMenuMode={setMenuBackgroundMode}
+        gameIndex={selectedGameBackgroundIndex}
+        setGameIndex={setGameBackgroundIndex}
+        gameMode={gameBackgroundMode}
+        setGameMode={setGameBackgroundMode}
+        appearanceMode={appearanceMode}
+        setAppearanceMode={setAppearanceMode}
+      />
+    </>
   );
 }

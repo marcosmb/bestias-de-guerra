@@ -179,8 +179,10 @@ describe('Regla 19 — summonedThisTurn', () => {
 
     state = run(state, { type: 'START_ATTACK', attackerUid: rivalUid });
     state = run(state, { type: 'DECLARE_ATTACK', attackerUid: rivalUid, defenderUid: 'mine' });
-    expect(state.phase).toBe('trap-response');
-    state = run(state, { type: 'RESOLVE_TRAP', activate: true });
+    // La Trampa 7 se resuelve automáticamente al declarar el ataque:
+    // trap-response es una fase interna y no requiere una acción manual.
+    expect(state.phase).toBe('playing');
+    expect(state.pendingTrap).toBeNull();
 
     // El atacante pasó al campo del Jugador 0.
     expect(state.players[0].field.some((f) => f?.uid === rivalUid)).toBe(true);
@@ -320,7 +322,7 @@ describe('Gestión de cartas — Mágica 2 y duplicados legítimos', () => {
     expect(duplicateIds(state.players[0].hand)).toEqual([]);
   });
 
-  it('no se consume la Mágica si la mano está llena', () => {
+  it('Mágica 2 puede superar 9 cartas porque no existe un máximo general de mano', () => {
     const steal = magic('m2', { kind: 'steal_hand_card' });
     const full = Array.from({ length: 9 }, (_, i) => monster(`h-${i}`, i + 1));
     let state = setHand(baseState(), 0, [...full, steal]);
@@ -328,8 +330,10 @@ describe('Gestión de cartas — Mágica 2 y duplicados legítimos', () => {
 
     state = run(state, { type: 'SELECT_MAGIC', card: steal });
 
-    expect(handIds(state, 0)).toContain('m2'); // sigue en la mano
-    expect(state.players[0].cardsPlayedThisTurn).toBe(0);
+    expect(handIds(state, 0)).not.toContain('m2'); // la Mágica se consume
+    expect(state.players[0].hand).toHaveLength(10); // 9 cartas previas + 1 robada
+    expect(handIds(state, 0)).toContain('m-bastos-9');
+    expect(state.players[0].cardsPlayedThisTurn).toBe(1);
   });
 
   it('no se consume la Mágica si el rival no tiene cartas en la mano', () => {
@@ -433,6 +437,56 @@ describe('Gestión de cartas — una Mágica ilegal no se consume', () => {
     state = run(state, { type: 'SELECT_MAGIC', card: draw });
 
     expect(handIds(state, 0)).not.toContain('m10');
+    expect(state.players[0].cardsPlayedThisTurn).toBe(1);
+  });
+
+  it.each([0, 1])('Mágica 10 roba las cartas disponibles cuando el mazo tiene %i', (deckSize) => {
+    const draw = magic('m10', { kind: 'draw_cards', amount: 2 });
+    const available = Array.from({ length: deckSize }, (_, i) => monster(`available-${i}`, i + 1));
+    let state = setHand(baseState(), 0, [draw]);
+    state = {
+      ...state,
+      players: [
+        { ...state.players[0], deck: available },
+        state.players[1],
+      ],
+    };
+
+    state = run(state, { type: 'SELECT_MAGIC', card: draw });
+
+    expect(state.players[0].hand).toEqual(available);
+    expect(state.players[0].deck).toHaveLength(0);
+    expect(state.players[0].cardsPlayedThisTurn).toBe(1);
+  });
+
+  it('Mágica 10 roba 2 cartas por encima de 9 y se elimina sin descartar ninguna', () => {
+    const draw = magic('m10', { kind: 'draw_cards', amount: 2 });
+    const startingHand = [
+      draw,
+      ...Array.from({ length: 8 }, (_, i) => monster(`hand-${i}`, i + 1)),
+    ];
+    const drawn = [
+      monster('deck-draw-1', 3),
+      monster('deck-draw-2', 4),
+      monster('deck-remains', 5),
+    ];
+    let state = setHand(baseState(), 0, startingHand);
+    state = {
+      ...state,
+      players: [
+        { ...state.players[0], deck: drawn },
+        state.players[1],
+      ],
+    };
+
+    state = run(state, { type: 'SELECT_MAGIC', card: draw });
+
+    expect(state.players[0].hand).toHaveLength(10);
+    expect(handIds(state, 0)).not.toContain('m10');
+    expect(handIds(state, 0)).toContain('deck-draw-1');
+    expect(handIds(state, 0)).toContain('deck-draw-2');
+    expect(handIds(state, 0)).not.toContain('deck-remains');
+    expect(state.players[0].deck.map((card) => card.id)).toEqual(['deck-remains']);
     expect(state.players[0].cardsPlayedThisTurn).toBe(1);
   });
 });

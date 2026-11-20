@@ -103,6 +103,8 @@ Una Trampa que ya estaba colocada en el campo y se activa por su condición **no
 
 Cada Trampa tiene el efecto y las condiciones definidos en este reglamento.
 
+**Activación automática:** cuando se cumple la condición de una Trampa colocada, esta se activa y su efecto se resuelve directamente, sin preguntar a su propietario si desea activarla. Si el efecto requiere elegir un objetivo u opción, el juego solicita esa elección al jugador indicado por la regla de esa Trampa.
+
 ---
 
 # 5. MÁGICAS
@@ -177,24 +179,26 @@ Cada jugador comienza con:
 
 **7 cartas.**
 
-## 9.2. Mano máxima
+## 9.2. Umbral del robo automático
 
-La mano puede contener como máximo:
+No existe un límite general al número de cartas que un jugador puede tener en la mano. Tener 10 o más cartas es válido y no obliga a descartar ninguna.
 
-**9 cartas.**
+El número **9** se utiliza exclusivamente para calcular el robo automático al comienzo del turno.
 
-## 9.3. Robo normal
+## 9.3. Robo automático
 
-Al comienzo de cada turno, el jugador roba **hasta 2 cartas**, sin superar el máximo de 9.
+Al comienzo de cada turno, el jugador roba **hasta 2 cartas**, pero solo las necesarias para llegar a 9 cartas en la mano. Si ya tiene 9 o más, no roba.
 
 Por tanto:
 
-- con 6 cartas → roba 2;
 - con 7 cartas → roba 2;
 - con 8 cartas → roba 1;
-- con 9 cartas → no roba.
+- con 9 cartas → no roba;
+- con más de 9 cartas → no roba.
 
 Si el mazo no dispone de cartas suficientes, solo se roban las cartas disponibles.
+
+Este umbral no limita los robos producidos por efectos de cartas.
 
 ---
 
@@ -667,7 +671,7 @@ La Trampa 4 permanece colocada hasta que el Monstruo asociado sea eliminado.
 Cuando un Monstruo rival te ataca:
 
 - se niega el ataque;
-- el propietario de la Trampa elige una Trampa o Mágica rival colocada en el campo;
+- el atacante (rival del propietario de la Trampa) elige una Trampa o Mágica del defensor colocada en el campo;
 - esa carta es destruida.
 
 ---
@@ -685,23 +689,21 @@ La Trampa 6 es de **un solo uso**.
 
 ---
 
-## Trampa 7 — Cambiar atacante
+## Trampa 7 — Intercambio de Monstruos
 
-Cuando un Monstruo rival te ataca:
+Cuando un Monstruo del adversario te ataca y se activa esta Trampa:
 
-- el Monstruo atacante pasa directamente a tu campo;
-- queda bajo tu control;
-- no se intercambia por uno de tus Monstruos.
+- el Monstruo atacante se intercambia con el Monstruo tuyo que ha recibido el ataque;
+- el Monstruo atacante pasa a ocupar la casilla que ocupaba tu Monstruo;
+- tu Monstruo pasa a ocupar la casilla que ocupaba el atacante;
+- ambos Monstruos pasan al campo del jugador contrario y quedan bajo el control de ese jugador;
+- ninguno de los dos Monstruos es destruido ni enviado al cementerio por este efecto.
 
-Debe existir un espacio libre en tu campo.
+Cada Monstruo conserva su posición (Ataque o Defensa) y las cartas asociadas que lleve. La propiedad original de todas las cartas se mantiene aunque cambien de controlador.
 
-Si no existe un espacio libre, **la Trampa no puede activarse**.
+No hace falta disponer de un espacio libre: los dos Monstruos intercambian sus casillas.
 
-El Monstruo mantiene su posición al pasar a tu campo.
-
-Sus cartas asociadas conservan la propiedad de sus propietarios originales.
-
-La Trampa 7 no establece una duración temporal concreta de control; el Monstruo permanece bajo el nuevo control hasta que una regla o efecto posterior modifique esa situación.
+La Trampa 7 se consume después de activarse y pasa al cementerio de su propietario.
 
 ---
 
@@ -860,7 +862,7 @@ El jugador elige una de dos opciones:
 
 La opción elegida debe ser posible.
 
-Para llevarlo a la mano debe existir espacio dentro del máximo de 9 cartas.
+Para llevarlo a la mano no se aplica el umbral del robo automático; debe existir un Monstruo recuperable válido.
 
 Para llevarlo al campo debe existir al menos un espacio libre de Monstruo.
 
@@ -940,17 +942,15 @@ Una carta cuyo efecto indique expresamente una eliminación automática puede el
 
 ## Mágica 10 — Robar 2 cartas
 
-El jugador roba **hasta 2 cartas**, respetando el máximo de 9 cartas en la mano.
+El jugador roba **2 cartas del mazo**, siempre que haya al menos 2 cartas disponibles. Si el mazo contiene solo 1 carta, roba esa única carta; si está vacío, no roba ninguna.
 
-Por ejemplo:
+Este efecto **ignora por completo el umbral de 9 cartas** del robo automático de inicio de turno. Puede aumentar la mano por encima de 9 cartas y no obliga a descartar ninguna carta para volver a ese umbral.
 
-- 7 cartas → roba 2 y queda en 9;
-- 8 cartas → roba 1 y queda en 9;
-- 9 cartas → no roba.
+Después de resolver el robo, la Mágica 10 se elimina de la mano y queda consumida.
 
-Después de resolver el efecto:
+Por ejemplo, si el jugador tiene 9 cartas en la mano, incluida la Mágica 10, y quedan al menos 2 cartas en su mazo, roba 2 y después elimina la Mágica 10: termina con **10 cartas en la mano**. Conserva las 10; no descarta ninguna.
 
-**la Mágica se elimina.**
+El umbral de 9 cartas no es un máximo general de mano: únicamente limita el robo automático al comienzo del turno. La Mágica 10 no está sujeta a ese umbral.
 
 ---
 

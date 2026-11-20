@@ -1,6 +1,6 @@
 # GUÍA COMPLETA DEL JUEGO DE CARTAS
 
-## REGLAMENTO OFICIAL DEL JUEGO — VERSIÓN 1.0
+## REGLAMENTO OFICIAL DEL JUEGO — VERSIÓN 1.1
 
 > **DOCUMENTO PROTEGIDO — REGLAS OFICIALES DEL JUEGO**
 >
@@ -177,24 +177,26 @@ Cada jugador comienza con:
 
 **7 cartas.**
 
-## 9.2. Mano máxima
+## 9.2. Umbral del robo automático
 
-La mano puede contener como máximo:
+No existe un límite general al número de cartas que un jugador puede tener en la mano.
 
-**9 cartas.**
+El número **9** se utiliza exclusivamente para calcular el robo automático al comienzo del turno.
 
-## 9.3. Robo normal
+## 9.3. Robo automático
 
-Al comienzo de cada turno, el jugador roba **hasta 2 cartas**, sin superar el máximo de 9.
+Al comienzo de cada turno, el jugador roba **hasta 2 cartas**, pero solo las necesarias para llegar a 9 cartas en la mano. Si ya tiene 9 o más, no roba.
 
 Por tanto:
 
-- con 6 cartas → roba 2;
 - con 7 cartas → roba 2;
 - con 8 cartas → roba 1;
-- con 9 cartas → no roba.
+- con 9 cartas → no roba;
+- con más de 9 cartas → no roba.
 
 Si el mazo no dispone de cartas suficientes, solo se roban las cartas disponibles.
+
+Este umbral no limita los robos producidos por efectos de cartas.
 
 ---
 
@@ -622,7 +624,7 @@ El daño reflejado se aplica a los **LP del rival**, no a un Monstruo.
 Cuando un Monstruo rival te ataca:
 
 - se niega el ataque;
-- el propietario de la Trampa elige una Trampa o Mágica rival colocada en el campo;
+- el atacante elige una Trampa o Mágica colocada del defensor;
 - esa carta es destruida.
 
 ---
@@ -641,17 +643,16 @@ Cuando se activa:
 
 Cuando un Monstruo rival te ataca:
 
-- el Monstruo atacante pasa directamente a tu campo;
-- queda bajo tu control;
-- no se intercambia por uno de tus Monstruos.
+- el Monstruo atacante pasa a la casilla que ocupaba el Monstruo defensor;
+- el Monstruo defensor pasa a la casilla que ocupaba el atacante;
+- ambos intercambian el control de sus respectivos Monstruos;
+- conservan sus posiciones de Ataque o Defensa;
+- conservan sus cartas asociadas;
+- no son destruidos;
+- no van al cementerio;
+- no necesitan una casilla libre, porque intercambian sus posiciones.
 
-Debe existir un espacio libre en tu campo.
-
-Si no existe un espacio libre, **la Trampa no puede activarse**.
-
-El Monstruo mantiene su posición al pasar a tu campo.
-
-Sus cartas asociadas conservan la propiedad de sus propietarios originales.
+La Trampa 7 se consume y va al cementerio de su propietario.
 
 La Trampa 7 no establece una duración temporal concreta de control; el Monstruo permanece bajo el nuevo control hasta que una regla o efecto posterior modifique esa situación.
 
@@ -771,25 +772,39 @@ Por ejemplo:
 
 ## Mágica 5 — Recuperar Monstruo
 
-Permite recuperar un Monstruo del cementerio.
+Permite recuperar un Monstruo del **cementerio propio**. No permite recuperar Monstruos del cementerio del adversario.
 
-El jugador elige una de dos opciones:
+**Condición obligatoria:** el jugador debe tener al menos un Monstruo propio en su cementerio.
+
+Si no tiene ningún Monstruo propio en el cementerio:
+
+- la Mágica no puede activarse;
+- no se consume ni se retira de la mano;
+- no gasta una de las 3 cartas permitidas por turno;
+- el juego debe mostrar el mensaje: **«No puedes utilizar la Mágica 5 porque no tienes ningún Monstruo en tu cementerio».**
+
+Si existe al menos un Monstruo propio elegible, el jugador elige una de estas dos opciones:
 
 - **Cementerio → Mano**
 - **Cementerio → Campo**
 
-La opción elegida debe ser posible.
+La recuperación a la mano no tiene límite por cantidad de cartas: la Mágica 5 se consume al utilizarse y el Monstruo recuperado sustituye a la Mágica en la mano, por lo que la cantidad de cartas no aumenta ni disminuye.
 
-Para llevarlo a la mano debe existir espacio dentro del máximo de 9 cartas.
+Una vez elegido el destino, el juego recupera automáticamente el Monstruo elegible con el **mayor ATQ**. El jugador no elige qué Monstruo concreto recuperar.
 
-Para llevarlo al campo debe existir al menos un espacio libre de Monstruo.
+La opción elegida debe ser posible:
 
-Si ninguna de las dos opciones es posible, **la Mágica no puede utilizarse**.
+- Para llevarlo a la mano no se exige espacio dentro de un máximo de cartas; el Monstruo no debe tener ya otra copia propia en la mano.
+- Para llevarlo al campo debe existir al menos un espacio libre de Monstruo.
 
-Si el Monstruo vuelve al campo, el jugador puede elegir:
+Si ninguna de las dos opciones es posible, **la Mágica no puede utilizarse** y no se consume.
 
-- Ataque boca arriba y vertical;
+Si el Monstruo vuelve al campo, el jugador puede elegir su posición, respetando las reglas generales:
+
+- Ataque boca arriba y vertical, salvo durante el primer turno del jugador que comienza la partida;
 - Defensa boca abajo y horizontal.
+
+Durante ese primer turno, el Monstruo recuperado mediante la Mágica 5 debe colocarse en Defensa.
 
 ---
 
@@ -860,17 +875,15 @@ Una carta cuyo efecto indique expresamente una eliminación automática puede el
 
 ## Mágica 10 — Robar 2 cartas
 
-El jugador roba **hasta 2 cartas**, respetando el máximo de 9 cartas en la mano.
+El jugador roba **hasta 2 cartas del mazo**, independientemente del número de cartas que tenga en la mano.
 
-Por ejemplo:
+La restricción de 9 cartas solo se aplica al robo automático del comienzo del turno y no limita este efecto.
 
-- 7 cartas → roba 2 y queda en 9;
-- 8 cartas → roba 1 y queda en 9;
-- 9 cartas → no roba.
+Después de resolver el efecto, la Mágica 10 se retira de la mano.
 
-Después de resolver el efecto:
+Por ejemplo, si el jugador comienza con 9 cartas (incluida la Mágica 10), roba 2 cartas y después se retira la Mágica: termina con 10 cartas en la mano.
 
-**la Mágica se elimina.**
+Si el mazo tiene menos de 2 cartas, roba únicamente las disponibles.
 
 ---
 
@@ -975,7 +988,9 @@ Cuando se cambie una regla:
 
 # 35. ESTADO DEL REGLAMENTO
 
-**Versión:** 1.0 — **reglamento oficial para la versión jugable actual.**
+**Versión:** 1.1 — **reglamento oficial para la versión jugable actual.**
+
+**Cambios de la versión 1.1:** se concreta la Mágica 5: solo utiliza Monstruos del cementerio propio; si no hay ninguno no se activa ni se consume y muestra un aviso; si hay opciones válidas, el jugador elige el destino y el juego recupera automáticamente el Monstruo elegible con mayor ATQ; durante el primer turno solo puede volver al campo en Defensa.
 
 Esta versión consolida las reglas decididas por el creador y elimina las contradicciones principales entre los documentos anteriores.
 

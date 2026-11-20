@@ -1,4 +1,4 @@
-import type { Card, CardInstanceId, MonsterCard, TrapCard, MagicCard } from './cardData';
+import type { Card, CardInstanceId, MonsterCard, TrapCard, MagicCard } from './cardData.ts';
 
 export type Position = 'attack' | 'defense';
 
@@ -49,14 +49,15 @@ export type SelectionMode =
   | { kind: 'attack'; attackerUid: string }
   | { kind: 'direct-attack'; attackerUid: string }
   | { kind: 'attack-or-direct'; attackerUid: string }
-  | { kind: 'choose-destroy-target'; trapUid: string }
-  | { kind: 'choose-destroy-associated-card'; trapUid: string; player: 0 | 1; targetUid?: string }
-  | { kind: 'choose-trap-2-own'; trapUid: string; selectedUids: string[] }
+  | { kind: 'choose-destroy-target'; trapUid: string; trapPlayer: 0 | 1 }
+  | { kind: 'choose-destroy-associated-card'; trapUid: string; player: 0 | 1; returnPlayer: 0 | 1; targetUid?: string }
+  | { kind: 'choose-trap-2-own'; trapUid: string; trapPlayer: 0 | 1; selectedUids: string[] }
   | { kind: 'revive-choice'; card: MagicCard };
 
 export interface PendingDice {
   reason: string;
-  onRoll: (roll: number) => Action;
+  magicCardInstanceId?: CardInstanceId;
+  magicPlayer?: 0 | 1;
 }
 
 export type Action =
@@ -213,8 +214,9 @@ export function createPlayer(index: 0 | 1, name: string, deck: Card[]): PlayerSt
 
 export const MAX_HAND_SIZE = 9;
 
+/** Robo por efecto o preparación: no aplica el umbral del robo automático. */
 export function drawCards(player: PlayerState, n: number): PlayerState {
-  const count = Math.max(0, Math.min(n, player.deck.length, MAX_HAND_SIZE - player.hand.length));
+  const count = Math.max(0, Math.min(n, player.deck.length));
   const drawn = player.deck.slice(0, count);
   const remaining = player.deck.slice(count);
   return {
@@ -381,18 +383,16 @@ export function canActivateMagic(player: PlayerState, state: GameState, magic: M
 
   switch (magic.effect.kind) {
     case 'steal_hand_card': {
-      // Mágica 2: única condición oficial → el rival debe tener cartas.
-      // Se permiten duplicados: la carta robada conserva a su propietario.
-      return player.hand.length < MAX_HAND_SIZE && opp.hand.length > 0;
+      // Mágica 2: única condición → el rival debe tener cartas.
+      // El umbral de 9 solo se aplica al robo automático de inicio de turno.
+      return opp.hand.length > 0;
     }
     case 'revive_monster': {
       // Mágica 5: recuperar del cementerio PROPIO sin crear una segunda copia
       // propia. (Cementerio → Campo solo exige un espacio libre.)
       const propios = player.graveyard.filter((c) => c.type === 'monster');
       if (propios.length === 0) return false;
-      const canGoToHand =
-        player.hand.length < MAX_HAND_SIZE &&
-        propios.some((c) => !hasOwnCopy(player.hand, c));
+      const canGoToHand = propios.some((c) => !hasOwnCopy(player.hand, c));
       const canGoToField = hasEmptySlot(player);
       return canGoToHand || canGoToField;
     }
@@ -446,15 +446,15 @@ export function hasLegalAttack(player: PlayerState, state: GameState): boolean {
 }
 
 /**
- * Decisión del creador — `deck.length > 0 && hand.length < MAX_HAND_SIZE`.
+ * Regla de robo automático — `deck.length > 0 && hand.length < MAX_HAND_SIZE`.
  *
  * El robo es AUTOMÁTICO al comienzo del turno (Regla 15), por lo que NO es una
  * acción legal (no cuenta para el test A). Lo que demuestra es el test B: que
  * la partida PUEDE CONTINUAR, porque ese jugador recibirá cartas nuevas en su
  * siguiente turno (Regla 9.3).
  *
- * El tope de 9 cartas es lo que hace que un mazo no vacío pueda quedar
- * neutralizado: con la mano a 9/9 la Regla 9.3 dice «no roba».
+ * No existe un máximo general de cartas en mano. El umbral de 9 solo decide
+ * si se reciben cartas en el robo automático de inicio de turno.
  */
 export function canReceiveNewCards(player: PlayerState): boolean {
   return player.deck.length > 0 && player.hand.length < MAX_HAND_SIZE;
@@ -571,9 +571,7 @@ export function checkStalemate(players: [PlayerState, PlayerState]): 0 | 1 | nul
  */
 export function legalActions(state: GameState, player: 0 | 1): Action[] {
   const me = state.players[player];
-  const opp = state.players[player === 0 ? 1 : 0];
   const meField = me.field.filter((f): f is FieldMonster => f !== null);
-  const oppField = state.players[player === 0 ? 1 : 0].field.filter((f: FieldMonster | null): f is FieldMonster => f !== null);
   const out: Action[] = [];
 
   if (state.phase === 'start' || state.phase === 'game-over') return [];
@@ -584,13 +582,8 @@ export function legalActions(state: GameState, player: 0 | 1): Action[] {
     }
     return [];
   }
-  if (state.phase === 'trap-response') {
-    if (!state.pendingTrap || state.pendingTrap.defenderPlayer !== player) return [];
-    return [
-      { type: 'RESOLVE_TRAP', activate: true },
-      { type: 'RESOLVE_TRAP', activate: false },
-    ];
-  }
+  // La fase trap-response solo se usa internamente durante la resolución automática.
+  if (state.phase === 'trap-response') return [];
   if (state.phase !== 'playing' || player !== state.currentPlayer) return [];
 
   // --- Selecciones pendientes ---
@@ -665,9 +658,9 @@ export function legalActions(state: GameState, player: 0 | 1): Action[] {
         break;
       }
       case 'revive-choice': {
-        const canGoToHand = state.players[player].hand.length < 9;
+        // No existe límite general de cartas en mano; el 9 solo limita el robo automático.
         const canGoToField = state.players[player].field.some((f) => f === null);
-        if (canGoToHand) completing.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'hand' });
+        completing.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'hand' });
         if (canGoToField) {
           completing.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'field', position: 'attack' });
           completing.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'field', position: 'defense' });
@@ -734,27 +727,52 @@ export function isLegalAction(state: GameState, player: 0 | 1, action: Action): 
 function actionsEqual(a: Action, b: Action): boolean {
   if (a.type !== b.type) return false;
   switch (a.type) {
-    case 'SUMMON_MONSTER': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card) && (a as any).position === (b as any).position;
-    case 'SELECT_TRAP_PLACE': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card);
-    case 'PLACE_TRAP_ON_MONSTER': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card) && (a as any).fieldUid === (b as any).fieldUid;
-    case 'SELECT_MAGIC': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card);
+    case 'SUMMON_MONSTER':
+      return b.type === 'SUMMON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.position === b.position;
+    case 'SELECT_TRAP_PLACE':
+      return b.type === 'SELECT_TRAP_PLACE' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
+    case 'PLACE_TRAP_ON_MONSTER':
+      return b.type === 'PLACE_TRAP_ON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid;
+    case 'SELECT_MAGIC':
+      return b.type === 'SELECT_MAGIC' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
     case 'PLACE_MAGIC_ON_MONSTER':
-    case 'MAGIC_TARGET_MONSTER': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card) && (a as any).fieldUid === (b as any).fieldUid;
-    case 'MAGIC_INSTANT': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card);
-    case 'START_ATTACK': return (a as any).attackerUid === (b as any).attackerUid;
-    case 'DECLARE_ATTACK': return (a as any).attackerUid === (b as any).attackerUid && (a as any).defenderUid === (b as any).defenderUid;
-    case 'DIRECT_ATTACK': return (a as any).attackerUid === (b as any).attackerUid;
-    case 'RESOLVE_TRAP': return (a as any).activate === (b as any).activate;
-    case 'CHANGE_POSITION': return (a as any).fieldUid === (b as any).fieldUid;
-    case 'DESTROY_MONSTER': return (a as any).fieldUid === (b as any).fieldUid;
-    case 'ROLL_DICE': return (a as any).roll === (b as any).roll;
-    case 'REVIVE_CHOICE': return cardInstanceKey((a as any).card) === cardInstanceKey((b as any).card) && (a as any).choice === (b as any).choice && (a as any).position === (b as any).position;
-    case 'START_GAME': case 'CPU_PLAY': case 'CONFIRM_START': case 'CONFIRM_PASS': case 'END_TURN': case 'CANCEL_SELECTION': case 'RESTART':
+    case 'MAGIC_TARGET_MONSTER':
+      return (b.type === 'PLACE_MAGIC_ON_MONSTER' || b.type === 'MAGIC_TARGET_MONSTER')
+        && cardInstanceKey(a.card) === cardInstanceKey(b.card)
+        && a.fieldUid === b.fieldUid;
+    case 'MAGIC_INSTANT':
+      return b.type === 'MAGIC_INSTANT' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
+    case 'START_ATTACK':
+      return b.type === 'START_ATTACK' && a.attackerUid === b.attackerUid;
+    case 'DECLARE_ATTACK':
+      return b.type === 'DECLARE_ATTACK' && a.attackerUid === b.attackerUid && a.defenderUid === b.defenderUid;
+    case 'DIRECT_ATTACK':
+      return b.type === 'DIRECT_ATTACK' && a.attackerUid === b.attackerUid;
+    case 'RESOLVE_TRAP':
+      return b.type === 'RESOLVE_TRAP' && a.activate === b.activate;
+    case 'CHANGE_POSITION':
+      return b.type === 'CHANGE_POSITION' && a.fieldUid === b.fieldUid;
+    case 'DESTROY_MONSTER':
+      return b.type === 'DESTROY_MONSTER' && a.fieldUid === b.fieldUid;
+    case 'ROLL_DICE':
+      return b.type === 'ROLL_DICE' && a.roll === b.roll;
+    case 'REVIVE_CHOICE':
+      return b.type === 'REVIVE_CHOICE'
+        && cardInstanceKey(a.card) === cardInstanceKey(b.card)
+        && a.choice === b.choice
+        && a.position === b.position;
+    case 'START_GAME':
+    case 'CPU_PLAY':
+    case 'CONFIRM_START':
+    case 'CONFIRM_PASS':
+    case 'END_TURN':
+    case 'CANCEL_SELECTION':
+    case 'RESTART':
       return true;
-    default: return false;
+    default:
+      return false;
   }
 }
-
 /**
  * Regla 22 — Un ataque a Monstruo puede elegir cualquier Monstruo rival,
  * tanto en Ataque como en Defensa.

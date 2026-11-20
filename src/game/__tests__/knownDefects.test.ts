@@ -1,28 +1,29 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import { initialState, reducer } from '../useGame';
 import { nextCpuAction } from '../cpu';
+import { legalActions } from '../legalActions';
 import { changedTheGame } from './support/simulation';
-import type { Action, FieldMonster, GameState, PlayerState, Position } from '../types';
+import type { Action, FieldMonster, GameState, PlayerState } from '../types';
 import { MAX_CARDS_PER_TURN, createPlayer, indexOfCardInstance } from '../types';
 import type { Card, MagicCard, MonsterCard, TrapCard } from '../cardData';
 import { MAGICS, TRAPS, buildDeck } from '../cardData';
 
 // ============================================================================
-// F0 — DEFECTOS PREEXISTENTES QUE LA RED DE SEGURIDAD HA DETECTADO
+// F0 â€” DEFECTOS PREEXISTENTES QUE LA RED DE SEGURIDAD HA DETECTADO
 // ============================================================================
 //
-// Ninguno de estos test «falla»: PASSAN. Lo que hacen es FIJAR el comportamiento
+// Ninguno de estos test Â«fallaÂ»: PASSAN. Lo que hacen es FIJAR el comportamiento
 // actual de cada defecto, de forma aislada y legible, para que:
-//   · quede documentado sin depender de leer el informe del torneo;
-//   · no se pueda arreglar ni olvidar en silencio: en cuanto cambie el
+//   Â· quede documentado sin depender de leer el informe del torneo;
+//   Â· no se pueda arreglar ni olvidar en silencio: en cuanto cambie el
 //     comportamiento, la prueba falla y hay que actualizar la nota al pie;
-//   · cada arreglo futuro pueda comprobar que el defecto era ÉSE y no otro.
+//   Â· cada arreglo futuro pueda comprobar que el defecto era Ã‰SE y no otro.
 //
 // Ninguno se corrige en F0 ni en F1. Se delegan a fases posteriores y se anotan
-// aquí con la fase a la que corresponde.
+// aquÃ­ con la fase a la que corresponde.
 //
 // REGLA: al corregir un defecto, se BORRA su test y se anota el cambio. Si el
-// arreglo fuera otra cosa, este test fallaría y lo delataría.
+// arreglo fuera otra cosa, este test fallarÃ­a y lo delatarÃ­a.
 
 // ---------- Constructores de estado ----------
 
@@ -101,15 +102,15 @@ const magic = (n: number): MagicCard => MAGICS[n - 1];
 
 // ============================================================================
 
-describe('ARREGLO · la cuota de 3 cartas por turno ya no se puede saltar (Regla 16)', () => {
-  // ANTES: el reducer comprobaba `cardsPlayedThisTurn` al entrar por la acción de
-  // SELECCIÓN (`SELECT_TRAP_PLACE` / `SELECT_MAGIC`) pero no al ejecutar la
-  // acción de colocación. Las acciones de un solo paso (`PLACE_TRAP_ON_MONSTER`,
+describe('ARREGLO Â· la cuota de 3 cartas por turno ya no se puede saltar (Regla 16)', () => {
+  // ANTES: el reducer comprobaba `cardsPlayedThisTurn` al entrar por la acciÃ³n de
+  // SELECCIÃ“N (`SELECT_TRAP_PLACE` / `SELECT_MAGIC`) pero no al ejecutar la
+  // acciÃ³n de colocaciÃ³n. Las acciones de un solo paso (`PLACE_TRAP_ON_MONSTER`,
   // `PLACE_MAGIC_ON_MONSTER`, `MAGIC_TARGET_MONSTER`, `MAGIC_INSTANT`) aplicaban
-  // la carta sin mirar la cuota, así que se podían jugar más de 3 cartas.
+  // la carta sin mirar la cuota, asÃ­ que se podÃ­an jugar mÃ¡s de 3 cartas.
   //
   // AHORA: la cuota se comprueba en el punto en el que una carta sale de la mano.
-  // Estos tests son la regresión que impide que el hueco vuelva a abrirse.
+  // Estos tests son la regresiÃ³n que impide que el hueco vuelva a abrirse.
   //
   // Historia: detectado por la red de seguridad de F0 y escrito como
   // `DEFECTO 1` antes de corregirlo.
@@ -137,7 +138,7 @@ describe('ARREGLO · la cuota de 3 cartas por turno ya no se puede saltar (Regla
     expect(agotada.players[0].field[0]!.trap).toBeNull();
   });
 
-  it('ninguna Mágica por la ruta directa respeta la cuota', () => {
+  it('ninguna MÃ¡gica por la ruta directa respeta la cuota', () => {
     // Las cuatro entradas de un solo paso.
     const m4 = magic(4);
     const m10 = magic(10);
@@ -154,7 +155,7 @@ describe('ARREGLO · la cuota de 3 cartas por turno ya no se puede saltar (Regla
     expect(reducer(agotada, { type: 'MAGIC_TARGET_MONSTER', card: m4, side: 'self', fieldUid: 'otro' })).toBe(agotada);
   });
 
-  it('con cuota disponible la Mágica se sigue aplicando por la ruta directa', () => {
+  it('con cuota disponible la MÃ¡gica se sigue aplicando por la ruta directa', () => {
     const m = magic(10);
     const conCuota = scene({ me: { hand: [m], deck: buildDeck().slice(0, 6) } });
     const after = reducer(conCuota, { type: 'MAGIC_INSTANT', card: m });
@@ -163,58 +164,55 @@ describe('ARREGLO · la cuota de 3 cartas por turno ya no se puede saltar (Regla
   });
 });
 
-describe('REGRESIÓN · Trampa 5 conserva la elección y envía las cartas al cementerio', () => {
-  it('mantiene la elección de objetivo y consume ambas cartas correctamente', () => {
-    const victima = trap(1);
+describe('REGRESIÃ“N â€” Trampa 5: el atacante elige y destruye una carta asociada del defensor', () => {
+  it('activaciÃ³n automÃ¡tica, negaciÃ³n y elecciÃ³n del atacante', () => {
     const negadora = trap(5);
+    const asociada = magic(1);
     const atacante = fieldMonster(monster(6));
-    const defensor = fieldMonster(monster(4), { uid: 'defensor', trap: negadora });
+    const defensor = fieldMonster(monster(4), { uid: 'defensor', trap: negadora, magic: asociada });
     const estado = scene({
-      me: { field: [atacante, ...blankField().slice(1)], hand: [victima] },
+      me: { field: [atacante, ...blankField().slice(1)] },
       opp: { field: [defensor, ...blankField().slice(1)] },
     });
 
-    const eligiendo = reducer(estado, { type: 'SELECT_TRAP_PLACE', card: victima });
-    const conTrampa = reducer(eligiendo, {
-      type: 'PLACE_TRAP_ON_MONSTER',
-      card: victima,
-      fieldUid: atacante.uid,
-    });
-    const trasAtacar = reducer(conTrampa, {
+    const trasAtacar = reducer(estado, {
       type: 'DECLARE_ATTACK',
       attackerUid: atacante.uid,
       defenderUid: 'defensor',
     });
-    expect(trasAtacar.phase).toBe('trap-response');
-
-    const respuesta = reducer(trasAtacar, { type: 'RESOLVE_TRAP', activate: true });
+    // La Trampa 5 se activa automÃ¡ticamente al declarar el ataque.
+    const respuesta = trasAtacar;
     expect(respuesta.phase).toBe('playing');
+    expect(respuesta.currentPlayer).toBe(0); // el atacante elige
     expect(respuesta.selection.kind).toBe('choose-destroy-associated-card');
+    if (respuesta.selection.kind !== 'choose-destroy-associated-card') throw new Error('SelecciÃ³n de Trampa 5 no abierta');
+    expect(respuesta.selection.player).toBe(0); // el atacante es quien elige
+    expect(respuesta.selection.returnPlayer).toBe(1); // campo objetivo del defensor
     expect(respuesta.pendingTrap).toBeNull();
-    expect(respuesta.players[0].graveyard.map((c) => c.id)).not.toContain('t1');
-    expect(respuesta.players[1].graveyard.map((c) => c.id)).toContain('t5');
+    expect(respuesta.players[1].graveyard.map((c) => c.id)).toContain('t5'); // trampa consumida
 
     const resuelto = reducer(respuesta, {
       type: 'DESTROY_ASSOCIATED_CARD',
-      fieldUid: atacante.uid,
-      cardType: 'trap',
+      fieldUid: 'defensor',
+      cardType: 'magic',
     });
     expect(resuelto.selection.kind).toBe('none');
-    expect(resuelto.players[0].field[0]?.trap).toBeNull();
-    expect(resuelto.players[0].graveyard.map((c) => c.id)).toContain('t1');
+    expect(resuelto.currentPlayer).toBe(0); // vuelve el turno al atacante
+    expect(resuelto.players[1].field[0]?.magic).toBeNull();
+    expect(resuelto.players[1].graveyard.map((c) => c.id)).toContain(magic(1).id);
     expect(resuelto.players[1].graveyard.map((c) => c.id)).toContain('t5');
   });
 });
 
-describe('ARREGLO · las Trampas 3 y 6 ya no dejan el dado colgado', () => {
-  // ANTES: `applyTrapEffect` pedía el dado devolviendo `phase: 'dice-roll'` con
-  // su `pendingDice`, pero `RESOLVE_TRAP` entraba después en el bloque
-  // `negateAttack`, que rehacía la fase a 'playing' sin limpiar `pendingDice`.
+describe('ARREGLO Â· las Trampas 3 y 6 ya no dejan el dado colgado', () => {
+  // ANTES: `applyTrapEffect` pedÃ­a el dado devolviendo `phase: 'dice-roll'` con
+  // su `pendingDice`, pero `RESOLVE_TRAP` entraba despuÃ©s en el bloque
+  // `negateAttack`, que rehacÃ­a la fase a 'playing' sin limpiar `pendingDice`.
   // Quedaba un dado pendiente en una fase normal: `ROLL_DICE` rechazaba la
-  // acción y la partida se congelaba para siempre con esa Trampa puesta.
+  // acciÃ³n y la partida se congelaba para siempre con esa Trampa puesta.
   //
   // AHORA: la fase de dados tiene prioridad y se sale de `RESOLVE_TRAP` antes de
-  // tocar nada más, conservando `pendingTrap` (que `ROLL_DICE` necesita).
+  // tocar nada mÃ¡s, conservando `pendingTrap` (que `ROLL_DICE` necesita).
   //
   // Historia: detectado por la red de seguridad de F0 (`DICE_ORPHANED`) y
   // escrito como `DEFECTO 3` antes de corregirlo.
@@ -225,8 +223,7 @@ describe('ARREGLO · las Trampas 3 y 6 ya no dejan el dado colgado', () => {
       opp: { field: [fieldMonster(monster(4), { uid: 'defensor', trap: trampaDelDefensor }), ...blankField().slice(1)] },
     });
     const atacando = reducer(estado, { type: 'DECLARE_ATTACK', attackerUid: 'atacante', defenderUid: 'defensor' });
-    expect(atacando.phase).toBe('trap-response');
-    return reducer(atacando, { type: 'RESOLVE_TRAP', activate: true });
+    return atacando;
   }
 
   it('la Trampa 3 pide el dado y el juego puede continuar', () => {
@@ -260,8 +257,8 @@ describe('ARREGLO · las Trampas 3 y 6 ya no dejan el dado colgado', () => {
     expect(lanzado.players[1].field[0]?.trap).toBeNull();
   });
 
-  it('no queda ningún estado con un dado pendiente fuera de la fase de dados', () => {
-    // Barrido: ninguna combinación de Trampa 3 o 6 puede dejar el juego colgado.
+  it('no queda ningÃºn estado con un dado pendiente fuera de la fase de dados', () => {
+    // Barrido: ninguna combinaciÃ³n de Trampa 3 o 6 puede dejar el juego colgado.
     for (const trampa of [trap(3), trap(6)]) {
       for (const cara of [1, 2, 3, 4, 5, 6]) {
         const resuelto = atacarConTrampa(trampa);
@@ -273,9 +270,9 @@ describe('ARREGLO · las Trampas 3 y 6 ya no dejan el dado colgado', () => {
   });
 
   it('la CPU responde al dado pendiente en vez de quedarse esperando', () => {
-    // Problema DERIVADO de la corrección: al arreglar el dado colgante, las
-    // Trampas 3 y 6 entran de verdad en la fase de dados, y la CPU no sabía
-    // salir de ella (proponía END_TURN, el reducer lo rechazaba por la fase y la
+    // Problema DERIVADO de la correcciÃ³n: al arreglar el dado colgante, las
+    // Trampas 3 y 6 entran de verdad en la fase de dados, y la CPU no sabÃ­a
+    // salir de ella (proponÃ­a END_TURN, el reducer lo rechazaba por la fase y la
     // partida esperaba un dado que nadie tiraba). Ahora responde.
     const m = monster(3);
     // Es turno de la CPU (asiento 1), y la Trampa 3 la tiene el DEFENSOR.
@@ -285,7 +282,7 @@ describe('ARREGLO · las Trampas 3 y 6 ya no dejan el dado colgado', () => {
       opp: { field: [fieldMonster(m, { uid: 'atacante' }), ...blankField().slice(1)] },
     });
     const atacando = reducer(escena, { type: 'DECLARE_ATTACK', attackerUid: 'atacante', defenderUid: 'defensor' });
-    const conDado = reducer(atacando, { type: 'RESOLVE_TRAP', activate: true });
+    const conDado = atacando;
     expect(conDado.phase).toBe('dice-roll');
 
     const accion = nextCpuAction(conDado);
@@ -301,10 +298,10 @@ describe('ARREGLO · las Trampas 3 y 6 ya no dejan el dado colgado', () => {
   });
 });
 
-describe('ARREGLO · una Mágica que deja al rival a 0 PV termina la partida (Regla 27.1)', () => {
-  // ANTES: `applyMagicEffect` calculaba el ganador pero devolvía el estado con la
-  // fase intacta, así que podía quedar un jugador con 0 PV y la partida
-  // continuando. La Regla 27.1 dice que ese jugador «pierde inmediatamente».
+describe('ARREGLO Â· una MÃ¡gica que deja al rival a 0 PV termina la partida (Regla 27.1)', () => {
+  // ANTES: `applyMagicEffect` calculaba el ganador pero devolvÃ­a el estado con la
+  // fase intacta, asÃ­ que podÃ­a quedar un jugador con 0 PV y la partida
+  // continuando. La Regla 27.1 dice que ese jugador Â«pierde inmediatamenteÂ».
   //
   // AHORA: `applyMagicEffect` aplica el final de partida igual que el resto de
   // acciones del motor.
@@ -312,7 +309,7 @@ describe('ARREGLO · una Mágica que deja al rival a 0 PV termina la partida (Re
   // Historia: detectado por la red de seguridad de F0 (`WIN_NOT_APPLIED`) y
   // escrito como `DEFECTO 4` antes de corregirlo.
 
-  it('la Mágica 1 permite el ataque directo y este termina la partida al llegar a 0 PV', () => {
+  it('la MÃ¡gica 1 permite el ataque directo y este termina la partida al llegar a 0 PV', () => {
     const m = magic(1);
     const attacker = fieldMonster(monster(9));
     const estado = scene({
@@ -336,8 +333,8 @@ describe('ARREGLO · una Mágica que deja al rival a 0 PV termina la partida (Re
     expect(after.phase).toBe('game-over');
   });
 
-  it('si la Mágica deja PV intactos, la partida sigue', () => {
-    const m = magic(10); // Robar 2 cartas: no hace daño.
+  it('si la MÃ¡gica deja PV intactos, la partida sigue', () => {
+    const m = magic(10); // Robar 2 cartas: no hace daÃ±o.
     const estado = scene({ me: { hand: [m], deck: buildDeck().slice(0, 6) } });
     const after = reducer(estado, { type: 'SELECT_MAGIC', card: m });
     expect(changedTheGame(estado, after)).toBe(true);
@@ -345,7 +342,7 @@ describe('ARREGLO · una Mágica que deja al rival a 0 PV termina la partida (Re
     expect(after.winner).toBeNull();
   });
 
-  it('el empate a 0 PV también termina la partida al comprobar el inicio del turno', () => {
+  it('el empate a 0 PV tambiÃ©n termina la partida al comprobar el inicio del turno', () => {
     const estado = scene({
       me: { lp: 0 },
       opp: { lp: 0 },
@@ -357,43 +354,63 @@ describe('ARREGLO · una Mágica que deja al rival a 0 PV termina la partida (Re
   });
 });
 
-describe('DEFECTO 2 · una Mágica utilizada desaparece del juego', () => {
-  // Al resolverse, `playCardFromHand` retira la Mágica de la mano y no la envía a
-  // ninguna zona. El reglamento NO define el destino de una Mágica utilizada
-  // (§26 habla de cartas «retiradas del campo»), así que esto es un PUNTO ABIERTO
-  // del reglamento además de un hecho observable del motor.
-  //
-  // CORRESPONDE A: decisión del creador sobre el destino de las cartas usadas.
-  // NO se inventa ninguna regla aquí.
-
-  it('la Mágica desaparece: sale de la mano y no aparece en el cementerio', () => {
+describe('Regla aprobada · las Mágicas instantáneas usadas van al cementerio propio', () => {
+  it('M10 termina en el cementerio después de resolver el robo', () => {
     const m = magic(10);
     const estado = scene({ me: { hand: [m], deck: buildDeck().slice(0, 6) } });
     const after = reducer(estado, { type: 'SELECT_MAGIC', card: m });
     expect(indexOfCardInstance(after.players[0].hand, m)).toBe(-1);
-    expect(after.players[0].graveyard.map((c) => c.id)).not.toContain(m.id);
-    expect(after.players[1].graveyard.map((c) => c.id)).not.toContain(m.id);
+    expect(after.players[0].graveyard).toContain(m);
+    expect(after.players[1].graveyard).not.toContain(m);
   });
 });
 
-describe('ARREGLO F1 · la CPU se atascaba con la Mágica 5 (recuperar del cementerio)', () => {
+describe('REGRESIÃ“N Â· la CPU usa MÃ¡gica 2 aunque pueda robar un duplicado', () => {
+  it('selecciona MÃ¡gica 2 si el rival tiene cartas, aunque todas sean copias que la CPU ya posee', () => {
+    const m2 = magic(2);
+    const duplicada = monster(3);
+    const estado = scene({
+      currentPlayer: 1,
+      me: { hand: [duplicada] },
+      opp: { hand: [m2, duplicada] },
+    });
+
+    const accion = nextCpuAction(estado);
+    expect(accion.type).toBe('SELECT_MAGIC');
+    if (accion.type !== 'SELECT_MAGIC') throw new Error('la CPU no seleccionÃ³ MÃ¡gica 2');
+    expect(accion.card).toBe(m2);
+  });
+
+  it('no selecciona MÃ¡gica 2 si el rival tiene la mano vacÃ­a', () => {
+    const m2 = magic(2);
+    const estado = scene({
+      currentPlayer: 1,
+      me: { hand: [] },
+      opp: { hand: [m2] },
+    });
+
+    expect(nextCpuAction(estado).type).not.toBe('SELECT_MAGIC');
+  });
+});
+
+describe('ARREGLO F1 Â· la CPU se atascaba con la MÃ¡gica 5 (recuperar del cementerio)', () => {
   // ANTES DE F1 (comportamiento documentado, ya retirado):
-  //   La Mágica 5 puede pedir al jugador que elija destino (mano o campo). Esa
-  //   elección solo la sabía completar la interfaz: `nextCpuAction` la ignoraba,
-  //   volvía a proponer la misma Mágica, el reducer le devolvía el mismo estado
-  //   y la partida se quedaba congelada. En la aplicación real solo la rescataba
-  //   la red de seguridad de 60 acciones, que además no puede cerrar el turno si
+  //   La MÃ¡gica 5 puede pedir al jugador que elija destino (mano o campo). Esa
+  //   elecciÃ³n solo la sabÃ­a completar la interfaz: `nextCpuAction` la ignoraba,
+  //   volvÃ­a a proponer la misma MÃ¡gica, el reducer le devolvÃ­a el mismo estado
+  //   y la partida se quedaba congelada. En la aplicaciÃ³n real solo la rescataba
+  //   la red de seguridad de 60 acciones, que ademÃ¡s no puede cerrar el turno si
   //   la fase no es 'playing'.
   //
-  // AHORA: `nextCpuAction` consulta `legalActions()`, que con una elección
+  // AHORA: `nextCpuAction` consulta `legalActions()`, que con una elecciÃ³n
   // abierta devuelve exactamente las jugadas que la terminan. La CPU elige
-  // recuperar al campo. Este test es la REGRESIÓN que impide que vuelva a
+  // recuperar al campo. Este test es la REGRESIÃ“N que impide que vuelva a
   // colarse.
   //
   // Historia: detectado por la red de seguridad de F0 (clase `CPU_REJECTED`) y
   // escrito como `DEFECTO 6` antes de arreglarlo.
 
-  it('la CPU completa la elección de destino de la Mágica 5 en lugar de repetirla', () => {
+  it('la CPU completa la elecciÃ³n de destino de la MÃ¡gica 5 en lugar de repetirla', () => {
     const m = magic(5);
     const difunto = monster(3);
     // El asiento 1 es el que juega la CPU de producto.
@@ -402,11 +419,11 @@ describe('ARREGLO F1 · la CPU se atascaba con la Mágica 5 (recuperar del cemen
       opp: { hand: [m], graveyard: [difunto] },
     });
 
-    // La Mágica abre la elección de destino: mano o campo.
+    // La MÃ¡gica abre la elecciÃ³n de destino: mano o campo.
     const abierta = reducer(estado, { type: 'SELECT_MAGIC', card: m });
     expect(abierta.selection.kind).toBe('revive-choice');
 
-    // Antes se repetía eternamente; ahora avanza.
+    // Antes se repetÃ­a eternamente; ahora avanza.
     const accion = nextCpuAction(abierta);
     expect(accion.type).toBe('REVIVE_CHOICE');
     const despues = reducer(abierta, accion);
@@ -415,7 +432,7 @@ describe('ARREGLO F1 · la CPU se atascaba con la Mágica 5 (recuperar del cemen
     expect(despues.players[1].field.filter(Boolean)).toHaveLength(1);
   });
 
-  it('la CPU no vuelve a proponer la Mágica 5 con la elección ya abierta', () => {
+  it('la CPU no vuelve a proponer la MÃ¡gica 5 con la elecciÃ³n ya abierta', () => {
     const m = magic(5);
     const difunto = monster(3);
     const abierta = reducer(
@@ -428,29 +445,27 @@ describe('ARREGLO F1 · la CPU se atascaba con la Mágica 5 (recuperar del cemen
   });
 });
 
-describe('REGRESIÓN · Trampa 9 elige un Monstruo rival', () => {
-  it('destruye el objetivo del rival y consume la Trampa 9', () => {
+describe('REGRESIÃ“N Â· Trampa 9 permite elegir cualquier Monstruo del campo', () => {
+  it('puede destruir su propio Monstruo portador y consumir la Trampa 9', () => {
     const trampa9 = trap(9);
     const conSeleccion = scene({
-      selection: { kind: 'choose-destroy-target', trapUid: 'mio' },
+      selection: { kind: 'choose-destroy-target', trapUid: 'mio', trapPlayer: 0 },
       me: {
         field: [fieldMonster(monster(2), { uid: 'mio', trap: trampa9, pendingTurns: 0 }), null, null, null, null, null],
       },
       opp: { field: [fieldMonster(monster(12), { uid: 'rival' }), null, null, null, null, null] },
     });
 
-    expect(reducer(conSeleccion, { type: 'DESTROY_MONSTER', fieldUid: 'mio' })).toBe(conSeleccion);
-    const resuelto = reducer(conSeleccion, { type: 'DESTROY_MONSTER', fieldUid: 'rival' });
+    const resuelto = reducer(conSeleccion, { type: 'DESTROY_MONSTER', fieldUid: 'mio' });
     expect(resuelto).not.toBe(conSeleccion);
-    expect(resuelto.players[1].field[0]).toBeNull();
-    expect(resuelto.players[0].field[0]?.trap).toBeNull();
+    expect(resuelto.players[0].field[0]).toBeNull();
     expect(resuelto.players[0].graveyard.map((c) => c.id)).toContain('t9');
     expect(resuelto.selection.kind).toBe('none');
   });
 });
 
-describe('REGRESIÓN · el reducer rechaza ataques ilegales', () => {
-  it('rechaza atacar con un Monstruo en Defensa o que ya atacó', () => {
+describe('REGRESIÃ“N Â· el reducer rechaza ataques ilegales', () => {
+  it('rechaza atacar con un Monstruo en Defensa o que ya atacÃ³', () => {
     const estado = scene({
       me: { field: [fieldMonster(monster(8), { uid: 'a', hasAttacked: true, position: 'defense', faceDown: false }), null, null, null, null, null] },
       opp: { field: [fieldMonster(monster(3), { uid: 'd' }), null, null, null, null, null] },
@@ -470,11 +485,11 @@ describe('REGRESIÓN · el reducer rechaza ataques ilegales', () => {
   });
 });
 
-describe('REGRESIÓN · el dado solo admite resultados entre 1 y 6', () => {
+describe('REGRESIÃ“N Â· el dado solo admite resultados entre 1 y 6', () => {
   it('rechaza un resultado fuera del rango y no altera la partida', () => {
     const estado = scene({
       phase: 'dice-roll',
-      pendingDice: { reason: 'Daño por dado', onRoll: (roll: number) => ({ type: 'ROLL_DICE', roll }) as Action },
+      pendingDice: { reason: 'DaÃ±o por dado' },
     });
     expect(reducer(estado, { type: 'ROLL_DICE', roll: 999 })).toBe(estado);
     expect(reducer(estado, { type: 'ROLL_DICE', roll: 0 })).toBe(estado);
@@ -482,15 +497,15 @@ describe('REGRESIÓN · el dado solo admite resultados entre 1 y 6', () => {
   });
 });
 
-describe('ARREGLO · una acción normal ya no cancela una selección pendiente', () => {
-  // ANTES: con una elección abierta (colocar una Trampa, colocar una Mágica,
-  // elegir objetivo, elegir destino con la Mágica 5), el reducer seguía
-  // admitiendo jugadas de fondo: invocar, cerrar el turno, cambiar de posición,
-  // abrir otra selección. Las que tocaban la selección la borraban sin
-  // resolverla, así que la carta elegida se quedaba en la mano y el jugador
-  // perdía su turno de decidir.
+describe('ARREGLO Â· una acciÃ³n normal ya no cancela una selecciÃ³n pendiente', () => {
+  // ANTES: con una elecciÃ³n abierta (colocar una Trampa, colocar una MÃ¡gica,
+  // elegir objetivo, elegir destino con la MÃ¡gica 5), el reducer seguÃ­a
+  // admitiendo jugadas de fondo: invocar, cerrar el turno, cambiar de posiciÃ³n,
+  // abrir otra selecciÃ³n. Las que tocaban la selecciÃ³n la borraban sin
+  // resolverla, asÃ­ que la carta elegida se quedaba en la mano y el jugador
+  // perdÃ­a su turno de decidir.
   //
-  // AHORA: con una elección abierta, lo único que el motor acepta son las
+  // AHORA: con una elecciÃ³n abierta, lo Ãºnico que el motor acepta son las
   // jugadas que la terminan o la cancelan.
   //
   // Historia: detectado por la red de seguridad de F0 y escrito como
@@ -518,7 +533,7 @@ describe('ARREGLO · una acción normal ya no cancela una selección pendiente',
     expect(reducer(estado, { type: 'SUMMON_MONSTER', card: m, position: 'attack' })).toBe(estado);
   });
 
-  it('bloquea las demás jugadas de fondo con una elección abierta', () => {
+  it('bloquea las demÃ¡s jugadas de fondo con una elecciÃ³n abierta', () => {
     const t = trap(1);
     const estado = scene({
       selection: { kind: 'place-trap', card: t },
@@ -535,17 +550,17 @@ describe('ARREGLO · una acción normal ya no cancela una selección pendiente',
       { type: 'DIRECT_ATTACK', attackerUid: 'uid-m-espadas-3' },
     ];
     for (const accion of bloqueadas) {
-      expect(reducer(estado, accion), `${accion.type} no debería admitirse`).toBe(estado);
+      expect(reducer(estado, accion), `${accion.type} no deberÃ­a admitirse`).toBe(estado);
     }
   });
 
-  it('la elección sigue siendo resoluble en cada uno de sus tipos', () => {
-    // Ninguna elección puede quedarse sin salida: completarla o cancelarla.
+  it('la elecciÃ³n sigue siendo resoluble en cada uno de sus tipos', () => {
+    // Ninguna elecciÃ³n puede quedarse sin salida: completarla o cancelarla.
     const casos: GameState[] = [
       scene({ selection: { kind: 'place-trap', card: trap(1) }, me: { hand: [trap(1)], field: [fieldMonster(monster(3)), ...blankField().slice(1)] } }),
       scene({ selection: { kind: 'place-magic', card: magic(4) }, me: { hand: [magic(4)], field: [fieldMonster(monster(3)), ...blankField().slice(1)] } }),
       scene({ selection: { kind: 'attack', attackerUid: 'a' }, me: { field: [fieldMonster(monster(8), { uid: 'a' }), ...blankField().slice(1)] }, opp: { field: [fieldMonster(monster(2), { uid: 'd', position: 'defense', faceDown: true }), ...blankField().slice(1)] } }),
-      scene({ selection: { kind: 'choose-destroy-target', trapUid: 'a' }, me: { field: [fieldMonster(monster(2), { uid: 'a' }), ...blankField().slice(1)] } }),
+      scene({ selection: { kind: 'choose-destroy-target', trapUid: 'a', trapPlayer: 0 }, me: { field: [fieldMonster(monster(2), { uid: 'a' }), ...blankField().slice(1)] } }),
       scene({ selection: { kind: 'revive-choice', card: magic(5) }, me: { hand: [magic(5)], graveyard: [monster(3)] } }),
     ];
     for (const estado of casos) {
@@ -554,10 +569,10 @@ describe('ARREGLO · una acción normal ya no cancela una selección pendiente',
     }
   });
 
-  it('las fases de Trampa y de dados siguen funcionando con una selección abierta', () => {
+  it('las fases de Trampa y de dados siguen funcionando con una selecciÃ³n abierta', () => {
     // La guarda no debe tocar las fases en las que decide otro jugador.
     const conSeleccion = scene({
-      phase: 'trap-response',
+      phase: 'playing',
       currentPlayer: 0,
       selection: { kind: 'attack', attackerUid: 'a' },
       me: { field: [fieldMonster(monster(8), { uid: 'a' }), ...blankField().slice(1)] },
@@ -573,12 +588,13 @@ describe('ARREGLO · una acción normal ya no cancela una selección pendiente',
         defenderPosition: 'attack',
       },
     });
-    expect(changedTheGame(conSeleccion, reducer(conSeleccion, { type: 'RESOLVE_TRAP', activate: false }))).toBe(true);
+    // La confirmaciÃ³n manual de activaciÃ³n ya no forma parte del flujo normal.
+    expect(reducer(conSeleccion, { type: 'RESOLVE_TRAP', activate: false })).toBe(conSeleccion);
   });
 });
 
-describe('REGRESIÓN · Mágica 5 valida la carta que abrió la elección', () => {
-  it('rechaza resolver Mágica 5 gastando otra Mágica', () => {
+describe('REGRESIÃ“N Â· MÃ¡gica 5 valida la carta que abriÃ³ la elecciÃ³n', () => {
+  it('rechaza resolver MÃ¡gica 5 gastando otra MÃ¡gica', () => {
     const m5 = magic(5);
     const otra = magic(10);
     const difunto = monster(3);
@@ -593,5 +609,201 @@ describe('REGRESIÓN · Mágica 5 valida la carta que abrió la elección', () =
     expect(after.players[0].hand.map((c) => c.id)).toContain('m10');
     expect(after.players[0].graveyard.map((c) => c.id)).toContain(difunto.id);
     expect(after.players[0].cardsPlayedThisTurn).toBe(0);
+  });
+});
+
+
+describe('REGRESIÃ“N Â· MÃ¡gica 5 sigue las reglas confirmadas por el creador', () => {
+  it('sin Monstruos propios en el cementerio no consume la MÃ¡gica ni la cuota', () => {
+    const m = magic(5);
+    const estado = scene({ me: { hand: [m], graveyard: [] } });
+    const despues = reducer(estado, { type: 'SELECT_MAGIC', card: m });
+
+    expect(despues.players[0].hand).toContain(m);
+    expect(despues.players[0].cardsPlayedThisTurn).toBe(0);
+    expect(despues.selection.kind).toBe('none');
+    expect(despues.log.join(' ')).toContain('No hay Monstruos en el cementerio');
+  });
+
+  it('al recuperar al campo selecciona automÃ¡ticamente el Monstruo de mayor ATQ', () => {
+    const m = magic(5);
+    const bajo = monster(3);
+    const alto = monster(12);
+    const estado = scene({ me: { hand: [m], graveyard: [bajo, alto] } });
+    const abierta = reducer(estado, { type: 'SELECT_MAGIC', card: m });
+    expect(abierta.selection.kind).toBe('revive-choice');
+
+    const despues = reducer(abierta, { type: 'REVIVE_CHOICE', card: m, choice: 'field', position: 'attack' });
+    expect(despues.players[0].field[0]?.card.atk).toBe(12);
+    expect(despues.players[0].graveyard).toContain(bajo);
+    expect(despues.players[0].graveyard).not.toContain(alto);
+    expect(despues.players[0].hand).not.toContain(m);
+  });
+
+  it('durante el primer turno la recuperaciÃ³n al campo queda obligatoriamente en Defensa', () => {
+    const m = magic(5);
+    const difunto = monster(9);
+    const estado = scene({ turnCount: 0, me: { hand: [m], graveyard: [difunto] } });
+    const abierta = reducer(estado, { type: 'SELECT_MAGIC', card: m });
+    expect(abierta.selection.kind).toBe('revive-choice');
+
+    const ataque = reducer(abierta, { type: 'REVIVE_CHOICE', card: m, choice: 'field', position: 'attack' });
+    expect(ataque).toBe(abierta);
+
+    const defensa = reducer(abierta, { type: 'REVIVE_CHOICE', card: m, choice: 'field', position: 'defense' });
+    expect(defensa.players[0].field[0]?.position).toBe('defense');
+    expect(defensa.players[0].field[0]?.faceDown).toBe(true);
+  });
+});
+
+
+describe('REGRESIÃ“N Â· MÃ¡gica 5 respeta su mÃ¡ximo especÃ­fico de 9 cartas', () => {
+  it('recupera a la mano con 9 cartas y mantiene la misma cantidad', () => {
+    const m = magic(5);
+    const difunto = monster(12);
+    const hand = [m, ...Array.from({ length: 8 }, (_, index) => monster(index + 1))];
+    const estado = scene({ me: { hand, graveyard: [difunto] } });
+    const abierta = reducer(estado, { type: 'SELECT_MAGIC', card: m });
+    expect(abierta.selection.kind).toBe('revive-choice');
+    const despues = reducer(abierta, { type: 'REVIVE_CHOICE', card: m, choice: 'hand' });
+    expect(despues.players[0].hand).toHaveLength(9);
+    expect(despues.players[0].hand).not.toContain(m);
+    expect(despues.players[0].hand).toContain(difunto);
+    expect(despues.players[0].graveyard).not.toContain(difunto);
+    expect(despues.players[0].cardsPlayedThisTurn).toBe(1);
+    expect(despues.selection.kind).toBe('none');
+  });
+
+  it('recupera a la mano aunque la mano supere las 9 cartas', () => {
+    const m = magic(5);
+    const difunto = monster(12);
+    const hand = [m, ...Array.from({ length: 9 }, (_, index) => monster(index + 1))];
+    const field = Array.from({ length: 6 }, (_, index) => fieldMonster(monster(index + 1), { uid: `full-${index}` }));
+    const estado = scene({ me: { hand, graveyard: [difunto], field } });
+    const despues = reducer(estado, { type: 'SELECT_MAGIC', card: m });
+    expect(despues.players[0].hand.map((c) => c.id)).toContain(difunto.id);
+    expect(despues.players[0].hand.map((c) => c.id)).not.toContain(m.id);
+    expect(despues.players[0].graveyard.map((c) => c.id)).not.toContain(difunto.id);
+    expect(despues.players[0].cardsPlayedThisTurn).toBe(1);
+  });
+});
+
+describe('REGRESIÃ“N Â· las Trampas asociadas sobreviven al combate si sobrevive su Monstruo', () => {
+  it.each([1, 12])('conserva la Trampa %i tras un empate y no la envÃ­a al cementerio', (trapNumber) => {
+    const passiveTrap = trap(trapNumber);
+    const attacker = fieldMonster(monster(8), { uid: 'attacker' });
+    const defender = fieldMonster(monster(8), {
+      uid: 'defender',
+      position: 'defense',
+      trap: passiveTrap,
+    });
+    const state = scene({
+      me: { field: [attacker, ...blankField().slice(1)] },
+      opp: { field: [defender, ...blankField().slice(1)] },
+    });
+
+    const selecting = reducer(state, { type: 'START_ATTACK', attackerUid: attacker.uid });
+    const afterCombat = reducer(selecting, {
+      type: 'DECLARE_ATTACK',
+      attackerUid: attacker.uid,
+      defenderUid: defender.uid,
+    });
+
+    expect(afterCombat.phase).toBe('playing');
+    expect(afterCombat.players[1].field[0]?.uid).toBe('defender');
+    expect(afterCombat.players[1].field[0]?.trap?.id).toBe(passiveTrap.id);
+    expect(afterCombat.players[1].graveyard.map((card) => card.id)).not.toContain(passiveTrap.id);
+  });
+
+  it('envÃ­a la Trampa al cementerio de su propietario cuando el Monstruo defensor es destruido', () => {
+    const passiveTrap = trap(1);
+    const attacker = fieldMonster(monster(10), { uid: 'attacker' });
+    const defender = fieldMonster(monster(5), {
+      uid: 'defender',
+      position: 'defense',
+      trap: passiveTrap,
+    });
+    const state = scene({
+      me: { field: [attacker, ...blankField().slice(1)] },
+      opp: { field: [defender, ...blankField().slice(1)] },
+    });
+
+    const selecting = reducer(state, { type: 'START_ATTACK', attackerUid: attacker.uid });
+    const afterCombat = reducer(selecting, {
+      type: 'DECLARE_ATTACK',
+      attackerUid: attacker.uid,
+      defenderUid: defender.uid,
+    });
+
+    expect(afterCombat.players[1].field[0]).toBeNull();
+    expect(afterCombat.players[1].graveyard.map((card) => card.id)).toContain(passiveTrap.id);
+  });
+});
+
+describe('REGRESION: Magica 5 no limita la recuperacion a una mano de 9 cartas', () => {
+  it('ofrece recuperar a la mano con 10 o mas cartas aunque el campo este lleno', () => {
+    const m5 = magic(5);
+    const recovered = monster(12);
+    const hand = [m5, ...Array.from({ length: 10 }, (_, index) => monster(index + 1))];
+    const fullField = Array.from({ length: 6 }, (_, index) =>
+      fieldMonster(monster(index + 20), { uid: `magic5-full-${index}` }),
+    );
+    const state = scene({ me: { hand, graveyard: [recovered], field: fullField } });
+
+    expect(legalActions(state, 0).some((action) => action.type === 'SELECT_MAGIC' && action.card === m5)).toBe(true);
+
+    // Con el campo lleno solo existe la opción de recuperar a la mano:
+    // el efecto se resuelve automáticamente y la Mágica se sustituye por el monstruo.
+    const selecting = reducer(state, { type: 'SELECT_MAGIC', card: m5 });
+    expect(selecting.selection.kind).toBe('none');
+    expect(selecting.players[0].hand).toHaveLength(hand.length);
+    expect(selecting.players[0].hand).toContain(recovered);
+    expect(selecting.players[0].hand).not.toContain(m5);
+    expect(selecting.players[0].graveyard).not.toContain(recovered);
+  });
+});
+
+describe('REGRESION: Trampa 7 intercambia monstruos aunque ambos campos esten llenos', () => {
+  it('intercambia control y casillas sin destruir monstruos ni exigir huecos libres', () => {
+    const attacker = fieldMonster(monster(8), { uid: 'full-field-attacker', position: 'attack' });
+    const defender = fieldMonster(monster(3), {
+      uid: 'full-field-defender',
+      position: 'defense',
+      trap: trap(7),
+    });
+    const attackerField = [
+      attacker,
+      ...Array.from({ length: 5 }, (_, index) =>
+        fieldMonster(monster(index + 30), { uid: `attacker-side-${index}` }),
+      ),
+    ];
+    const defenderField = [
+      defender,
+      ...Array.from({ length: 5 }, (_, index) =>
+        fieldMonster(monster(index + 40), { uid: `defender-side-${index}` }),
+      ),
+    ];
+    const state = scene({ me: { field: attackerField }, opp: { field: defenderField } });
+
+    const after = reducer(state, {
+      type: 'DECLARE_ATTACK',
+      attackerUid: attacker.uid,
+      defenderUid: defender.uid,
+    });
+
+    const attackerAfter = after.players[1].field.find((fm) => fm?.uid === attacker.uid);
+    const defenderAfter = after.players[0].field.find((fm) => fm?.uid === defender.uid);
+    expect(attackerAfter).toBeDefined();
+    expect(defenderAfter).toBeDefined();
+    expect(attackerAfter?.controlledBy).toBe(1);
+    expect(defenderAfter?.controlledBy).toBe(0);
+    expect(attackerAfter?.position).toBe('attack');
+    expect(defenderAfter?.position).toBe('defense');
+    expect(after.players[0].field.filter(Boolean)).toHaveLength(6);
+    expect(after.players[1].field.filter(Boolean)).toHaveLength(6);
+    expect(defenderAfter?.trap).toBeNull();
+    expect(after.players[1].graveyard.some((card) => card.id === trap(7).id)).toBe(true);
+    expect(after.players[0].graveyard.some((card) => card.id === attacker.card.id || card.id === defender.card.id)).toBe(false);
+    expect(after.players[1].graveyard.some((card) => card.id === attacker.card.id || card.id === defender.card.id)).toBe(false);
   });
 });

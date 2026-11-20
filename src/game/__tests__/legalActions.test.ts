@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { initialState, reducer } from '../useGame';
 import {
   canDirectAttack,
+  getActingPlayer,
   isLegalAction,
   isLegalAttacker,
   legalActions,
@@ -13,6 +14,41 @@ import type { Action, FieldMonster, GameState, PlayerState, Position } from '../
 import { MAX_CARDS_PER_TURN, MAX_HAND_SIZE, createPlayer } from '../types';
 import type { Card, MagicCard, MonsterCard, TrapCard } from '../cardData';
 import { MAGICS, TRAPS, buildDeck } from '../cardData';
+
+describe('sameAction security-sensitive fields', () => {
+  it('does not accept a magic action retargeted to the opposite side', () => {
+    const card = { ...MAGICS[0], instanceId: 'magic-side-test' };
+    const ownTarget: Action = {
+      type: 'PLACE_MAGIC_ON_MONSTER',
+      card,
+      side: 'self',
+      fieldUid: 'target-1',
+    };
+    const enemyTarget: Action = {
+      type: 'PLACE_MAGIC_ON_MONSTER',
+      card,
+      side: 'enemy',
+      fieldUid: 'target-1',
+    };
+    expect(sameAction(ownTarget, enemyTarget)).toBe(false);
+    expect(sameAction(enemyTarget, ownTarget)).toBe(false);
+
+    const ownInstantTarget: Action = {
+      type: 'MAGIC_TARGET_MONSTER',
+      card,
+      side: 'self',
+      fieldUid: 'target-2',
+    };
+    const enemyInstantTarget: Action = {
+      type: 'MAGIC_TARGET_MONSTER',
+      card,
+      side: 'enemy',
+      fieldUid: 'target-2',
+    };
+    expect(sameAction(ownInstantTarget, enemyInstantTarget)).toBe(false);
+    expect(sameAction(enemyInstantTarget, ownInstantTarget)).toBe(false);
+  });
+});
 
 // ============================================================================
 // F1 — `legalActions()`: GENERADOR ÚNICO DE ACCIONES LEGALES
@@ -82,6 +118,24 @@ function scene(options: {
     pendingDice: options.pendingDice ?? null,
   };
 }
+
+describe('getActingPlayer', () => {
+  it('uses the temporary Trap 5 chooser instead of currentPlayer', () => {
+    const state = scene({
+      currentPlayer: 0,
+      selection: {
+        kind: 'choose-destroy-associated-card',
+        trapUid: 'trap-5',
+        player: 1,
+        returnPlayer: 0,
+        targetUid: 'target',
+      },
+    });
+
+    expect(getActingPlayer(state)).toBe(1);
+    expect(getActingPlayer(scene({ currentPlayer: 0 }))).toBe(0);
+  });
+});
 
 const trap = (n: number): TrapCard => TRAPS[n - 1];
 const magic = (n: number): MagicCard => MAGICS[n - 1];
@@ -558,18 +612,18 @@ describe('legalActions · Regla 5 (lado exigido por la Mágica)', () => {
 // ============================================================================
 
 describe('legalActions · Mágica 2 (robar de la mano del rival)', () => {
-  it('necesita que el rival tenga cartas y que mi mano no esté llena', () => {
+  it('solo necesita que el rival tenga cartas, aunque mi mano ya tenga 9', () => {
     const conAmbas = scene({ me: { hand: [magic(2)] }, opp: { hand: [monster(4)] } });
     expect(find(conAmbas, 0, 'SELECT_MAGIC')).toHaveLength(1);
 
     const rivalVacio = scene({ me: { hand: [magic(2)] } });
     expect(find(rivalVacio, 0, 'SELECT_MAGIC')).toHaveLength(0);
 
-    const manoLlena = scene({
+    const manoConNueve = scene({
       me: { hand: [magic(2), ...Array.from({ length: MAX_HAND_SIZE - 1 }, (_, i) => monster(i + 1))] },
       opp: { hand: [monster(4)] },
     });
-    expect(find(manoLlena, 0, 'SELECT_MAGIC')).toHaveLength(0);
+    expect(find(manoConNueve, 0, 'SELECT_MAGIC')).toHaveLength(1);
   });
 
   it('se ofrece aunque el rival tenga una carta que yo ya tenga: son copias distintas', () => {
@@ -645,13 +699,13 @@ describe('legalActions · fases especiales', () => {
     expect(new Set(types)).toEqual(new Set(['PLACE_TRAP_ON_MONSTER', 'CANCEL_SELECTION']));
   });
 
-  it('Trampa 9: se elige un Monstruo rival para destruir', () => {
+  it('Trampa 9: se puede elegir cualquier Monstruo de ambos campos', () => {
     const state = scene({
-      selection: { kind: 'choose-destroy-target', trapUid: 'mio' },
+      selection: { kind: 'choose-destroy-target', trapUid: 'mio', trapPlayer: 0 },
       me: { field: [fieldMonster(monster(2), { uid: 'mio' }), fieldMonster(monster(3), { uid: 'mio2' }), ...blank().slice(2)] },
       opp: { field: [fieldMonster(monster(12), { uid: 'rival' }), ...blank().slice(1)] },
     });
-    expect(find(state, 0, 'DESTROY_MONSTER').map((a) => (a as { fieldUid: string }).fieldUid)).toEqual(['rival']);
+    expect(find(state, 0, 'DESTROY_MONSTER').map((a) => (a as { fieldUid: string }).fieldUid)).toEqual(['mio', 'mio2', 'rival']);
   });
 
   it('fase de paso de dispositivo: solo confirmar', () => {
@@ -660,7 +714,7 @@ describe('legalActions · fases especiales', () => {
     expect(legalActions(state, 0)).toEqual([]);
   });
 
-  it('fase de respuesta de Trampa: decide el defensor, y puede activarla o no', () => {
+  it('fase interna de respuesta de Trampa: no ofrece acciones manuales', () => {
     const pendiente = {
       attackerUid: 'a',
       defenderUid: 'd',
@@ -672,8 +726,9 @@ describe('legalActions · fases especiales', () => {
       defenderPosition: 'attack' as Position,
     };
     const state = scene({ phase: 'trap-response', currentPlayer: 0, pendingTrap: pendiente });
-    expect(find(state, 1, 'RESOLVE_TRAP').map((a) => (a as { activate: boolean }).activate)).toEqual([true, false]);
-    // Al atacante no le toca decidir.
+    // El reducer resuelve automáticamente la Trampa al declarar el ataque.
+    // Esta fase solo existe durante esa resolución interna.
+    expect(legalActions(state, 1)).toEqual([]);
     expect(legalActions(state, 0)).toEqual([]);
   });
 
@@ -681,7 +736,7 @@ describe('legalActions · fases especiales', () => {
     const state = scene({
       phase: 'dice-roll',
       currentPlayer: 1,
-      pendingDice: { reason: 'Daño por dado', onRoll: (roll: number) => ({ type: 'ROLL_DICE', roll }) as Action },
+      pendingDice: { reason: 'Daño por dado' },
     });
     expect(find(state, 1, 'ROLL_DICE').map((a) => (a as { roll: number }).roll)).toEqual([1, 2, 3, 4, 5, 6]);
     expect(legalActions(state, 0)).toEqual([]);

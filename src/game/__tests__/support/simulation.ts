@@ -48,7 +48,7 @@
 
 import { reducer } from '../../useGame';
 import { nextCpuAction } from '../../cpu';
-import { MAX_HAND_SIZE, MAX_CARDS_PER_TURN } from '../../types';
+import { MAX_CARDS_PER_TURN } from '../../types';
 import type {
   Action,
   Difficulty,
@@ -290,7 +290,8 @@ export function rejectedByProbe(state: GameState, seat: 0 | 1): Map<string, numb
 /**
  * Comprobaciones que el juego debe cumplir SIEMPRE, paso a paso. No derivan de
  * ninguna regla nueva: son la lectura directa de los invariantes que el motor ya
- * respeta (mano de 9, campo de 6, cuota de 3, LP ≥ 0, conservación de cartas).
+ * respeta (campo de 6, cuota de 3, LP ≥ 0, conservación de cartas). No existe
+ * un límite máximo de puntos de vida; el umbral de 9 cartas solo limita el robo automático.
  *
  * Cada problema lleva su código al principio (`CÓDIGO: texto`) para que la
  * simulación pueda clasificarlos sin adivinar.
@@ -301,8 +302,6 @@ export function checkInvariants(state: GameState, context: string): string[] {
 
   for (const p of state.players) {
     if (p.lp < 0) push('INVARIANT', `${p.name} tiene ${p.lp} PV (negativos)`);
-    if (p.lp > 999) push('INVARIANT', `${p.name} tiene ${p.lp} PV (por encima del tope)`);
-    if (p.hand.length > MAX_HAND_SIZE) push('INVARIANT', `${p.name} tiene ${p.hand.length} cartas en la mano (tope ${MAX_HAND_SIZE})`);
     if (p.cardsPlayedThisTurn < 0) push('INVARIANT', `${p.name} tiene cuota negativa`);
     if (p.cardsPlayedThisTurn > MAX_CARDS_PER_TURN) {
       push('QUOTA_EXCEEDED', `${p.name} ha jugado ${p.cardsPlayedThisTurn} cartas este turno (tope ${MAX_CARDS_PER_TURN})`);
@@ -352,15 +351,18 @@ export function checkInvariants(state: GameState, context: string): string[] {
       if (!monstersOf(me).some((f) => f.uid === sel.attackerUid)) push('INVARIANT', `selección '${sel.kind}' con un atacante que no está en el campo propio`);
       break;
     case 'choose-destroy-target':
-      if (!monstersOf(me).some((f) => f.uid === sel.trapUid)) push('INVARIANT', 'selección choose-destroy-target sin el Monstruo de la Trampa 9 en el campo propio');
+      if (!state.players[sel.trapPlayer].field.some((fm) => fm?.uid === sel.trapUid)) {
+        push('INVARIANT', 'selección choose-destroy-target sin su Monstruo portador en el campo registrado');
+      }
       break;
     case 'choose-trap-2-own':
-      if (!monstersOf(me).some((f) => f.uid === sel.trapUid)) push('INVARIANT', 'selección choose-trap-2-own sin su Monstruo portador');
+      if (!state.players[sel.trapPlayer].field.some((fm) => fm?.uid === sel.trapUid)) {
+        push('INVARIANT', 'selección choose-trap-2-own sin su Monstruo portador en el campo registrado');
+      }
       if (sel.selectedUids.some((uid) => !monstersOf(me).some((f) => f.uid === uid))) push('INVARIANT', 'Trampa 2 mantiene seleccionado un Monstruo que ya no está en el campo');
       break;
     case 'choose-destroy-associated-card':
-      // trapUid identifies the Monster carrying Trampa 5 on the OTHER field;
-      // the chooser selects an associated card from their own field instead.
+      // player is the chooser; returnPlayer is the field containing the target.
       break;
   }
 
@@ -378,32 +380,57 @@ export function checkCardConservation(
   initialInstances: Set<string>,
   cardNameOf: Map<string, string>,
   context: string,
+  previousState?: GameState,
+  actionDescription = 'desconocida',
 ): string[] {
-  const seen = new Map<string, number>();
-  const bump = (id: string | undefined) => {
-    if (id === undefined) return;
-    seen.set(id, (seen.get(id) ?? 0) + 1);
-  };
-  for (const p of state.players) {
-    for (const c of p.deck) bump(c.instanceId);
-    for (const c of p.hand) bump(c.instanceId);
-    for (const c of p.graveyard) bump(c.instanceId);
-    for (const fm of p.field) {
-      if (!fm) continue;
-      bump(fm.card.instanceId);
-      bump(fm.trap?.instanceId);
-      bump(fm.magic?.instanceId);
+  const locate = (game: GameState): Map<string, { zones: string[]; owner: string }> => {
+    const locations = new Map<string, { zones: string[]; owner: string }>();
+    const record = (card: Card | null | undefined, player: 0 | 1, zone: string) => {
+      if (!card?.instanceId) return;
+      const current = locations.get(card.instanceId) ?? {
+        zones: [],
+        owner: `Jugador ${(card.owner ?? player) + 1}`,
+      };
+      current.zones.push(`Jugador ${player + 1}:${zone}`);
+      locations.set(card.instanceId, current);
+    };
+    for (const player of game.players) {
+      for (const card of player.deck) record(card, player.index, 'mazo');
+      for (const card of player.hand) record(card, player.index, 'mano');
+      for (const card of player.graveyard) record(card, player.index, 'cementerio');
+      for (const monster of player.field) {
+        if (!monster) continue;
+        record(monster.card, player.index, 'campo');
+        record(monster.magic, player.index, 'mágica asociada');
+        record(monster.trap, player.index, 'trampa asociada');
+      }
     }
-  }
+    return locations;
+  };
 
-  const label = (id: string) => cardNameOf.get(id) ?? 'desconocida';
+  const before = previousState ? locate(previousState) : new Map<string, { zones: string[]; owner: string }>();
+  const after = locate(state);
   const problems: string[] = [];
-  for (const id of initialInstances) {
-    const n = seen.get(id) ?? 0;
-    if (n !== 1) problems.push(`${context}: la carta ${label(id)} aparece ${n} veces en el juego (debe aparecer exactamente 1)`);
-  }
-  for (const [id, n] of seen) {
-    if (n !== 1) problems.push(`${context}: la carta ${label(id)} aparece ${n} veces y no estaba en el mazo inicial`);
+  const allInstances = new Set([...initialInstances, ...after.keys()]);
+  for (const id of allInstances) {
+    const prior = before.get(id)?.zones ?? [];
+    const current = after.get(id)?.zones ?? [];
+    if (!initialInstances.has(id) && current.length > 0) {
+      problems.push(
+        `CARD_DUPLICATED: instanceId=${id}; carta=${cardNameOf.get(id) ?? 'desconocida'}; propietario=${after.get(id)?.owner ?? 'propietario desconocido'}; ` +
+        `zonaAnterior=${prior.join(', ') || 'ninguna'}; zonaPosterior=${current.join(', ') || 'ninguna'}; ` +
+        `acción=${actionDescription}; paso=${context}; instancia ausente del conjunto inicial`,
+      );
+      continue;
+    }
+    if (current.length === 1 || (current.length === 0 && prior.length !== 1)) continue;
+    const kind = current.length === 0 ? 'CARD_LOST' : 'CARD_DUPLICATED';
+    const owner = after.get(id)?.owner ?? before.get(id)?.owner ?? 'propietario desconocido';
+    problems.push(
+      `${kind}: instanceId=${id}; carta=${cardNameOf.get(id) ?? 'desconocida'}; propietario=${owner}; ` +
+      `zonaAnterior=${prior.join(', ') || 'ninguna'}; zonaPosterior=${current.join(', ') || 'ninguna'}; ` +
+      `acción=${actionDescription}; paso=${context}`,
+    );
   }
   return problems;
 }
@@ -428,8 +455,10 @@ export type FindingCode =
   | 'INVARIANT'
   /** Se ha superado la cuota de 3 cartas por turno (Regla 16). */
   | 'QUOTA_EXCEEDED'
-  /** Una copia de carta ha desaparecido del juego o se ha duplicado. */
+  /** Una copia de carta ha desaparecido de todas las zonas válidas. */
   | 'CARD_LOST'
+  /** Una copia física aparece simultáneamente en varias zonas. */
+  | 'CARD_DUPLICATED'
   /** Hay un dado pendiente en una fase que no es la de tirar dados. */
   | 'DICE_ORPHANED'
   /** Hay un ganador registrado pero la partida no ha pasado a 'game-over'. */
@@ -762,10 +791,17 @@ export function simulateGame(options: SimulateOptions): GameResult {
         const code = problem.split(': ')[1] as FindingCode;
         add(code, problem.replace(/^paso \d+: /, ''));
       }
-      if (steps % 5 === 0) {
-        for (const c of checkCardConservation(state, initialInstances, cardNameOf, `paso ${steps}`)) {
-          add('CARD_LOST', c.replace(/^paso \d+: /, ''));
-        }
+      for (const issue of checkCardConservation(
+        state,
+        initialInstances,
+        cardNameOf,
+        `paso ${steps}`,
+        before,
+        describeAction(chosen, before),
+      )) {
+        const separator = issue.indexOf(':');
+        const code = issue.slice(0, separator) as FindingCode;
+        add(code, issue.slice(separator + 1).trim());
       }
     }
 

@@ -4,10 +4,9 @@ import type {
   GameState,
   PlayerState,
   Position,
-} from './types';
+} from './types.ts';
 import {
   MAX_CARDS_PER_TURN,
-  MAX_HAND_SIZE,
   canActivateMagic,
   canAttack,
   canPlaceTrapOn,
@@ -16,8 +15,8 @@ import {
   hasTrapTarget,
   magicRequiredSide,
   cardInstanceKey,
-} from './types';
-import type { MagicCard } from './cardData';
+} from './types.ts';
+import type { MagicCard } from './cardData.ts';
 
 /**
  * ============================================================================
@@ -91,6 +90,18 @@ import type { MagicCard } from './cardData';
  * Cerrar el hueco en el reducer es F3; el test que fija el comportamiento actual
  * está en `knownDefects.test.ts` (DEFECTO 8).
  */
+
+/**
+ * Player who is currently allowed to submit an action.
+ * Trap 5 temporarily transfers the choice to the trap owner, who may not be
+ * the normal currentPlayer. Keep client and server turn checks on this helper.
+ */
+export function getActingPlayer(state: GameState): 0 | 1 {
+  if (state.phase === 'playing' && state.selection.kind === 'choose-destroy-associated-card') {
+    return state.selection.player;
+  }
+  return state.currentPlayer;
+}
 
 /** Posiciones en las que se puede invocar un Monstruo. */
 const POSITIONS: readonly Position[] = ['attack', 'defense'];
@@ -254,13 +265,15 @@ function selectionActions(state: GameState, player: 0 | 1, me: PlayerState, opp:
     }
 
     case 'choose-destroy-target': {
-      // Trampa 9: el propietario elige cualquier Monstruo del adversario.
-      return monstersOf(opp).map((fm) => ({ type: 'DESTROY_MONSTER', fieldUid: fm.uid }));
+      // Trampa 9: el reglamento permite elegir cualquier Monstruo de ambos campos.
+      return state.players.flatMap((player) =>
+        monstersOf(player).map((fm) => ({ type: 'DESTROY_MONSTER' as const, fieldUid: fm.uid })),
+      );
     }
     
     case 'choose-destroy-associated-card': {
-      const owner = sel.player;
-      const field = monstersOf(state.players[owner]);
+      const targetPlayer = sel.returnPlayer;
+      const field = monstersOf(state.players[targetPlayer]);
       return field
         .filter((fm) => fm.trap || fm.magic)
         .flatMap((fm) => [
@@ -284,11 +297,10 @@ function selectionActions(state: GameState, player: 0 | 1, me: PlayerState, opp:
       // Mágica 5: recuperar del cementerio a la mano o al campo.
       const out: Action[] = [];
 
-      // A la mano: hace falta hueco y que la carta no esté ya representada en
-      // la mano por OTRA COPIA PROPIA (la del rival no lo impide: Mágica 2).
+      // A la mano: la Mágica 5 se sustituye por el Monstruo recuperado, sin
+      // límite de tamaño; solo se impide recuperar otra copia propia.
       const alCementerio = me.graveyard.filter((c) => c.type === 'monster');
-      const aLaManoPosible =
-        me.hand.length < MAX_HAND_SIZE && alCementerio.some((c) => !hasOwnCopy(me.hand, c));
+      const aLaManoPosible = alCementerio.some((c) => !hasOwnCopy(me.hand, c));
       if (aLaManoPosible) {
         out.push({ type: 'REVIVE_CHOICE', card: sel.card, choice: 'hand' });
       }
@@ -426,18 +438,8 @@ export function legalActions(state: GameState, player: 0 | 1): Action[] {
     return player === state.currentPlayer ? [{ type: 'CONFIRM_PASS' }] : [];
   }
 
-  // Regla 19: el defensor decide si activa su Trampa.
-  //
-  // DEFICIENCIA DOCUMENTADA (F3): el reducer no comprueba QUIÉN resuelve la
-  // Trampa, así que en la aplicación cualquiera puede pulsar los botones. Aquí
-  // se le atribuye la decisión a quien realmente la tiene: el defensor.
-  if (state.phase === 'trap-response') {
-    if (!state.pendingTrap || state.pendingTrap.defenderPlayer !== player) return [];
-    return [
-      { type: 'RESOLVE_TRAP', activate: true },
-      { type: 'RESOLVE_TRAP', activate: false },
-    ];
-  }
+  // La fase trap-response solo se usa internamente durante la resolución automática.
+  if (state.phase === 'trap-response') return [];
 
   // Dado pendiente (Trampas 3 y 6, Mágica 11, protección por dado).
   //
@@ -448,15 +450,12 @@ export function legalActions(state: GameState, player: 0 | 1): Action[] {
     return DICE_FACES.map((roll) => ({ type: 'ROLL_DICE', roll }));
   }
 
-  // Algunas selecciones pertenecen a un jugador que no es el jugador en turno.
-  // Trampa 5 se activa durante el ataque rival, pero la elección de qué carta
-  // destruir corresponde al propietario de la Trampa.
+  // Trampa 5 transfiere temporalmente el turno al propietario de la Trampa.
+  // selection.player es quien elige; selection.returnPlayer identifica el campo
+  // rival donde están las cartas asociadas que puede destruir.
   if (state.phase === 'playing' && state.selection.kind === 'choose-destroy-associated-card') {
     if (player !== state.selection.player) return [];
-    return [
-      ...selectionActions(state, player, me, opp) ?? [],
-      { type: 'CANCEL_SELECTION' },
-    ];
+    return selectionActions(state, player, me, opp) ?? [];
   }
 
   // A partir de aquí solo juega quien tiene el turno: el reducer siempre aplica
@@ -501,9 +500,9 @@ export function sameAction(a: Action, b: Action): boolean {
     case 'SELECT_MAGIC':
       return b.type === 'SELECT_MAGIC' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
     case 'PLACE_MAGIC_ON_MONSTER':
-      return b.type === 'PLACE_MAGIC_ON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid;
+      return b.type === 'PLACE_MAGIC_ON_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid && a.side === b.side;
     case 'MAGIC_TARGET_MONSTER':
-      return b.type === 'MAGIC_TARGET_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid;
+      return b.type === 'MAGIC_TARGET_MONSTER' && cardInstanceKey(a.card) === cardInstanceKey(b.card) && a.fieldUid === b.fieldUid && a.side === b.side;
     case 'MAGIC_INSTANT':
       return b.type === 'MAGIC_INSTANT' && cardInstanceKey(a.card) === cardInstanceKey(b.card);
     case 'START_ATTACK':
