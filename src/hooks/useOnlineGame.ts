@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Action, GameState } from '../game/types';
-import { isLegalAction } from '../game/legalActions';
+import { getActingPlayer, isLegalAction } from '../game/legalActions';
 
 export type GameMode = 'local' | 'cpu' | 'online';
 
@@ -264,7 +264,7 @@ export function useOnlineGame(): OnlineGameHook {
     const id = roomRef.current;
     const role = roleRef.current;
     if (!current || !id || waitingForOpponent || (role !== 'player1' && role !== 'player2')) return;
-    if (dispatchingRef.current || current.currentPlayer !== (role === 'player1' ? 0 : 1)) return;
+    if (dispatchingRef.current || getActingPlayer(current) !== (role === 'player1' ? 0 : 1)) return;
     if (!isLegalAction(current, role === 'player1' ? 0 : 1, action)) return;
 
     dispatchingRef.current = true;
