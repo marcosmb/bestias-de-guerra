@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { initialState, reducer } from '../useGame';
 import {
   canDirectAttack,
+  getActingPlayer,
   isLegalAction,
   isLegalAttacker,
   legalActions,
@@ -117,6 +118,25 @@ function scene(options: {
     pendingDice: options.pendingDice ?? null,
   };
 }
+
+describe('getActingPlayer', () => {
+  it('uses the temporary Trap 5 chooser instead of currentPlayer', () => {
+    const state = scene({
+      currentPlayer: 0,
+      selection: {
+        kind: 'choose-destroy-associated-card',
+        trapUid: 'trap-5',
+        player: 1,
+        trapPlayer: 1,
+        returnPlayer: 0,
+        targetUid: 'target',
+      },
+    });
+
+    expect(getActingPlayer(state)).toBe(1);
+    expect(getActingPlayer(scene({ currentPlayer: 0 }))).toBe(0);
+  });
+});
 
 const trap = (n: number): TrapCard => TRAPS[n - 1];
 const magic = (n: number): MagicCard => MAGICS[n - 1];
