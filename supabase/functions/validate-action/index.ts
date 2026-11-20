@@ -4,7 +4,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { reducer } from "../../../src/game/engine.ts";
-import { isLegalAction } from "../../../src/game/legalActions.ts";
+import { getActingPlayer, isLegalAction } from "../../../src/game/legalActions.ts";
 import { filterOnlineState } from "../../../src/game/onlineState.ts";
 import type { Action, GameState } from "../../../src/game/types.ts";
 import type { Card } from "../../../src/game/cardData.ts";
@@ -138,12 +138,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const currentState = privateRow.game_state as GameState;
-    const actingPlayer = currentState?.phase === "playing" &&
-      currentState.selection?.kind === "choose-destroy-associated-card"
-      ? currentState.selection.player
-      : currentState?.currentPlayer;
     if (!isRecord(currentState) || !Array.isArray(currentState.players) ||
-        actingPlayer !== playerIndex) {
+        getActingPlayer(currentState) !== playerIndex) {
       return json({ error: "Not your turn or invalid game state" }, 403);
     }
 
