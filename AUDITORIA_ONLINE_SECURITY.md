@@ -1,79 +1,57 @@
-# Auditoría de seguridad online — v0/card-lost-eslint-release
+# Auditoría de seguridad online — estado histórico y situación consolidada
 
-## Estado de Git
+> Este documento conserva hallazgos históricos de la auditoría original. No debe utilizarse como descripción del estado actual sin contrastarlo con el código de `fusion-de-ramas` y el informe de validación más reciente.
 
-- Rama: `v0/card-lost-eslint-release` (detached HEAD).
-- SHA inicial y final: `c0be229034b131bc0d769dbd9ad1546d800c80a4`.
-- Árbol de trabajo limpio.
-- Base de fusión: `fusion-de-ramas` @ `8b9202722f61c0f44c3ed0ae4516dfc862753af1`.
+## Rama y consolidación
 
-## PR #12
+- Rama única de trabajo: `fusion-de-ramas`.
+- El PR #12 (`v0/card-lost-eslint-release` → `fusion-de-ramas`) fue fusionado el 20 de noviembre de 2026.
+- Commit de fusión: `39972d733a1fb5a0fc22cb80fa9ba6097bdc0df8`.
+- Los hallazgos de las secciones siguientes describen una auditoría histórica y no prueban por sí mismos que el defecto siga presente o que esté resuelto en producción.
 
-- Estado: open.
-- Título: "Fix CARD_LOST and correct game rules".
-- Head: `v0/card-lost-eslint-release` @ `c0be229`.
-- Base: `fusion-de-ramas`.
-- Sin conflictos detectados (merge-base = 8b92027, v0 añade 8 commits encima).
+## Hallazgos históricos
 
-## Verificaciones ejecutadas
+La auditoría previa identificó problemas graves en el primer diseño online: exposición de estados privados por broadcast compartido, identidad de jugador insuficientemente protegida, ausencia de validación autoritativa, políticas RLS permisivas y falta de canales privados separados.
 
-- `npm run test`: ✅ 472/472 superados (29 archivos).
-- `npm run typecheck`: ✅ sin errores.
-- `npm run lint`: ✅ 0 errores.
-- `npm run build`: ✅ `✓ built in 17.74s`.
+Se añadieron posteriormente:
+- Autenticación Supabase en las Edge Functions.
+- Validación de pertenencia a sala y de turno.
+- Resolución de cartas desde el estado canónico del servidor.
+- Generación del dado en el servidor.
+- Persistencia con control optimista de versión.
+- Filtrado separado de estado por jugador y topics privados.
+- Migraciones aditivas para estado privado, conservando las filas existentes.
 
-## Archivos revisados
+## Estado actual del código — no equivale a validación de producción
 
-- `src/hooks/useOnlineGame.ts` — hook online (single channel `game-room:<id>`, broadcast `game-sync` con ambas vistas filtradas, `realGameStateRef` como fuente de verdad, host procesa acciones).
-- `src/game/onlineState.ts` — filtrado client-side de mano/mazo/campo/trampas/mágicas/selecciones pendientes del rival.
-- `supabase/schema.sql` — RLS permisivo ("Anyone can ...").
-- `supabase/migrations/DRAFT_20260119_private_online_state.sql` — borrador con mejoras de RLS pero con defectos.
-- `src/game/__tests__/onlineState.test.ts` — 10 tests de filtrado.
+El código actual contiene las funciones:
+- `supabase/functions/room-lifecycle/index.ts`
+- `supabase/functions/validate-action/index.ts`
+- `src/game/onlineState.ts`
+- `src/hooks/useOnlineGame.ts`
 
-## Problemas encontrados
+La presencia de estas implementaciones y el éxito de `deno check` no demuestran que el backend esté configurado o desplegado, que las migraciones estén aplicadas, ni que RLS/Realtime funcionen con identidades reales.
 
-1. **Filtrado solo client-side.** `filterOnlineState` oculta cartas del rival en la vista, pero el host envía `gameStateP1` y `gameStateP2` por el mismo canal `game-sync`. Un cliente malicioso puede leer la vista del rival del payload. **Severidad: Alta.**
-2. **Sin autenticación real.** Se usa `crypto.randomUUID()` como `playerId` sin Supabase Auth. Cualquiera puede suplantar. **Severidad: Crítica.**
-3. **Sin validación autoritativa.** El host aplica el reducer localmente y difunde el resultado; el servidor no valida acciones, turno ni legalidad. **Severidad: Crítica.**
-4. **RLS permisivo en `schema.sql`.** "Anyone can view/create/update/delete" sin auth. **Severidad: Crítica.**
-5. **Borrador SQL: borrado indiscriminado.** `delete from game_rooms where player1_uid is null` elimina todas las salas antiguas. **Severidad: Alta.** (Corregido en el borrador: estrategia de cuarentena.)
-6. **Borrador SQL: `split_part(realtime.topic(), ':', 2)`** asume que el id de sala no contiene `:`. Los códigos son alfanuméricos de 6 caracteres, así que es seguro, pero frágil si cambia el formato.
-7. **`lastCombat`, `log`, `diceResult`** se transmiten sin filtrar; pueden filtrar nombres de cartas ocultas. **Severidad: Media.**
-8. **Sin Edge Function.** No existe validación en servidor. **Severidad: Crítica.**
-9. **Sin canales privados separados.** Un solo canal `game-room:<id>` para ambos jugadores. **Severidad: Alta.**
+La migración `20261119000000_online_private_state_stage1.sql` es aditiva y copia estados existentes sin sobrescribir filas privadas existentes. Las migraciones siguientes deben revisarse y validarse en el proyecto de pruebas antes de cualquier cutover. No ejecutar ninguna migración contra producción como parte de esta auditoría.
 
-## Correcciones realizadas
+## Funcionalidad pendiente identificada
 
-1. **SQL draft:** reemplazado el borrado indiscriminado por estrategia de conservación/cuarentena/migración/eliminación selectiva con copia de seguridad y reversión.
-2. **Edge Function skeleton:** creado `supabase/functions/validate-action/index.ts` (no desplegado). Incluye verificación de JWT, carga de estado privado, validación de pertenencia y turno, persistencia y placeholder de validación de acción.
-3. **Documentación:** este archivo.
+En `src/hooks/useOnlineGame.ts`, `sendRematch` actualmente devuelve un mensaje de que la revancha online está pendiente de implementar. No debe presentarse como funcional.
 
-## Lo que NO se ha implementado (requiere proyecto Supabase de desarrollo)
+La revancha segura requiere coordinación autoritativa entre ambos jugadores, control de concurrencia/versión, autorización de ambos participantes y creación de un estado nuevo. No sustituirlo por un reinicio local del cliente.
 
-- Activación de Supabase Auth anónimo (configuración del proyecto).
-- Aplicación de migraciones (RLS, `room_private_state`).
-- Implementación completa de la Edge Function (importar el motor de juego para validación autoritativa; Deno no puede importar directamente el reducer de TS sin empaquetado).
-- Canales privados separados por jugador (`room:<id>:p1`, `room:<id>:p2`) con RLS.
-- Pruebas de RLS y Realtime con dos identidades reales.
-- Pruebas de privacidad end-to-end (dos navegadores).
+## Restricciones operativas
 
-## Estado de seguridad online
+- Reutilizar el proyecto Supabase independiente de pruebas si ya existe y está correctamente configurado. No crear otro.
+- Si no hay un entorno de pruebas independiente disponible, detener cualquier prueba que escriba datos.
+- No tocar el proyecto Supabase principal ni sus 143 salas legacy.
+- No desplegar Edge Functions ni aplicar migraciones contra producción.
+- No exponer secretos ni credenciales.
 
-**NO LISTO para producción.** La privacidad sigue dependiendo del filtrado client-side. El borrador SQL y el skeleton de Edge Function están preparados pero no aplicados ni probados.
+## Dictamen
 
-## Pruebas que faltan
+**Motor de juego y CI:** la ejecución de GitHub Actions sobre el commit de consolidación completó TypeScript, ESLint, Deno check, 477 pruebas y build correctamente.
 
-- Proyecto Supabase de desarrollo con Auth anónimo activo.
-- Aplicar el borrador (revisado) y probar RLS con dos usuarios.
-- Probar Realtime privado con dos clientes.
-- Desplegar y probar la Edge Function.
-- Pruebas de suplantación (playerId falso, acción fuera de turno, manipulación de estado).
+**Online:** no declarar listo para producción hasta verificar con dos identidades reales y dos navegadores aislados: autenticación, RLS, Realtime privado, acciones concurrentes, filtrado de datos, reconexión, ciclo de vida y conservación de salas legacy.
 
-## Recomendación
-
-La rama `v0/card-lost-eslint-release` NO está lista para fusionarse en `fusion-de-ramas` hasta que:
-1. Se complete la implementación de autenticación anónima + RLS + Edge Function.
-2. Se pruebe con un proyecto Supabase de desarrollo.
-3. Se verifique la privacidad con dos navegadores reales.
-
-El código de juego (reglas, tests) está en buen estado (472 tests, typecheck, lint, build verdes). El trabajo de seguridad online está en fase de diseño/preparación.
+**Revancha:** pendiente de implementación y validación end-to-end.
