@@ -127,7 +127,6 @@ describe('getActingPlayer', () => {
         kind: 'choose-destroy-associated-card',
         trapUid: 'trap-5',
         player: 1,
-        trapPlayer: 1,
         returnPlayer: 0,
         targetUid: 'target',
       },
