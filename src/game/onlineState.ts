@@ -141,21 +141,19 @@ function hiddenCardNames(state: GameState, viewerIndex: 0 | 1): string[] {
   return [...names].sort((a, b) => b.length - a.length);
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\function redactHiddenNames(value: string, names: string[]): string {
-  return names.reduce((result, name) => result.split(name).join('Carta oculta'), value);
-}');
-}
-
 function redactHiddenNames(value: string, names: string[]): string {
   return names.reduce((result, name) => {
-    // El número identificador forma parte de la identidad visible de la carta:
-    // si el nombre está oculto, también debe ocultarse el sufijo "(número)".
-    const cardNamePattern = new RegExp(`${escapeRegExp(name)}(?:\\\\s*\\\\(\\\\d+\\\\))?`, 'g');
-    return result.replace(cardNamePattern, 'Carta oculta');
+    let index = result.indexOf(name);
+    while (index !== -1) {
+      const afterName = index + name.length;
+      const numberSuffix = result.slice(afterName).match(/^\\s*\\(\\d+\\)/);
+      const end = afterName + (numberSuffix?.[0].length ?? 0);
+      result = result.slice(0, index) + 'Carta oculta' + result.slice(end);
+      index = result.indexOf(name, index + 'Carta oculta'.length);
+    }
+    return result;
   }, value);
 }
-
 export function filterOnlineState(state: GameState, viewerIndex: 0 | 1): GameState {
   const privateNames = hiddenCardNames(state, viewerIndex);
   return {
