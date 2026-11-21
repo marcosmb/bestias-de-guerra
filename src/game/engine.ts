@@ -808,7 +808,12 @@ function startNextTurnStartSelection(
   while (queue.length > 0) {
     const nextSelection = queue.shift()!;
     if (!isValidTurnStartSelection(nextState, nextSelection)) {
-      const effectName = nextSelection.kind === 'choose-trap-2-own' ? 'Trampa 2' : 'Trampa 9';
+      const trapCarrier = nextSelection.kind === 'choose-trap-2-own' || nextSelection.kind === 'choose-destroy-target'
+        ? findFieldMonster(nextState.players[nextSelection.trapPlayer], nextSelection.trapUid)
+        : null;
+      const effectName = trapCarrier?.trap
+        ? `Trampa ${trapCarrier.trap.name} (${trapCarrier.trap.number})`
+        : nextSelection.kind === 'choose-trap-2-own' ? 'Trampa 2' : 'Trampa 9';
       nextState = {
         ...nextState,
         log: addLog(nextState, effectName + ': ya no quedan objetivos válidos; el efecto no se resuelve.', nextState.currentPlayer),
