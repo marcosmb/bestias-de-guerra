@@ -256,6 +256,7 @@ function FieldSlot({
   trapTargetSelected = false,
   trapCounting = false,
   attackerHighlight = false,
+  attackSelection = false,
   fieldPlayer,
   slotIndex,
 }: {
@@ -271,6 +272,7 @@ function FieldSlot({
   trapTargetSelected?: boolean;
   trapCounting?: boolean;
   attackerHighlight?: boolean;
+  attackSelection?: boolean;
   fieldPlayer: 0 | 1;
   slotIndex: number;
 }) {
@@ -303,7 +305,7 @@ function FieldSlot({
         isOpponent={isOpponent}
         showTrap={showTrap}
         showMagic={showMagic}
-        interactive={Boolean(selectable || attackerHighlight)}
+        interactive={!(isOpponent === false && attackSelection && !selectable && !attackerHighlight)}
         onClick={onClick}
         animateSummon={animateSummon}
         className={
@@ -1593,6 +1595,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                 }
               } : undefined}
               selectable={isMySlotSelectable(fm)}
+              attackSelection={
+                sel.kind === 'attack' || sel.kind === 'attack-or-direct' || sel.kind === 'direct-attack'
+              }
               attackerHighlight={
                 (sel.kind === 'attack' || sel.kind === 'attack-or-direct' || sel.kind === 'direct-attack') &&
                 fm?.uid === (sel as { attackerUid?: string }).attackerUid
