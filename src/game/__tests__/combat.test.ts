@@ -114,4 +114,18 @@ describe('Combate', () => {
       expect(getEffectiveDef(fm)).toBe(0);
     });
   });
+
+  it('el registro identifica las cartas por número y conserva los valores ATQ/DEF', () => {
+    const attacker = createFieldMonster({
+      card: { ...createFieldMonster().card, id: 'kraken', name: 'Kraken', number: 10, atk: 10, def: 10 },
+    });
+    const defender = createFieldMonster({
+      card: { ...createFieldMonster().card, id: 'sapo', name: 'Sapo', number: 1, atk: 1, def: 1 },
+    });
+    const result = resolveCombat(attacker, defender);
+    expect(result.log).toContain('Kraken (10) destruye a Sapo (1)');
+    expect(result.log).toContain('10 ATQ');
+    expect(result.log).not.toContain('Kraken (10) (10)');
+    expect(result.log).not.toContain('Sapo (1) (1)');
+  });
 });
