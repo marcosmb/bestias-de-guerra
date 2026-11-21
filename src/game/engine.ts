@@ -1482,8 +1482,8 @@ export function reducer(state: GameState, action: Action): GameState {
         const pt = state.pendingTrap;
         if (pt) {
           if (roll >= 4) {
-            removeFieldMonster(players, pt.attackerPlayer, pt.attackerUid);
             const destroyedAttacker = findFieldMonster(players[pt.attackerPlayer], pt.attackerUid);
+            removeFieldMonster(players, pt.attackerPlayer, pt.attackerUid);
             log.push(`¡${roll} ≥ 4! ${destroyedAttacker ? `${destroyedAttacker.card.name} (${destroyedAttacker.card.number})` : 'El Monstruo atacante'} es destruido por la Trampa ${pt.trap.name} (${pt.trap.number}).`);
           } else {
             const survivingAttacker = findFieldMonster(players[pt.attackerPlayer], pt.attackerUid);
