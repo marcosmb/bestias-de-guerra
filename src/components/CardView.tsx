@@ -76,6 +76,7 @@ interface CardViewProps {
   onClick?: () => void;
   selected?: boolean;
   disabled?: boolean;
+  interactive?: boolean;
   faceDown?: boolean;
   isField?: boolean;
   fieldMonster?: FieldMonster;
@@ -98,6 +99,7 @@ export function CardView({
   onClick,
   selected = false,
   disabled = false,
+  interactive = true,
   faceDown = false,
   isField = false,
   fieldMonster,
@@ -143,9 +145,9 @@ export function CardView({
 
     return (
       <div
-        className={`rounded-lg border-2 shadow-card relative overflow-hidden cursor-pointer transition-all duration-300 ${
+        className={`rounded-lg border-2 shadow-card relative overflow-hidden ${interactive ? 'cursor-pointer' : 'cursor-default'} transition-all duration-300 ${
           selected ? 'ring-2 ring-gold-300 scale-105 shadow-glow z-10' : ''
-        } ${disabled ? 'opacity-50' : 'hover:scale-105 hover:shadow-glow'} ${isDef ? 'rotate-0' : ''} ${animateSummon ? 'animate-card-summon' : ''} ${className}`}
+        } ${disabled ? 'opacity-50' : (interactive ? 'hover:scale-105 hover:shadow-glow' : '')} ${isDef ? 'rotate-0' : ''} ${animateSummon ? 'animate-card-summon' : ''} ${className}`}
         style={{
           width: s.w,
           height: s.h,
@@ -216,9 +218,9 @@ export function CardView({
     const colors = suitColors('copas');
     return (
       <div
-        className={`rounded-lg border-2 shadow-card relative overflow-hidden cursor-pointer transition-all duration-300 ${
+        className={`rounded-lg border-2 shadow-card relative overflow-hidden ${interactive ? 'cursor-pointer' : 'cursor-default'} transition-all duration-300 ${
           selected ? 'ring-2 ring-crimson-400 scale-105 shadow-glow-crimson' : ''
-        } ${disabled ? 'opacity-50' : 'hover:scale-105 hover:shadow-glow-crimson'} ${className}`}
+        } ${disabled ? 'opacity-50' : (interactive ? 'hover:scale-105 hover:shadow-glow-crimson' : '')} ${className}`}
         style={{
           width: s.w,
           height: s.h,
@@ -247,9 +249,9 @@ export function CardView({
   const colors = suitColors('oros');
   return (
     <div
-      className={`rounded-lg border-2 shadow-card relative overflow-hidden cursor-pointer transition-all duration-300 ${
+      className={`rounded-lg border-2 shadow-card relative overflow-hidden ${interactive ? 'cursor-pointer' : 'cursor-default'} transition-all duration-300 ${
         selected ? 'ring-2 ring-gold-400 scale-105 shadow-glow' : ''
-      } ${disabled ? 'opacity-50' : 'hover:scale-105 hover:shadow-glow'} ${className}`}
+      } ${disabled ? 'opacity-50' : (interactive ? 'hover:scale-105 hover:shadow-glow' : '')} ${className}`}
       style={{
         width: s.w,
         height: s.h,

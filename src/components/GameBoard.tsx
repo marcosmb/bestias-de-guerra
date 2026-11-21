@@ -303,6 +303,7 @@ function FieldSlot({
         isOpponent={isOpponent}
         showTrap={showTrap}
         showMagic={showMagic}
+        interactive={Boolean(selectable || attackerHighlight)}
         onClick={onClick}
         animateSummon={animateSummon}
         className={
