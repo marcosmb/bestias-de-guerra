@@ -305,7 +305,7 @@ function FieldSlot({
         isOpponent={isOpponent}
         showTrap={showTrap}
         showMagic={showMagic}
-        interactive={!(isOpponent === false && attackSelection && !selectable && !attackerHighlight)}
+        interactive={selectable || attackerHighlight || !attackSelection}
         onClick={onClick}
         animateSummon={animateSummon}
         className={
