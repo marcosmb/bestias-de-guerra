@@ -1223,4 +1223,67 @@ describe('HISTORIAL DE LA ÚLTIMA PARTIDA', () => {
       expect(serializeHistory(hist(b))).toBe(antes);
     });
   });
+
+  describe('Identificación de cartas en el registro', () => {
+    it('identifica el Monstruo invocado con nombre y número una sola vez', () => {
+      const kraken = mon('Kraken', 10);
+      const b = run(sobre(estado({ p0: { hand: [kraken] } })), {
+        type: 'SUMMON_MONSTER', card: kraken, position: 'attack',
+      });
+      const entry = last(st(b).log);
+      expect(entry).toContain('Kraken (10)');
+      expect(entry).not.toContain('Kraken (10) (10)');
+    });
+
+    it('identifica atacante y defensor en el registro de combate', () => {
+      const attacker = fm('attacker', mon('Kraken', 10));
+      const defender = fm('defender', mon('Sapo', 1));
+      const game = estado({
+        p0: { field: [attacker, ...CAMPO.slice(1)] },
+        p1: { field: [defender, ...CAMPO.slice(1)] },
+      });
+      const b = run(sobre(game), {
+        type: 'DECLARE_ATTACK', attackerUid: 'attacker', defenderUid: 'defender',
+      });
+      const entry = last(st(b).log);
+      expect(entry).toContain('Kraken (10)');
+      expect(entry).toContain('Sapo (1)');
+      expect(entry).not.toContain('(10) (10)');
+      expect(entry).not.toContain('(1) (1)');
+    });
+
+    it('identifica la Trampa y el Monstruo al colocarla', () => {
+      const trap = trp({ kind: 'damage_per_turn', amount: 5 }, 't12', 'Menos 5 PV');
+      const game = estado({
+        p0: {
+          field: [fm('carrier', mon('Orco', 5)), ...CAMPO.slice(1)],
+          hand: [trap],
+        },
+      });
+      const b = run(sobre(game),
+        { type: 'SELECT_TRAP_PLACE', card: trap },
+        { type: 'PLACE_TRAP_ON_MONSTER', card: trap, fieldUid: 'carrier' },
+      );
+      const entry = last(st(b).log);
+      expect(entry).toContain('Menos 5 PV (1)');
+      expect(entry).toContain('Orco (5)');
+    });
+
+    it('identifica la Mágica y el Monstruo al colocarla', () => {
+      const magic = mag({ kind: 'atk_boost', amount: 2 }, 'm4', 'field', '+2 de ataque');
+      const game = estado({
+        p0: {
+          field: [fm('target', mon('Orco', 5)), ...CAMPO.slice(1)],
+          hand: [magic],
+        },
+      });
+      const b = run(sobre(game),
+        { type: 'SELECT_MAGIC', card: magic },
+        { type: 'PLACE_MAGIC_ON_MONSTER', card: magic, fieldUid: 'target' },
+      );
+      const entry = last(st(b).log);
+      expect(entry).toContain('+2 de ataque (1)');
+      expect(entry).toContain('Orco (5)');
+    });
+  });
 });
