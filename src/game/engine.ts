@@ -314,12 +314,12 @@ function applyTrapEffect(
   switch (effect.kind) {
     case 'heal_per_turn':
       // passive — handled at turn start, not on attack
-      log.push(`¡${trap.name}! (Efecto pasivo, no se activa en combate.)`);
+      log.push(`¡${trap.name} (${trap.number})! (Efecto pasivo, no se activa en combate.)`);
       break;
     case 'destroy_2_self_1_opp': {
       // Trampa 2 no se activa al recibir un ataque — se activa al comienzo del turno
       // Este caso no debería ejecutarse aquí, pero se mantiene por seguridad
-      log.push(`¡${trap.name}! (Esta Trampa se activa al comienzo del turno, no al recibir un ataque.)`);
+      log.push(`¡${trap.name} (${trap.number})! (Esta Trampa se activa al comienzo del turno, no al recibir un ataque.)`);
       break;
     }
     case 'dice_count_field':
@@ -329,7 +329,7 @@ function applyTrapEffect(
       // handled in combat resolution — mark defender
       if (defender) {
         players[defenderPlayer] = updateFieldMonster(players[defenderPlayer], defenderUid, (fm) => ({ ...fm, pendingEffect: 'death', pendingTurns: -1 }));
-        log.push(`¡${trap.name}! El daño será devuelto al adversario.`);
+        log.push(`¡${trap.name} (${trap.number})! El daño será devuelto al adversario.`);
       }
       break;
     case 'negate_destroy_card': {
@@ -367,7 +367,7 @@ function applyTrapEffect(
           skipCombat,
         };
       }
-      log.push(`¡${trap.name}! Ataque negado.`);
+      log.push(`¡${trap.name} (${trap.number})! Ataque negado.`);
       break;
     }
     case 'dice_4plus_destroy':
@@ -398,7 +398,7 @@ function applyTrapEffect(
             ...players[defenderPlayer],
             field: players[defenderPlayer].field.map((f, i) => (i === defenderSlot ? attackerAfterSwap : f)),
           };
-          log.push(`¡${trap.name}! ${attacker.card.name} y ${defender.card.name} intercambian sus campos.`);
+          log.push(`¡${trap.name} (${trap.number})! ${attacker.card.name} (${attacker.card.number}) y ${defender.card.name} (${defender.card.number}) intercambian sus campos.`);
         }
       }
       negateAttack = true;
@@ -408,7 +408,7 @@ function applyTrapEffect(
     case 'destroy_attacker':
       if (attacker) {
         removeFieldMonster(players, attackerPlayer, attackerUid);
-        log.push(`¡${trap.name}! ${attacker.card.name} es destruido.`);
+        log.push(`¡${trap.name} (${trap.number})! ${attacker.card.name} (${attacker.card.number}) es destruido.`);
         destroyAttacker = true;
         negateAttack = true;
         skipCombat = true;
@@ -417,14 +417,14 @@ function applyTrapEffect(
     case 'three_turns_kill': {
       // Trampa 9 no se activa al recibir un ataque — se activa al comienzo del turno
       // Este caso no debería ejecutarse aquí, pero se mantiene por seguridad
-      log.push(`¡${trap.name}! (Esta Trampa se activa al comienzo del turno, no al recibir un ataque.)`);
+      log.push(`¡${trap.name} (${trap.number})! (Esta Trampa se activa al comienzo del turno, no al recibir un ataque.)`);
       break;
     }
     case 'control_two_turns': {
       // Trampa 10: El atacante pasa al campo del defensor bajo su control durante 2 turnos
       if (attacker) {
         if (!hasEmptySlot(players[defenderPlayer])) {
-          log.push(`¡${trap.name}! No hay espacio libre en tu campo. La Trampa no puede activarse.`);
+          log.push(`¡${trap.name} (${trap.number})! No hay espacio libre en tu campo. La Trampa no puede activarse.`);
           break;
         }
         const movedAttacker: FieldMonster = {
@@ -438,7 +438,7 @@ function applyTrapEffect(
         };
         players[defenderPlayer] = placeFieldMonster(players[defenderPlayer], movedAttacker);
         players[attackerPlayer] = detachFieldMonster(players[attackerPlayer], attackerUid);
-        log.push(`¡${trap.name}! ${attacker.card.name} pasa a tu campo bajo tu control por 2 turnos.`);
+        log.push(`¡${trap.name} (${trap.number})! ${attacker.card.name} (${attacker.card.number}) pasa a tu campo bajo tu control por 2 turnos.`);
       }
       negateAttack = true;
       skipCombat = true;
@@ -450,11 +450,11 @@ function applyTrapEffect(
         // El ataque continúa resolviéndose: si el defensor es más débil, debe morir
         // en el combate normal mientras el atacante queda marcado para morir en 2 turnos.
         players[attackerPlayer] = updateFieldMonster(players[attackerPlayer], attackerUid, (fm) => ({ ...fm, pendingEffect: 'death', pendingTurns: 2 }));
-        log.push(`¡${trap.name}! ${attacker.card.name} morirá en 2 turnos.`);
+        log.push(`¡${trap.name} (${trap.number})! ${attacker.card.name} (${attacker.card.number}) morirá en 2 turnos.`);
       }
       break;
     case 'damage_per_turn':
-      log.push(`¡${trap.name}! (Efecto pasivo, no se activa en combate.)`);
+      log.push(`¡${trap.name} (${trap.number})! (Efecto pasivo, no se activa en combate.)`);
       break;
   }
 
@@ -500,7 +500,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
           targetUid,
           (fm) => ({ ...fm, magic: card }),
         );
-        log.push(`${card.name}: queda asociada a ${target.card.name}. Ese Monstruo puede elegir atacar a cualquier Monstruo rival o directamente a los LP, incluso si hay Defensas.`);
+        log.push(`${card.name} (${card.number}): queda asociada a ${target.card.name} (${target.card.number}). Ese Monstruo puede elegir atacar a cualquier Monstruo rival o directamente a los LP, incluso si hay Defensas.`);
       }
       break;
     }
@@ -513,7 +513,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
       const oppHand = players[opp].hand;
       if (oppHand.length === 0) {
         resolves = false;
-        log.push(`${card.name}: El rival no tiene cartas en su mano.`);
+        log.push(`${card.name} (${card.number}): El rival no tiene cartas en su mano.`);
       } else {
         const idx = Math.floor(Math.random() * oppHand.length);
         const stolen = oppHand[idx];
@@ -522,7 +522,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
         players[me] = { ...players[me], hand: [...players[me].hand, stolen] };
         const dueno = ownerOf(stolen) ?? opp;
         log.push(
-          `${card.name}: Robas ${stolen.name} de la mano del rival. ` +
+          `${card.name} (${card.number}): Robas ${stolen.name} (${stolen.number}) de la mano del rival. ` +
           `Sigue siendo propiedad del Jugador ${dueno + 1}.`,
         );
       }
@@ -540,10 +540,10 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
           players[dueno] = { ...players[dueno], graveyard: [...players[dueno].graveyard, carta] };
         }
         if (!puedeRobar) {
-          log.push(`${card.name}: Jugador ${i + 1} no tiene 5 cartas en el mazo. No roba ninguna.`);
+          log.push(`${card.name} (${card.number}): Jugador ${i + 1} no tiene 5 cartas en el mazo. No roba ninguna.`);
         } else {
           players[i] = drawCards(players[i], 5);
-          log.push(`${card.name}: Jugador ${i + 1} descarta y roba 5 cartas.`);
+          log.push(`${card.name} (${card.number}): Jugador ${i + 1} descarta y roba 5 cartas.`);
         }
       }
       break;
@@ -569,21 +569,21 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
 
       if (!targetUid) {
         resolves = false;
-        log.push(`${card.name}: No se ha indicado un Monstruo sobre el que colocarla.`);
+        log.push(`${card.name} (${card.number}): No se ha indicado un Monstruo sobre el que colocarla.`);
       } else if (ladoReal === null) {
         resolves = false;
-        log.push(`${card.name}: El Monstruo indicado ya no está en el campo.`);
+        log.push(`${card.name} (${card.number}): El Monstruo indicado ya no está en el campo.`);
       } else if (exigidoLado !== null && ladoReal !== exigidoLado) {
         resolves = false;
         log.push(
           exigido === 'self'
-            ? `${card.name}: solo puede colocarse sobre un Monstruo PROPIO.`
-            : `${card.name}: solo puede colocarse sobre un Monstruo RIVAL.`,
+            ? `${card.name} (${card.number}): solo puede colocarse sobre un Monstruo PROPIO.`
+            : `${card.name} (${card.number}): solo puede colocarse sobre un Monstruo RIVAL.`,
         );
       } else if (findFieldMonster(players[ladoReal], targetUid)!.magic !== null) {
         // Regla 4 y Regla 5: máximo 1 Mágica por Monstruo.
         resolves = false;
-        log.push(`${card.name}: ese Monstruo ya tiene una Mágica asociada.`);
+        log.push(`${card.name} (${card.number}): ese Monstruo ya tiene una Mágica asociada.`);
       } else {
         players[ladoReal] = updateFieldMonster(players[ladoReal], targetUid, (fm) => {
           if (eff.kind === 'atk_boost') return { ...fm, magic: card, tempAtkModifier: fm.tempAtkModifier + eff.amount };
@@ -594,7 +594,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
           eff.kind === 'atk_boost' ? `+${eff.amount} ATQ colocada.`
           : eff.kind === 'def_reduce' ? `-${eff.amount} DEF colocada.`
           : 'Protección por dado colocada.';
-        log.push(`${card.name}: ${detalle}`);
+        log.push(`${card.name} (${card.number}): ${detalle}`);
       }
       break;
     }
@@ -602,7 +602,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
       const monsters = players[me].graveyard.filter((c) => c.type === 'monster') as MonsterCard[];
       if (monsters.length === 0) {
         resolves = false;
-        log.push(`${card.name}: No hay Monstruos en el cementerio.`);
+        log.push(`${card.name} (${card.number}): No hay Monstruos en el cementerio.`);
         break;
       }
       // Decisión del creador: NO recuperar una carta que ya esté representada en
@@ -617,7 +617,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
       const canReviveToField = hasEmptySlot(players[me]);
       if (!canReviveToHand && !canReviveToField) {
         resolves = false;
-        log.push(`${card.name}: No hay espacio en la mano ni en el campo, o la carta ya está en tu mano. La Mágica no puede utilizarse.`);
+        log.push(`${card.name} (${card.number}): No hay espacio en la mano ni en el campo, o la carta ya está en tu mano. La Mágica no puede utilizarse.`);
         break;
       }
       // Si solo hay una opción posible, ejecutarla directamente
@@ -629,7 +629,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
           hand: [...players[me].hand, revived],
           graveyard: removeCardFromGraveyard(players[me].graveyard, revived),
         };
-        log.push(`${card.name}: ${revived.name} recuperado del cementerio a la mano.`);
+        log.push(`${card.name} (${card.number}): ${revived.name} (${revived.number}) recuperado del cementerio a la mano.`);
       } else if (!canReviveToHand && canReviveToField) {
         // Solo se puede revivir al campo
         const revived = highestAtkMonster(monsters);
@@ -658,7 +658,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
           graveyard: removeCardFromGraveyard(players[me].graveyard, revived),
           field: players[me].field.map((f, i) => (i === slot ? fm : f)) as (FieldMonster | null)[],
         };
-        log.push(`${card.name}: ${revived.name} revivido del cementerio al campo.`);
+        log.push(`${card.name} (${card.number}): ${revived.name} (${revived.number}) revivido del cementerio al campo.`);
       } else {
         // Ambas opciones son posibles — pedir al jugador que elija
         return { ...state, selection: { kind: 'revive-choice', card } };
@@ -670,7 +670,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
         const count = players[i].field.filter(Boolean).length;
         const allFms = players[i].field.filter(Boolean) as FieldMonster[];
         allFms.forEach((f) => { removeFieldMonster(players, i, f.uid); });
-        log.push(`${card.name}: ${count} cartas destruidas del Jugador ${i + 1}.`);
+        log.push(`${card.name} (${card.number}): ${count} cartas destruidas del Jugador ${i + 1}.`);
       }
       break;
     }
@@ -688,7 +688,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
           } : f,
         ),
       };
-      log.push(`${card.name}: Todos los Monstruos del rival cambian de posición.`);
+      log.push(`${card.name} (${card.number}): Todos los Monstruos del rival cambian de posición.`);
       break;
     }
     // NOTA: `def_reduce` y `dice_protection` se resuelven junto a `atk_boost`
@@ -705,7 +705,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
         hand: [...players[me].hand, ...drawnCards],
         deck: players[me].deck.slice(drawCount),
       };
-      log.push(`${card.name}: Robas ${drawCount} cartas.`);
+      log.push(`${card.name} (${card.number}): Robas ${drawCount} cartas.`);
       break;
     }
     case 'dice_damage': {
@@ -724,7 +724,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
     case 'clean_opp_field': {
       const allFms = players[opp].field.filter(Boolean) as FieldMonster[];
       allFms.forEach((f) => { removeFieldMonster(players, opp, f.uid); });
-      log.push(`${card.name}: Campo del rival limpiado.`);
+      log.push(`${card.name} (${card.number}): Campo del rival limpiado.`);
       break;
     }
   }
@@ -1073,7 +1073,7 @@ export function reducer(state: GameState, action: Action): GameState {
         cardsPlayedThisTurn: players[cp].cardsPlayedThisTurn + 1,
       };
       const posText = action.position === 'attack' ? 'Ataque' : 'Defensa (boca abajo)';
-      const newState: GameState = { ...state, players, selection: { kind: 'none' }, log: addLog(state, `${players[cp].name} invoca ${action.card.name} en ${posText}.`) };
+      const newState: GameState = { ...state, players, selection: { kind: 'none' }, log: addLog(state, `${players[cp].name} invoca ${action.card.name} (${action.card.number}) en ${posText}.`) };
       return checkStalemateEnd(newState);
     }
     case 'SELECT_TRAP_PLACE': {
@@ -1096,7 +1096,7 @@ export function reducer(state: GameState, action: Action): GameState {
       players[cp] = updateFieldMonster(players[cp], action.fieldUid, (f) => ({ ...f, trap: action.card, trapRevealed: false }));
       players[cp] = playCardFromHand(players[cp], action.card);
 
-      const logMessage = `${players[cp].name} coloca una Trampa bajo ${fm.card.name}.`;
+      const logMessage = `${players[cp].name} coloca una Trampa bajo ${fm.card.name} (${fm.card.number}).`;
 
       const winResult = checkWinner(players);
       const newState: GameState = {
@@ -1149,7 +1149,7 @@ export function reducer(state: GameState, action: Action): GameState {
                 : 'no hay Monstruos sin Mágica donde colocarla';
           return {
             ...state,
-            log: addLog(state, `${action.card.name}: ${mensaje}. La Mágica no se utiliza.`),
+            log: addLog(state, `${action.card.name} (${action.card.number}): ${mensaje}. La Mágica no se utiliza.`),
           };
         }
         return { ...state, selection: { kind: 'place-magic', card: action.card } };
@@ -1314,7 +1314,7 @@ export function reducer(state: GameState, action: Action): GameState {
         faceDown: false,
         hasChangedPosition: true,
       }));
-      const newState: GameState = { ...state, players, log: addLog(state, `${fm.card.name} cambia a ${fm.position === 'attack' ? 'Defensa' : 'Ataque'}.`) };
+      const newState: GameState = { ...state, players, log: addLog(state, `${fm.card.name} (${fm.card.number}) cambia a ${fm.position === 'attack' ? 'Defensa' : 'Ataque'}.`) };
       return checkStalemateEnd(newState);
     }
     case 'END_TURN': {
@@ -1464,7 +1464,7 @@ export function reducer(state: GameState, action: Action): GameState {
           if (allMonsters.length > 0) {
             const target = allMonsters[(roll - 1) % allMonsters.length];
             removeFieldMonster(players, target.player, target.fm.uid);
-            log.push(`${target.fm.card.name} destruido por conteo.`);
+            log.push(`${target.fm.card.name} (${target.fm.card.number}) destruido por conteo.`);
           }
           // La Trampa 3 ya fue consumida al activarse (RESOLVE_TRAP).
           // Aquí solo se resuelve el resultado del dado.
@@ -1535,7 +1535,7 @@ export function reducer(state: GameState, action: Action): GameState {
         return {
           ...state,
           selection: { ...sel, selectedUids },
-          log: addLog(state, `${selected.card.name} seleccionado para la Trampa. Elige 1 Monstruo propio más.`),
+          log: addLog(state, `${selected.card.name} (${selected.card.number}) seleccionado para la Trampa. Elige 1 Monstruo propio más.`),
         };
       }
 
@@ -1570,7 +1570,7 @@ export function reducer(state: GameState, action: Action): GameState {
         players,
         phase: winResult.winner !== null || winResult.isDraw ? 'game-over' : 'playing',
         selection: { kind: 'none' },
-        log: addLog(state, `Trampa 2: destruyes ${first?.card.name ?? 'un Monstruo'}, ${second?.card.name ?? 'un Monstruo'} y ${opponentTarget.card.name} del rival.`, owner),
+        log: addLog(state, `Trampa 2: destruyes ${first?.card.name ?? 'un Monstruo'}${first?.card.number ? ` (${first.card.number})` : ''}, ${second?.card.name ?? 'un Monstruo'}${second?.card.number ? ` (${second.card.number})` : ''} y ${opponentTarget.card.name} (${opponentTarget.card.number}) del rival.`, owner),
         winner: winResult.winner,
         isDraw: winResult.isDraw,
       };
@@ -1607,7 +1607,7 @@ export function reducer(state: GameState, action: Action): GameState {
         players,
         phase: winResult.winner !== null || winResult.isDraw ? ('game-over' as const) : ('playing' as const),
         selection: { kind: 'none' },
-        log: addLog(state, `${target.card.name} destruido por Trampa 9.`),
+        log: addLog(state, `${target.card.name} (${target.card.number}) destruido por Trampa 9.`),
         winner: winResult.winner,
         isDraw: winResult.isDraw,
       };
@@ -1646,7 +1646,7 @@ export function reducer(state: GameState, action: Action): GameState {
         selection: { kind: 'none' },
         log: addLog(
           state,
-          `Trampa 5: ${card.name} destruida y enviada al Cementerio.`,
+          `Trampa 5: ${card.name} (${card.number}) destruida y enviada al Cementerio.`,
           state.currentPlayer,
         ),
       };
@@ -1677,7 +1677,7 @@ export function reducer(state: GameState, action: Action): GameState {
           hand: [...players[me].hand, revived],
           graveyard: removeCardFromGraveyard(players[me].graveyard, revived),
         };
-        log.push(`${action.card.name}: ${revived.name} recuperado del cementerio a la mano.`);
+        log.push(`${action.card.name} (${action.card.number}): ${revived.name} (${revived.number}) recuperado del cementerio a la mano.`);
       } else {
         const slot = getFirstEmptySlot(players[me]);
         // Si no hay hueco, la carta NO se retira del cementerio (no se pierde).
@@ -1708,7 +1708,7 @@ export function reducer(state: GameState, action: Action): GameState {
           graveyard: removeCardFromGraveyard(players[me].graveyard, revived),
           field: players[me].field.map((f, i) => (i === slot ? fm : f)) as (FieldMonster | null)[],
         };
-        log.push(`${action.card.name}: ${revived.name} revivido del cementerio al campo en posición ${position === 'attack' ? 'Ataque' : 'Defensa'}.`);
+        log.push(`${action.card.name} (${action.card.number}): ${revived.name} (${revived.number}) revivido del cementerio al campo en posición ${position === 'attack' ? 'Ataque' : 'Defensa'}.`);
       }
       // La Mágica se consume solo después de recuperar correctamente el Monstruo.
       consumeInstantMagic(players, me, action.card);
@@ -1753,7 +1753,7 @@ function executeDirectAttack(state: GameState, attackerUid: string): GameState {
     defenderDestroyed: false,
     attackerDamage: 0,
     defenderDamage: dmg,
-    log: `${attacker.card.name} ataca directamente. ${dmg} PV al rival.`,
+    log: `${attacker.card.name} (${attacker.card.number}) ataca directamente. ${dmg} PV al rival.`,
     attackerUid,
     defenderUid: 'lp-' + opp,
     attackerPlayer: cp,
@@ -1764,7 +1764,7 @@ function executeDirectAttack(state: GameState, attackerUid: string): GameState {
     players,
     phase: winResult.winner !== null || winResult.isDraw ? 'game-over' : 'playing',
     selection: { kind: 'none' },
-    log: addLog(state, `${attacker.card.name} ataca directamente. ${dmg} PV al rival.`),
+    log: addLog(state, `${attacker.card.name} (${attacker.card.number}) ataca directamente. ${dmg} PV al rival.`),
     lastCombat: combat,
     winner: winResult.winner,
     isDraw: winResult.isDraw,
@@ -1815,7 +1815,7 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
   };
   const hasReflect = defender.trap?.effect.kind === 'reflect_damage';
   const attackerHasReflect = attacker.trap?.effect.kind === 'reflect_damage';
-  const trapDiscoveryLog = defender.trap ? ` ¡Trampa descubierta: ${defender.trap.name}. ${defender.trap.description}` : '';
+  const trapDiscoveryLog = defender.trap ? ` ¡Trampa descubierta: ${defender.trap.name} (${defender.trap.number}). ${defender.trap.description}` : '';
 
   // Regla 24.3 — en un empate ATQ vs ATQ ambos Monstruos se destruyen.
   // Se resuelve de forma atómica antes de cualquier tratamiento de daño o de
@@ -1925,7 +1925,7 @@ function executeCombat(state: GameState, attackerUid: string, defenderUid: strin
     log: addLog(
       state,
       result.log + trapDiscoveryLog + (result.defenderDestroyed && defender.trap
-        ? ` La Trampa ${defender.trap.name} se elimina porque su Monstruo ha sido destruido.`
+        ? ` La Trampa ${defender.trap.name} (${defender.trap.number}) se elimina porque su Monstruo ha sido destruido.`
         : ''),
     ),
     winner: winResult.winner,
