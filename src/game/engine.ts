@@ -371,7 +371,7 @@ function applyTrapEffect(
       break;
     }
     case 'dice_4plus_destroy':
-      return { state: { ...state, phase: 'dice-roll', pendingDice: { reason: trap.name } }, negateAttack: true, destroyAttacker: false, skipCombat: true };
+      return { state: { ...state, phase: 'dice-roll', pendingDice: { reason: `${trap.name} (${trap.number})` } }, negateAttack: true, destroyAttacker: false, skipCombat: true };
     case 'swap_attacker': {
       // Trampa 7: intercambia el Monstruo atacante por el Monstruo que recibió
       // el ataque. Cada uno ocupa la casilla del otro; ambos conservan sus
@@ -713,7 +713,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
         ...state,
         phase: 'dice-roll',
         pendingDice: {
-          reason: card.name,
+          reason: `${card.name} (${card.number})`,
           magicCardInstanceId: card.instanceId,
           magicPlayer: me,
         },
@@ -1481,7 +1481,8 @@ export function reducer(state: GameState, action: Action): GameState {
             const destroyedAttacker = findFieldMonster(players[pt.attackerPlayer], pt.attackerUid);
             log.push(`¡${roll} ≥ 4! ${destroyedAttacker ? `${destroyedAttacker.card.name} (${destroyedAttacker.card.number})` : 'El Monstruo atacante'} es destruido por la Trampa ${pt.trap.name} (${pt.trap.number}).`);
           } else {
-            log.push(`${roll} < 4. Sin efecto de la Trampa ${pt.trap.name} (${pt.trap.number}); ${findFieldMonster(players[pt.attackerPlayer], pt.attackerUid)?.card.name ?? 'el Monstruo atacante'} no es destruido.`);
+            const survivingAttacker = findFieldMonster(players[pt.attackerPlayer], pt.attackerUid);
+            log.push(`${roll} < 4. Sin efecto de la Trampa ${pt.trap.name} (${pt.trap.number}); ${survivingAttacker ? `${survivingAttacker.card.name} (${survivingAttacker.card.number})` : 'el Monstruo atacante'} no es destruido.`);
             if (findFieldMonster(players[pt.attackerPlayer], pt.attackerUid)) {
               players[pt.attackerPlayer] = updateFieldMonster(players[pt.attackerPlayer], pt.attackerUid, (fm) => ({ ...fm, hasAttacked: true }));
             }
@@ -1586,6 +1587,7 @@ export function reducer(state: GameState, action: Action): GameState {
       if (targetOwner < 0) return state;
       const target = findFieldMonster(players[targetOwner], action.fieldUid);
       if (!target) return state;
+      const sourceTrap = findFieldMonster(state.players[state.selection.trapPlayer], state.selection.trapUid)?.trap;
       removeFieldMonster(players, targetOwner as 0 | 1, action.fieldUid);
       // Si se destruye el propio Monstruo portador, removeFieldMonster ya habrá
       // enviado la Trampa 9 a su propietario original.
@@ -1608,7 +1610,7 @@ export function reducer(state: GameState, action: Action): GameState {
         players,
         phase: winResult.winner !== null || winResult.isDraw ? ('game-over' as const) : ('playing' as const),
         selection: { kind: 'none' },
-        log: addLog(state, `${target.card.name} (${target.card.number}) destruido por ${findFieldMonster(state.players[state.selection.trapPlayer], state.selection.trapUid)?.trap ? `la Trampa ${findFieldMonster(state.players[state.selection.trapPlayer], state.selection.trapUid)!.trap!.name} (${findFieldMonster(state.players[state.selection.trapPlayer], state.selection.trapUid)!.trap!.number})` : 'la Trampa 9'}.`),
+        log: addLog(state, `${target.card.name} (${target.card.number}) destruido por ${sourceTrap ? `la Trampa ${sourceTrap.name} (${sourceTrap.number})` : 'la Trampa 9'}.`),
         winner: winResult.winner,
         isDraw: winResult.isDraw,
       };
