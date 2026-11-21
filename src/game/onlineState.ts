@@ -146,7 +146,7 @@ function redactHiddenNames(value: string, names: string[]): string {
     let index = result.indexOf(name);
     while (index !== -1) {
       const afterName = index + name.length;
-      const numberSuffix = result.slice(afterName).match(/^\\s*\\(\\d+\\)/);
+      const numberSuffix = result.slice(afterName).match(/^\s*\(\d+\)/);
       const end = afterName + (numberSuffix?.[0].length ?? 0);
       result = result.slice(0, index) + 'Carta oculta' + result.slice(end);
       index = result.indexOf(name, index + 'Carta oculta'.length);
