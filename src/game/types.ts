@@ -240,19 +240,19 @@ export function resolveCombat(attacker: FieldMonster, defender: FieldMonster): C
 
   if (defender.position === 'attack') {
     if (atk > defVal) {
-      return { attackerDestroyed: false, defenderDestroyed: true, attackerDamage: 0, defenderDamage: atk - defVal, log: `${attacker.card.name} (${atk}) destruye a ${defender.card.name} (${defVal}). Rival pierde ${atk - defVal} PV.` };
+      return { attackerDestroyed: false, defenderDestroyed: true, attackerDamage: 0, defenderDamage: atk - defVal, log: `${attacker.card.name} (${attacker.card.number}) destruye a ${defender.card.name} (${defender.card.number}). Rival pierde ${atk - defVal} PV.` };
     } else if (atk < defVal) {
-      return { attackerDestroyed: true, defenderDestroyed: false, attackerDamage: defVal - atk, defenderDamage: 0, log: `${attacker.card.name} (${atk}) es destruido por ${defender.card.name} (${defVal}). Pierdes ${defVal - atk} PV.` };
+      return { attackerDestroyed: true, defenderDestroyed: false, attackerDamage: defVal - atk, defenderDamage: 0, log: `${attacker.card.name} (${attacker.card.number}) es destruido por ${defender.card.name} (${defender.card.number}). Pierdes ${defVal - atk} PV.` };
     } else {
-      return { attackerDestroyed: true, defenderDestroyed: true, attackerDamage: 0, defenderDamage: 0, log: `Ambos monstruos (${atk}) se destruyen mutuamente.` };
+      return { attackerDestroyed: true, defenderDestroyed: true, attackerDamage: 0, defenderDamage: 0, log: `Ambos monstruos, ${attacker.card.name} (${attacker.card.number}) y ${defender.card.name} (${defender.card.number}), se destruyen mutuamente.` };
     }
   } else {
     if (atk > defVal) {
-      return { attackerDestroyed: false, defenderDestroyed: true, attackerDamage: 0, defenderDamage: 0, log: `${attacker.card.name} (${atk} ATQ) destruye a ${defender.card.name} (${defVal} DEF).` };
+      return { attackerDestroyed: false, defenderDestroyed: true, attackerDamage: 0, defenderDamage: 0, log: `${attacker.card.name} (${attacker.card.number}) destruye a ${defender.card.name} (${defender.card.number}). (${atk} ATQ vs ${defVal} DEF)` };
     } else if (atk < defVal) {
-      return { attackerDestroyed: false, defenderDestroyed: false, attackerDamage: defVal - atk, defenderDamage: 0, log: `${attacker.card.name} (${atk} ATQ) rebota contra ${defender.card.name} (${defVal} DEF). Pierdes ${defVal - atk} PV.` };
+      return { attackerDestroyed: false, defenderDestroyed: false, attackerDamage: defVal - atk, defenderDamage: 0, log: `${attacker.card.name} (${attacker.card.number}) rebota contra ${defender.card.name} (${defender.card.number}). Pierdes ${defVal - atk} PV. (${atk} ATQ vs ${defVal} DEF)` };
     } else {
-      return { attackerDestroyed: false, defenderDestroyed: false, attackerDamage: 0, defenderDamage: 0, log: `Empate: ${atk} ATQ vs ${defVal} DEF. Sin daño.` };
+      return { attackerDestroyed: false, defenderDestroyed: false, attackerDamage: 0, defenderDamage: 0, log: `Empate entre ${attacker.card.name} (${attacker.card.number}) y ${defender.card.name} (${defender.card.number}): ${atk} ATQ vs ${defVal} DEF. Sin daño.` };
     }
   }
 }
