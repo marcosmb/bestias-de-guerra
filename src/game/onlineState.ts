@@ -141,8 +141,19 @@ function hiddenCardNames(state: GameState, viewerIndex: 0 | 1): string[] {
   return [...names].sort((a, b) => b.length - a.length);
 }
 
-function redactHiddenNames(value: string, names: string[]): string {
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\function redactHiddenNames(value: string, names: string[]): string {
   return names.reduce((result, name) => result.split(name).join('Carta oculta'), value);
+}');
+}
+
+function redactHiddenNames(value: string, names: string[]): string {
+  return names.reduce((result, name) => {
+    // El número identificador forma parte de la identidad visible de la carta:
+    // si el nombre está oculto, también debe ocultarse el sufijo "(número)".
+    const cardNamePattern = new RegExp(`${escapeRegExp(name)}(?:\\\\s*\\\\(\\\\d+\\\\))?`, 'g');
+    return result.replace(cardNamePattern, 'Carta oculta');
+  }, value);
 }
 
 export function filterOnlineState(state: GameState, viewerIndex: 0 | 1): GameState {
