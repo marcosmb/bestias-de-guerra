@@ -217,13 +217,13 @@ describe('filterOnlineState', () => {
     const hidden = state.players[1].deck.find((card) => card.type === 'monster');
     if (!hidden || hidden.type !== 'monster') throw new Error('Expected a hidden opponent monster');
 
-    state.log = [`El rival prepara ${hidden.name}.`];
+    state.log = [`El rival prepara ${hidden.name} (${hidden.number}).`];
     state.lastCombat = {
       attackerDestroyed: false,
       defenderDestroyed: false,
       attackerDamage: 0,
       defenderDamage: 0,
-      log: `La carta ${hidden.name} permanece oculta.`,
+      log: `La carta ${hidden.name} (${hidden.number}) permanece oculta.`,
       attackerCard: hidden,
       defenderCard: undefined,
     };
@@ -232,8 +232,10 @@ describe('filterOnlineState', () => {
     const filtered = filterOnlineState(state, 0);
     expect(filtered.log.join(' ')).not.toContain(hidden.name);
     expect(filtered.log.join(' ')).toContain('Carta oculta');
+    expect(filtered.log.join(' ')).not.toContain(`(${hidden.number})`);
     expect(filtered.lastCombat?.log).not.toContain(hidden.name);
     expect(filtered.lastCombat?.log).toContain('Carta oculta');
+    expect(filtered.lastCombat?.log).not.toContain(`(${hidden.number})`);
     expect(filtered.lastCombat?.attackerCard?.name).not.toBe(hidden.name);
     expect(filtered.diceResult).toBe(4);
   });
