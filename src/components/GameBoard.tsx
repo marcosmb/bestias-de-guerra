@@ -1596,7 +1596,8 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               } : undefined}
               selectable={isMySlotSelectable(fm)}
               attackSelection={
-                sel.kind === 'attack' || sel.kind === 'attack-or-direct' || sel.kind === 'direct-attack'
+                sel.kind === 'attack' || sel.kind === 'attack-or-direct' || sel.kind === 'direct-attack' ||
+                sel.kind === 'place-magic'
               }
               attackerHighlight={
                 (sel.kind === 'attack' || sel.kind === 'attack-or-direct' || sel.kind === 'direct-attack') &&
