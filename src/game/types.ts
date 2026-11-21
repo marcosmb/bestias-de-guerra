@@ -240,7 +240,7 @@ export function resolveCombat(attacker: FieldMonster, defender: FieldMonster): C
 
   if (defender.position === 'attack') {
     if (atk > defVal) {
-      return { attackerDestroyed: false, defenderDestroyed: true, attackerDamage: 0, defenderDamage: atk - defVal, log: `${attacker.card.name} (${attacker.card.number}) destruye a ${defender.card.name} (${defender.card.number}). Rival pierde ${atk - defVal} PV.` };
+      return { attackerDestroyed: false, defenderDestroyed: true, attackerDamage: 0, defenderDamage: atk - defVal, log: `${attacker.card.name} (${attacker.card.number}) destruye a ${defender.card.name} (${defender.card.number}). Rival pierde ${atk - defVal} PV. (${atk} ATQ)` };
     } else if (atk < defVal) {
       return { attackerDestroyed: true, defenderDestroyed: false, attackerDamage: defVal - atk, defenderDamage: 0, log: `${attacker.card.name} (${attacker.card.number}) es destruido por ${defender.card.name} (${defender.card.number}). Pierdes ${defVal - atk} PV.` };
     } else {
