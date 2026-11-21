@@ -114,7 +114,7 @@ export function CardView({
   if (faceDown) {
     return (
       <div
-        className="rounded-lg card-back border border-gold-700/40 shadow-card relative flex items-center justify-center transition-all duration-300 hover:scale-105"
+        className={`rounded-lg card-back border border-gold-700/40 shadow-card relative flex items-center justify-center transition-all duration-300 ${interactive ? 'hover:scale-105' : ''} ${className}`}
         style={{
           width: s.w,
           height: s.h,
