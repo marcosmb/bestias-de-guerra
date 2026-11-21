@@ -1211,6 +1211,9 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
 
   const isOpponentSlotSelectable = (fm: FieldMonster | null): boolean => {
     if (!fm) return false;
+    // Las acciones legales de ataque existen incluso cuando no hay una selección
+    // pendiente. El resaltado solo debe mostrarse mientras se elige un objetivo.
+    if (sel.kind === 'none') return false;
     if (fm.uid !== opponentUidOf(fm)) return false;
     // Una Mágica solo puede resaltar el campo indicado por su regla:
     // M4/M9 -> campo propio; M8 -> campo rival.
@@ -1222,6 +1225,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       (a) =>
         (a.type === 'DECLARE_ATTACK' && a.defenderUid === fm.uid) ||
         ((a.type === 'PLACE_MAGIC_ON_MONSTER' || a.type === 'MAGIC_TARGET_MONSTER') && a.fieldUid === fm.uid) ||
+        (a.type === 'DESTROY_MONSTER' && a.fieldUid === fm.uid) ||
         (a.type === 'DESTROY_ASSOCIATED_CARD' && a.fieldUid === fm.uid),
     );
   };
