@@ -1236,8 +1236,10 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
     // No resaltar el campo propio si la Mágica seleccionada exige un objetivo rival.
     if (sel.kind === 'place-magic' && magicSide !== 'self') return false;
     if (sel.kind === 'direct-attack' || sel.kind === 'attack-or-direct') {
-      // Clic en un Monstruo propio para hacer el ataque directo.
-      return legal.some((a) => a.type === 'DIRECT_ATTACK');
+      // Los monstruos propios NO se resaltan durante la selección de ataque:
+      // el ataque directo se ejecuta mediante el botón "Ataque directo" o
+      // clicando un monstruo propio (manejador conservado), sin parpadeo.
+      return false;
     }
     if (sel.kind === 'choose-trap-2-own') {
       return legal.some((a) => a.type === 'TRAP_2_SELECT_OWN' && a.fieldUid === fm.uid);
