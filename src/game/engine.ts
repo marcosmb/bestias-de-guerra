@@ -324,7 +324,7 @@ function applyTrapEffect(
     }
     case 'dice_count_field':
       // needs dice — set up pending dice
-      return { state: { ...state, phase: 'dice-roll', pendingDice: { reason: trap.name } }, negateAttack: true, destroyAttacker: false, skipCombat: true };
+      return { state: { ...state, phase: 'dice-roll', pendingDice: { reason: `${trap.name} (${trap.number})` } }, negateAttack: true, destroyAttacker: false, skipCombat: true };
     case 'reflect_damage':
       // handled in combat resolution — mark defender
       if (defender) {
@@ -594,7 +594,7 @@ function applyMagicEffect(state: GameState, card: MagicCard, targetUid?: string)
           eff.kind === 'atk_boost' ? `+${eff.amount} ATQ colocada.`
           : eff.kind === 'def_reduce' ? `-${eff.amount} DEF colocada.`
           : 'Protección por dado colocada.';
-        log.push(`${card.name} (${card.number}): ${detalle}`);
+        log.push(`${card.name} (${card.number}) colocada sobre ${findFieldMonster(players[ladoReal], targetUid)!.card.name} (${findFieldMonster(players[ladoReal], targetUid)!.card.number}): ${detalle}`);
       }
       break;
     }
@@ -1096,7 +1096,7 @@ export function reducer(state: GameState, action: Action): GameState {
       players[cp] = updateFieldMonster(players[cp], action.fieldUid, (f) => ({ ...f, trap: action.card, trapRevealed: false }));
       players[cp] = playCardFromHand(players[cp], action.card);
 
-      const logMessage = `${players[cp].name} coloca una Trampa bajo ${fm.card.name} (${fm.card.number}).`;
+      const logMessage = `${players[cp].name} coloca la Trampa ${action.card.name} (${action.card.number}) bajo ${fm.card.name} (${fm.card.number}).`;
 
       const winResult = checkWinner(players);
       const newState: GameState = {
@@ -1478,9 +1478,10 @@ export function reducer(state: GameState, action: Action): GameState {
         if (pt) {
           if (roll >= 4) {
             removeFieldMonster(players, pt.attackerPlayer, pt.attackerUid);
-            log.push(`¡${roll} ≥ 4! Atacante destruido.`);
+            const destroyedAttacker = findFieldMonster(players[pt.attackerPlayer], pt.attackerUid);
+            log.push(`¡${roll} ≥ 4! ${destroyedAttacker ? `${destroyedAttacker.card.name} (${destroyedAttacker.card.number})` : 'El Monstruo atacante'} es destruido por la Trampa ${pt.trap.name} (${pt.trap.number}).`);
           } else {
-            log.push(`${roll} < 4. Sin efecto.`);
+            log.push(`${roll} < 4. Sin efecto de la Trampa ${pt.trap.name} (${pt.trap.number}); ${findFieldMonster(players[pt.attackerPlayer], pt.attackerUid)?.card.name ?? 'el Monstruo atacante'} no es destruido.`);
             if (findFieldMonster(players[pt.attackerPlayer], pt.attackerUid)) {
               players[pt.attackerPlayer] = updateFieldMonster(players[pt.attackerPlayer], pt.attackerUid, (fm) => ({ ...fm, hasAttacked: true }));
             }
@@ -1535,7 +1536,7 @@ export function reducer(state: GameState, action: Action): GameState {
         return {
           ...state,
           selection: { ...sel, selectedUids },
-          log: addLog(state, `${selected.card.name} (${selected.card.number}) seleccionado para la Trampa. Elige 1 Monstruo propio más.`),
+          log: addLog(state, `${selected.card.name} (${selected.card.number}) seleccionado para ${findFieldMonster(state.players[sel.trapPlayer], sel.trapUid)?.trap ? `la Trampa ${findFieldMonster(state.players[sel.trapPlayer], sel.trapUid)!.trap!.name} (${findFieldMonster(state.players[sel.trapPlayer], sel.trapUid)!.trap!.number})` : 'la Trampa'}. Elige 1 Monstruo propio más.`),
         };
       }
 
@@ -1570,7 +1571,7 @@ export function reducer(state: GameState, action: Action): GameState {
         players,
         phase: winResult.winner !== null || winResult.isDraw ? 'game-over' : 'playing',
         selection: { kind: 'none' },
-        log: addLog(state, `Trampa 2: destruyes ${first?.card.name ?? 'un Monstruo'}${first?.card.number ? ` (${first.card.number})` : ''}, ${second?.card.name ?? 'un Monstruo'}${second?.card.number ? ` (${second.card.number})` : ''} y ${opponentTarget.card.name} (${opponentTarget.card.number}) del rival.`, owner),
+        log: addLog(state, `${trapFm?.trap ? `Trampa ${trapFm.trap.name} (${trapFm.trap.number})` : 'Trampa 2'}: destruyes ${first?.card.name ?? 'un Monstruo'}${first?.card.number ? ` (${first.card.number})` : ''}, ${second?.card.name ?? 'un Monstruo'}${second?.card.number ? ` (${second.card.number})` : ''} y ${opponentTarget.card.name} (${opponentTarget.card.number}) del rival.`, owner),
         winner: winResult.winner,
         isDraw: winResult.isDraw,
       };
@@ -1607,7 +1608,7 @@ export function reducer(state: GameState, action: Action): GameState {
         players,
         phase: winResult.winner !== null || winResult.isDraw ? ('game-over' as const) : ('playing' as const),
         selection: { kind: 'none' },
-        log: addLog(state, `${target.card.name} (${target.card.number}) destruido por Trampa 9.`),
+        log: addLog(state, `${target.card.name} (${target.card.number}) destruido por ${findFieldMonster(state.players[state.selection.trapPlayer], state.selection.trapUid)?.trap ? `la Trampa ${findFieldMonster(state.players[state.selection.trapPlayer], state.selection.trapUid)!.trap!.name} (${findFieldMonster(state.players[state.selection.trapPlayer], state.selection.trapUid)!.trap!.number})` : 'la Trampa 9'}.`),
         winner: winResult.winner,
         isDraw: winResult.isDraw,
       };
@@ -1646,7 +1647,7 @@ export function reducer(state: GameState, action: Action): GameState {
         selection: { kind: 'none' },
         log: addLog(
           state,
-          `Trampa 5: ${card.name} (${card.number}) destruida y enviada al Cementerio.`,
+          `${carrier.trap ? `Trampa ${carrier.trap.name} (${carrier.trap.number})` : 'Trampa 5'}: ${card.name} (${card.number}) destruida y enviada al Cementerio.`,
           state.currentPlayer,
         ),
       };
