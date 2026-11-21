@@ -1502,7 +1502,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               }
               attackSelection={
                 sel.kind === 'attack' || sel.kind === 'attack-or-direct' || sel.kind === 'direct-attack' ||
-                sel.kind === 'place-magic'
+                sel.kind === 'place-magic' || sel.kind === 'place-trap'
               }
               trapCounting={Boolean(trapCountAnimation && fm && trapCountAnimation.sequence[trapCountAnimation.step]?.uid === fm.uid)}
               showTrap={true}
@@ -1601,7 +1601,7 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
               selectable={isMySlotSelectable(fm)}
               attackSelection={
                 sel.kind === 'attack' || sel.kind === 'attack-or-direct' || sel.kind === 'direct-attack' ||
-                sel.kind === 'place-magic'
+                sel.kind === 'place-magic' || sel.kind === 'place-trap'
               }
               attackerHighlight={
                 (sel.kind === 'attack' || sel.kind === 'attack-or-direct' || sel.kind === 'direct-attack') &&
