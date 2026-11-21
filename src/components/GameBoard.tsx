@@ -1500,6 +1500,10 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                 (sel.kind === 'attack' || sel.kind === 'attack-or-direct') &&
                 isOpponentSlotSelectable(fm)
               }
+              attackSelection={
+                sel.kind === 'attack' || sel.kind === 'attack-or-direct' || sel.kind === 'direct-attack' ||
+                sel.kind === 'place-magic'
+              }
               trapCounting={Boolean(trapCountAnimation && fm && trapCountAnimation.sequence[trapCountAnimation.step]?.uid === fm.uid)}
               showTrap={true}
               showMagic={true}
