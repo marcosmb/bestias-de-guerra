@@ -255,6 +255,7 @@ function FieldSlot({
   attackTarget = false,
   trapTargetSelected = false,
   trapCounting = false,
+  attackerHighlight = false,
   fieldPlayer,
   slotIndex,
 }: {
@@ -269,6 +270,7 @@ function FieldSlot({
   attackTarget?: boolean;
   trapTargetSelected?: boolean;
   trapCounting?: boolean;
+  attackerHighlight?: boolean;
   fieldPlayer: 0 | 1;
   slotIndex: number;
 }) {
@@ -310,6 +312,8 @@ function FieldSlot({
               ? 'ring-4 ring-gold-200 shadow-[0_0_34px_rgba(250,204,21,1)] brightness-125 scale-110'
               : trapTargetSelected
                 ? 'ring-4 ring-gold-300 shadow-[0_0_24px_rgba(250,204,21,0.8)] scale-105'
+                : attackerHighlight
+                ? 'ring-4 ring-azure-400 shadow-[0_0_24px_rgba(96,165,250,0.9)] scale-105'
                 : selectable
                 ? 'ring-2 ring-gold-300 animate-pulse shadow-glow scale-105'
                 : ''
@@ -1176,6 +1180,11 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
   };
 
   const handleMyFieldClick = (uid: string) => {
+    // Durante una selección de ataque no se ejecuta ninguna acción al clicar
+    // monstruos propios: el ataque directo solo se hace con el botón.
+    if (sel.kind === 'attack' || sel.kind === 'attack-or-direct' || sel.kind === 'direct-attack') {
+      return;
+    }
     if (sel.kind === 'place-magic' && magicRequiredSide(sel.card) !== 'self') {
       return;
     }
@@ -1183,8 +1192,6 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
       dispatch({ type: 'PLACE_TRAP_ON_MONSTER', card: sel.card, fieldUid: uid });
     } else if (sel.kind === 'place-magic') {
       dispatch({ type: 'PLACE_MAGIC_ON_MONSTER', card: sel.card, side: 'self', fieldUid: uid });
-    } else if (sel.kind === 'direct-attack' || sel.kind === 'attack-or-direct') {
-      dispatch({ type: 'DIRECT_ATTACK', attackerUid: sel.attackerUid });
     } else if (sel.kind === 'choose-destroy-target') {
       dispatch({ type: 'DESTROY_MONSTER', fieldUid: uid });
     } else if (sel.kind === 'choose-trap-2-own') {
@@ -1585,6 +1592,10 @@ export function GameBoard({ state, dispatch, onExit, musicEnabled, onToggleMusic
                 }
               } : undefined}
               selectable={isMySlotSelectable(fm)}
+              attackerHighlight={
+                (sel.kind === 'attack' || sel.kind === 'attack-or-direct' || sel.kind === 'direct-attack') &&
+                fm?.uid === (sel as { attackerUid?: string }).attackerUid
+              }
               trapTargetSelected={sel.kind === 'choose-trap-2-own' && sel.selectedUids.includes(fm?.uid ?? '')}
               trapCounting={Boolean(trapCountAnimation && fm && trapCountAnimation.sequence[trapCountAnimation.step]?.uid === fm.uid)}
               showTrap={true}
